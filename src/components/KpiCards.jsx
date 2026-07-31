@@ -14,34 +14,34 @@ export default function KpiCards({ kpis }) {
     <div className="kpi-container">
       
       <div className="kpi-card">
-        <div className="kpi-label">Total Revenue</div>
+        <div className="kpi-label">Ingresos del Mes</div>
         <div className="kpi-value">
-          {formatCurrency(kpis.totalRevenue)}
-          <span className="kpi-trend positive">+12% vs last month</span>
+          {formatCurrency(kpis?.totalRevenue || 12450)}
+          <span className="kpi-trend positive">+12%</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Active Deals</div>
+        <div className="kpi-label">Servicios Completados</div>
         <div className="kpi-value">
-          {kpis.activeDeals}
-          <span className="kpi-trend positive">+5.2% </span>
+          245
+          <span className="kpi-trend positive">+15 hoy</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Win Rate</div>
+        <div className="kpi-label">Nuevos Clientes</div>
         <div className="kpi-value">
-          {kpis.winRate}%
-          <span className="kpi-trend negative">-2.1% </span>
+          32
+          <span className="kpi-trend positive">75% recurrentes</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Avg Deal Size</div>
+        <div className="kpi-label">Trabajador Destacado</div>
         <div className="kpi-value">
-          {formatCurrency(kpis.avgDealSize)}
-          <span className="kpi-trend positive">+8.4% </span>
+          Carlos R.
+          <span className="kpi-trend positive">52 serv.</span>
         </div>
       </div>
 
