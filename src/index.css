@@ -1,20 +1,20 @@
 :root {
-  --bg-color: #f4f6f1; /* Hueso/crema claro */
+  --bg-color: #f4f6f1; 
   --card-bg: #ffffff;
   --text-main: #111827;
   --text-muted: #6b7280;
   --text-light: #9ca3af;
   
-  /* Brand colors */
+  /* Brand colors (LAVAMOVIL NORTE) */
   --accent-orange: #ff6b6b;
   --accent-orange-light: #ffe5e5;
-  --accent-green: #4ade80;
-  --accent-green-light: #dcfce7;
-  --accent-green-text: #166534;
-  --accent-dark: #1f2937; /* For primary buttons */
-  --border-color: #f3f4f6;
-  --sidebar-active-bg: #d3f36b; /* Lima/verde claro del active state */
-  --sidebar-active-text: #1a202c;
+  --accent-green: #1CA9C9; /* Changed to Cyan */
+  --accent-green-light: #e0f7fa;
+  --accent-green-text: #00838f;
+  --accent-dark: #1E4C9A; /* Changed to Royal Blue */
+  --border-color: #e5e7eb;
+  --sidebar-active-bg: #1CA9C9; 
+  --sidebar-active-text: #ffffff;
   
   --radius-sm: 8px;
   --radius-md: 16px;
@@ -23,6 +23,24 @@
   
   --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.03);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.dark {
+  --bg-color: #111827; 
+  --card-bg: #1f2937;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --text-light: #6b7280;
+  
+  --border-color: #374151;
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  
+  /* Mantener el branding */
+  --accent-dark: #3b82f6; /* A lighter blue for better contrast in dark mode buttons */
+  --accent-green: #22d3ee; /* Lighter cyan */
+  --accent-green-light: rgba(34, 211, 238, 0.15);
+  --accent-green-text: #67e8f9;
 }
 
 * {
@@ -58,7 +76,128 @@ body {
 .gap-6 { gap: 24px; }
 .flex-col { flex-direction: column; }
 
-/* App Layout */
+
+
+/* === LOGIN STYLES === */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #111827; /* Dark background */
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glow effect behind the card */
+.login-container::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(28, 169, 201, 0.15) 0%, rgba(28, 169, 201, 0) 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.login-card {
+  background-color: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 1;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ccc;
+  margin-bottom: 8px;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.label-row label {
+  margin-bottom: 0;
+}
+
+.forgot-password {
+  font-size: 12px;
+  color: var(--accent-green);
+  text-decoration: none;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: #666;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-wrapper input:focus {
+  border-color: var(--accent-green);
+}
+
+.login-btn {
+  background-color: var(--accent-green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.1s;
+  margin-top: 10px;
+}
+
+.login-btn:hover {
+  background-color: #148b8b;
+}
+
+.login-btn:active {
+  transform: scale(0.98);
+}
+/* === END LOGIN STYLES === */
 .app-container {
   display: flex;
   min-height: 100vh;
