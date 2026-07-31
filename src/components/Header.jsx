@@ -1,22 +1,35 @@
 import React from 'react';
-import { Search, Gift, Bell, ChevronDown } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown } from 'lucide-react';
 
-export default function Header() {
+export default function Header({ isDarkMode, toggleTheme }) {
   return (
     <header className="header">
       <div className="search-bar">
-        <Search size={16} className="text-muted" />
-        <input type="text" placeholder="Search" />
-        <div className="text-small text-muted" style={{ backgroundColor: '#e5e7eb', padding: '2px 6px', borderRadius: '4px' }}>⌘ K</div>
+        <Search size={18} className="text-muted" />
+        <input type="text" placeholder="Buscar clientes, servicios o placas..." />
       </div>
-      
+
       <div className="header-actions">
-        <button className="icon-btn">
-          <Gift size={18} />
+        {/* Nuevos botones rápidos */}
+        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+          <MapPin size={16} /> Notificar Llegada
         </button>
-        <button className="icon-btn">
-          <Bell size={18} />
+        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+          <MessageSquare size={16} /> Chatbot
         </button>
+        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+          <Plus size={16} /> Nuevo Servicio
+        </button>
+
+        {/* Notificaciones y Tema */}
+        <button className="icon-btn">
+          <Bell size={20} />
+        </button>
+        
+        <button className="icon-btn" onClick={toggleTheme}>
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
         <div className="user-profile">
           <img src="https://i.pravatar.cc/150?u=u2" alt="User" className="avatar" />
           <div>
