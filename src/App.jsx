@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
 import Login from './components/Login'
+import Citas from './components/Citas'
+import Zonas from './components/Zonas'
+import Trabajadores from './components/Trabajadores'
+import Clientes from './components/Clientes'
+import Productos from './components/Productos'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,7 +37,15 @@ function App() {
 
   return (
     <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme}>
-      <Dashboard />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/citas" element={<Citas />} />
+        <Route path="/zonas" element={<Zonas />} />
+        <Route path="/trabajadores" element={<Trabajadores />} />
+        <Route path="/clientes" element={<Clientes />} />
+        <Route path="/productos" element={<Productos />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Layout>
   )
 }
