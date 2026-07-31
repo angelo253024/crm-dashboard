@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, CalendarCheck, Map } from 'lucide-react';
 import { deals, stages } from '../data/mockData';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -32,18 +32,22 @@ export default function Dashboard() {
       
       <div className="welcome-section">
         <div>
-          <h1 className="text-h1">Dashboard</h1>
-          <p className="text-body text-muted">Welcome, let's dive into your sales performance.</p>
+          <h1 className="text-h1">Hola, Admin 👋</h1>
+          <p className="text-body text-muted" style={{ marginTop: '4px' }}>Aquí tienes el resumen de Lavamóvil Norte para hoy.</p>
         </div>
-        <button className="btn-primary">
-          <Plus size={18} />
-          Create Deal
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn-secondary">
+            <CalendarCheck size={18} /> Agendar Cita
+          </button>
+          <button className="btn-secondary">
+            <Map size={18} /> Ver Ruta del Día
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ padding: '32px' }}>
         <div className="chart-header">
-          <h2 className="text-h2">Performance Overview</h2>
+          <h2 className="text-h2">Visión General del Rendimiento</h2>
         </div>
         <KpiCards kpis={kpis} />
       </div>
@@ -52,8 +56,8 @@ export default function Dashboard() {
         <div className="card">
           <div className="chart-header">
             <div>
-              <h2 className="text-h2">Pipeline Value by Stage</h2>
-              <p className="text-body text-muted" style={{ marginTop: '4px' }}>Active deals distributed across your pipeline</p>
+              <h2 className="text-h2">Valor del Pipeline por Etapa</h2>
+              <p className="text-body text-muted" style={{ marginTop: '4px' }}>Servicios activos distribuidos en tu pipeline</p>
             </div>
           </div>
           <PipelineChart deals={deals.filter(d => d.status === 'open')} stages={stages} />
@@ -61,7 +65,7 @@ export default function Dashboard() {
 
         <div className="card">
           <div className="chart-header">
-             <h2 className="text-h2">Top Deals</h2>
+             <h2 className="text-h2">Mejores Promos</h2>
           </div>
           <TopDeals deals={deals} />
         </div>
@@ -69,7 +73,7 @@ export default function Dashboard() {
       
       <div className="card" style={{ marginTop: '0px' }}>
           <div className="chart-header">
-             <h2 className="text-h2">Sales Trend (Revenue over time)</h2>
+             <h2 className="text-h2">Tendencia de Ventas (Ingresos en el tiempo)</h2>
           </div>
           <SalesTrendChart deals={deals} />
       </div>
