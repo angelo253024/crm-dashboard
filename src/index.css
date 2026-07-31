@@ -361,6 +361,7 @@ body {
   margin-top: 8px;
 }
 
+/* Buttons */
 .btn-primary {
   background: var(--accent-dark);
   color: white;
@@ -371,8 +372,32 @@ body {
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent-dark);
+  border: 1px solid var(--accent-green);
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-secondary:hover {
+  background: var(--accent-green-light);
 }
 
 /* Dashboard Grid */
