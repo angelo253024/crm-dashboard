@@ -25,6 +25,12 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    
+    if (user.id === 'local-demo') {
+      alert('Estás usando el usuario de demostración (local-demo). Para editar tu perfil real, ve a la sección "Trabajadores" y asegúrate de que exista tu usuario allí, luego cierra sesión y entra con él.');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('trabajadores')
       .update({

@@ -15,7 +15,9 @@ export default function Trabajadores() {
     nombre: '', 
     rol: 'Trabajador',
     password: '',
-    foto_url: ''
+    foto_url: '',
+    pregunta_seguridad: '',
+    respuesta_seguridad: ''
   });
 
   useEffect(() => {
@@ -40,7 +42,14 @@ export default function Trabajadores() {
   const handleOpenAdd = () => {
     setIsEditing(false);
     setEditingId(null);
-    setFormData({ nombre: '', rol: 'Trabajador', password: '', foto_url: '' });
+    setFormData({ 
+      nombre: '', 
+      rol: 'Trabajador', 
+      password: '', 
+      foto_url: '',
+      pregunta_seguridad: '',
+      respuesta_seguridad: ''
+    });
     setShowModal(true);
   };
 
@@ -51,7 +60,9 @@ export default function Trabajadores() {
       nombre: t.nombre || '', 
       rol: t.rol || 'Trabajador', 
       password: t.password || '',
-      foto_url: t.foto_url || ''
+      foto_url: t.foto_url || '',
+      pregunta_seguridad: t.pregunta_seguridad || '',
+      respuesta_seguridad: t.respuesta_seguridad || ''
     });
     setShowModal(true);
   };
@@ -63,7 +74,9 @@ export default function Trabajadores() {
       nombre: formData.nombre,
       rol: formData.rol,
       password: formData.password,
-      foto_url: formData.foto_url
+      foto_url: formData.foto_url,
+      pregunta_seguridad: formData.pregunta_seguridad,
+      respuesta_seguridad: formData.respuesta_seguridad
     };
 
     if (isEditing) {
@@ -170,8 +183,8 @@ export default function Trabajadores() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '450px', boxShadow: 'var(--shadow-soft)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, overflowY: 'auto', padding: '20px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '500px', boxShadow: 'var(--shadow-soft)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <h2 className="text-h2">{isEditing ? 'Editar Usuario' : 'Agregar Nuevo Usuario'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
@@ -220,6 +233,30 @@ export default function Trabajadores() {
                   onChange={(e) => setFormData({...formData, foto_url: e.target.value})}
                   style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}
                   placeholder="https://ejemplo.com/foto.jpg"
+                />
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', margin: '8px 0' }}></div>
+              <h3 style={{ fontSize: '15px', fontWeight: '600' }}>Seguridad (Recuperación)</h3>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Pregunta de Seguridad</label>
+                <input 
+                  type="text" 
+                  value={formData.pregunta_seguridad}
+                  onChange={(e) => setFormData({...formData, pregunta_seguridad: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}
+                  placeholder="Ej. ¿Cuál es el nombre de tu primera mascota?"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Respuesta de Seguridad</label>
+                <input 
+                  type="text" 
+                  value={formData.respuesta_seguridad}
+                  onChange={(e) => setFormData({...formData, respuesta_seguridad: e.target.value})}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}
+                  placeholder="Respuesta que usará para recuperar contraseña"
                 />
               </div>
               
