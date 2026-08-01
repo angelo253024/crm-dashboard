@@ -7,14 +7,21 @@ export default function LandingPage() {
     <div className="landing-page">
       {/* Navigation */}
       <nav className="landing-nav">
-        <div style={{ display: 'flex', alignItems: 'center', lineHeight: '1.1' }}>
+        <img 
+          src="/logo.png" 
+          alt="Lavamóvil Norte" 
+          className="landing-logo-img"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        {/* Fallback Nav */}
+        <div style={{ display: 'none', alignItems: 'center', lineHeight: '1.1' }}>
           <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '24px' }}>
             <span style={{ color: '#1E4C9A' }}>LAVA</span>
             <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
             <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
-          </div>
-          <div style={{ color: '#1CA9C9', fontWeight: 700, fontSize: '12px', letterSpacing: '4px', marginLeft: '8px' }}>
-            NORTE
           </div>
         </div>
         
@@ -39,16 +46,28 @@ export default function LandingPage() {
           LAVADO DE AUTOS A DOMICILIO • SANTA CRUZ, BOLIVIA
         </div>
         
-        <div className="landing-title">
-          <div className="landing-title-icon">
-            <Droplets size={48} />
+        <img 
+          src="/logo.png" 
+          alt="Lavamóvil Norte" 
+          className="landing-logo-hero"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'block';
+          }}
+        />
+        {/* Fallback si no suben la imagen */}
+        <div style={{ display: 'none', marginBottom: '24px', animation: 'fadeUp 0.8s ease-out 0.4s forwards', opacity: 0 }}>
+          <div className="landing-title">
+            <div className="landing-title-icon">
+              <Droplets size={48} />
+            </div>
+            <span style={{ color: '#1E4C9A', fontSize: '64px', fontWeight: 900 }}>LAVA</span>
+            <span style={{ color: '#1CA9C9', margin: '0 -5px', fontSize: '64px', fontWeight: 900 }}>M</span>
+            <span style={{ color: '#1E4C9A', fontSize: '64px', fontWeight: 900 }}>ÓVIL</span>
           </div>
-          <span style={{ color: '#1E4C9A' }}>LAVA</span>
-          <span style={{ color: '#1CA9C9', margin: '0 -15px' }}>M</span>
-          <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
-        </div>
-        <div className="landing-title" style={{ fontSize: '64px', color: '#1CA9C9', marginTop: '-20px', marginBottom: '24px', letterSpacing: '8px' }}>
-          NORTE
+          <div style={{ fontSize: '48px', fontWeight: 900, color: '#1CA9C9', marginTop: '-10px', letterSpacing: '8px' }}>
+            NORTE
+          </div>
         </div>
 
         <h1 className="landing-description">

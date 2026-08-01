@@ -117,14 +117,25 @@ export default function Login({ onLogin }) {
         </Link>
         
         {/* Logo LAVAMOVIL NORTE */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.1', marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '32px' }}>
-            <span style={{ color: '#1E4C9A' }}>LAVA</span>
-            <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
-            <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
-          </div>
-          <div style={{ color: '#1CA9C9', fontWeight: 700, fontSize: '18px', letterSpacing: '6px' }}>
-            NORTE
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
+          <img 
+            src="/logo.png" 
+            alt="Lavamóvil Norte" 
+            style={{ height: '80px', width: 'auto', objectFit: 'contain' }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+          <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', lineHeight: '1.1' }}>
+            <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '32px' }}>
+              <span style={{ color: '#1E4C9A' }}>LAVA</span>
+              <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
+              <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
+            </div>
+            <div style={{ color: '#1CA9C9', fontWeight: 700, fontSize: '18px', letterSpacing: '6px' }}>
+              NORTE
+            </div>
           </div>
         </div>
 

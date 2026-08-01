@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
 :root {
   --bg-color: #f4f6f1; 
   --card-bg: #ffffff;
@@ -572,12 +574,13 @@ body {
   color: var(--accent-orange);
 }
 
+
 /* === LANDING PAGE STYLES === */
 .landing-page {
   background-color: #0b1121; /* Dark blueish background */
   min-height: 100vh;
   color: #ffffff;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nunito', sans-serif;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -595,6 +598,7 @@ body {
   background: radial-gradient(circle, rgba(28, 169, 201, 0.15) 0%, rgba(28, 169, 201, 0) 70%);
   border-radius: 50%;
   z-index: 0;
+  animation: floatBubble 8s ease-in-out infinite alternate;
 }
 .landing-page::after {
   content: '';
@@ -606,6 +610,7 @@ body {
   background: radial-gradient(circle, rgba(30, 76, 154, 0.15) 0%, rgba(30, 76, 154, 0) 70%);
   border-radius: 50%;
   z-index: 0;
+  animation: floatBubble 10s ease-in-out infinite alternate-reverse;
 }
 
 .landing-nav {
@@ -621,18 +626,20 @@ body {
   animation: fadeDown 0.8s ease-out forwards;
 }
 
-.landing-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: linear-gradient(135deg, #1E4C9A 0%, #1CA9C9 100%);
-  padding: 8px 16px;
-  border-radius: 12px;
-  color: #fff;
-  font-weight: 800;
-  font-size: 20px;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(28, 169, 201, 0.3);
+.landing-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.landing-logo-hero {
+  height: 120px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 24px;
+  animation: fadeUp 0.8s ease-out 0.4s forwards;
+  opacity: 0;
+  filter: drop-shadow(0px 10px 15px rgba(28,169,201,0.3));
 }
 
 .landing-links {
@@ -870,5 +877,16 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes floatBubble {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 0.15;
+  }
+  to {
+    transform: translateY(-30px) scale(1.05);
+    opacity: 0.25;
   }
 }
