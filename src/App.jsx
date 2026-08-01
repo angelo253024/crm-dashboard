@@ -36,7 +36,7 @@ function App() {
   }
 
   return (
-    <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user}>
+    <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/citas" element={<Citas />} />
