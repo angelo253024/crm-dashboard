@@ -8,12 +8,13 @@
   /* Brand colors (LAVAMOVIL NORTE) */
   --accent-orange: #ff6b6b;
   --accent-orange-light: #ffe5e5;
-  --accent-green: #1CA9C9; /* Changed to Cyan */
+  --accent-green: #00a2e8; /* Cyan from image */
   --accent-green-light: #e0f7fa;
-  --accent-green-text: #00838f;
-  --accent-dark: #1E4C9A; /* Changed to Royal Blue */
+  --accent-green-text: #0076a8;
+  --accent-dark: #0f1c3f; /* Deep navy blue */
   --border-color: #e5e7eb;
-  --sidebar-active-bg: #1CA9C9; 
+  --sidebar-active-bg: #00a2e8; 
+
   --sidebar-active-text: #ffffff;
   
   --radius-sm: 8px;
@@ -398,6 +399,25 @@ body {
 }
 .btn-secondary:hover {
   background: var(--accent-green-light);
+}
+
+.btn-outline-cyan {
+  background: transparent;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.btn-outline-cyan:hover {
+  background: rgba(0, 162, 232, 0.1);
 }
 
 /* Dashboard Grid */

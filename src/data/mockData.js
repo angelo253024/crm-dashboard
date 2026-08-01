@@ -45,21 +45,24 @@ export const deals = [
   { id: "d20", title: "Flota de Entregas", customer_id: "c5", owner_id: "u1", stage_id: "s4", amount: 3500.00, currency: "BOB", status: "won", created_at: "2024-09-25T08:00:00Z", closed_at: "2024-10-05T10:00:00Z" }
 ];
 
+
+
 export const workers = [
-  { id: "w1", name: "Carlos RamÃ­rez", status: "en_servicio", avatar_url: "https://i.pravatar.cc/150?u=w1", zone: "Norte" },
+  { id: "w1", name: "Carlos Ramírez", status: "en_servicio", avatar_url: "https://i.pravatar.cc/150?u=w1", zone: "Norte" },
   { id: "w2", name: "Luis Fernandez", status: "disponible", avatar_url: "https://i.pravatar.cc/150?u=w2", zone: "Centro" },
   { id: "w3", name: "Miguel Rojas", status: "descanso", avatar_url: "https://i.pravatar.cc/150?u=w3", zone: "Sur" }
 ];
 
 export const products = [
-  { id: "p1", name: "Lavado BÃ¡sico", price: 80, stock: "Ilimitado", category: "Servicio" },
+  { id: "p1", name: "Lavado Básico", price: 80, stock: "Ilimitado", category: "Servicio" },
   { id: "p2", name: "Encerado Premium", price: 150, stock: "Ilimitado", category: "Servicio" },
   { id: "p3", name: "Shampoo CarWash 5L", price: 120, stock: 15, category: "Insumo" },
   { id: "p4", name: "Cera de Carnauba", price: 90, stock: 8, category: "Insumo" }
 ];
 
 export const appointments = [
-  { id: "a1", date: "2024-10-15T10:00:00Z", customer: "Transportes Robles", service: "Lavado Flota", worker: "Carlos RamÃ­rez", status: "en_proceso" },
-  { id: "a2", date: "2024-10-15T14:30:00Z", customer: "Flota Corporativa", service: "DesinfecciÃ³n Ozono", worker: "Luis Fernandez", status: "pendiente" },
-  { id: "a3", date: "2024-10-16T09:00:00Z", customer: "Cliente Particular", service: "Lavado BÃ¡sico", worker: "Miguel Rojas", status: "confirmada" }
+  { id: "a1", date: "2024-10-15T10:00:00Z", customer: "Transportes Robles", service: "Lavado Flota", worker: "Carlos Ramírez", status: "en_proceso" },
+  { id: "a2", date: "2024-10-15T14:30:00Z", customer: "Flota Corporativa", service: "Desinfección Ozono", worker: "Luis Fernandez", status: "pendiente" },
+  { id: "a3", date: "2024-10-16T09:00:00Z", customer: "Cliente Particular", service: "Lavado Básico", worker: "Miguel Rojas", status: "confirmada" }
 ];
+

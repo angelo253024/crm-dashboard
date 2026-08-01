@@ -11,13 +11,13 @@ export default function Header({ isDarkMode, toggleTheme }) {
 
       <div className="header-actions">
         {/* Nuevos botones rápidos */}
-        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+        <button className="btn-secondary" style={{ display: 'none', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
           <MapPin size={16} /> Notificar Llegada
         </button>
-        <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+        <button className="btn-outline-cyan" style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px' }}>
           <MessageSquare size={16} /> Chatbot
         </button>
-        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
+        <button className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
           <Plus size={16} /> Nuevo Servicio
         </button>
 

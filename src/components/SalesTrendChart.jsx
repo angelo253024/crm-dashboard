@@ -8,17 +8,20 @@ export default function SalesTrendChart({ deals }) {
     // Group by month
     const monthlyData = wonDeals.reduce((acc, deal) => {
       const date = new Date(deal.closed_at || deal.created_at);
-      const month = date.toLocaleString('default', { month: 'short' });
+      const month = date.toLocaleString('es-ES', { month: 'short' });
       
-      if (!acc[month]) {
-        acc[month] = { name: month, revenue: 0 };
+      // capitalize first letter
+      const monthCapitalized = month.charAt(0).toUpperCase() + month.slice(1);
+
+      if (!acc[monthCapitalized]) {
+        acc[monthCapitalized] = { name: monthCapitalized, revenue: 0 };
       }
-      acc[month].revenue += deal.amount;
+      acc[monthCapitalized].revenue += deal.amount;
       return acc;
     }, {});
 
-    // Sort months (simplified for this mock)
-    const monthsOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // Sort months
+    const monthsOrder = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     return Object.values(monthlyData).sort((a, b) => {
       return monthsOrder.indexOf(a.name) - monthsOrder.indexOf(b.name);
     });
@@ -35,18 +38,18 @@ export default function SalesTrendChart({ deals }) {
         >
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#4ade80" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#4ade80" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#1CA9C9" stopOpacity={0.4}/>
+              <stop offset="95%" stopColor="#1CA9C9" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
-          <YAxis tickFormatter={formatCurrency} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} dy={10} />
+          <YAxis tickFormatter={formatCurrency} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
           <Tooltip 
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            formatter={(value) => [`Bs ${value.toLocaleString('es-BO')}`, 'Revenue']}
+            contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-soft)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }}
+            formatter={(value) => [`Bs ${value.toLocaleString('es-BO')}`, 'Ingresos']}
           />
-          <Area type="monotone" dataKey="revenue" stroke="#4ade80" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+          <Area type="monotone" dataKey="revenue" stroke="#1CA9C9" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

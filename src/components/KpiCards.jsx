@@ -14,34 +14,34 @@ export default function KpiCards({ kpis }) {
     <div className="kpi-container">
       
       <div className="kpi-card">
-        <div className="kpi-label">Ingresos del Mes</div>
+        <div className="kpi-label">Ingresos Hoy</div>
         <div className="kpi-value">
-          {formatCurrency(kpis?.totalRevenue || 12450)}
-          <span className="kpi-trend positive">+12%</span>
+          {formatCurrency(kpis?.ingresosDia || 0)}
+          <span className="kpi-trend positive">+5% vs ayer</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Servicios Completados</div>
+        <div className="kpi-label">Ingresos Semana</div>
         <div className="kpi-value">
-          245
-          <span className="kpi-trend positive">+15 hoy</span>
+          {formatCurrency(kpis?.ingresosSemana || 0)}
+          <span className="kpi-trend positive">+12% vs sem ant.</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Nuevos Clientes</div>
+        <div className="kpi-label">Ingresos Mes</div>
         <div className="kpi-value">
-          32
-          <span className="kpi-trend positive">75% recurrentes</span>
+          {formatCurrency(kpis?.ingresosMes || 0)}
+          <span className="kpi-trend positive">+8% vs mes ant.</span>
         </div>
       </div>
 
       <div className="kpi-card">
-        <div className="kpi-label">Trabajador Destacado</div>
+        <div className="kpi-label">Servicios Hoy</div>
         <div className="kpi-value">
-          Carlos R.
-          <span className="kpi-trend positive">52 serv.</span>
+          {kpis?.serviciosHoy || 0}
+          <span className="kpi-trend positive">En progreso</span>
         </div>
       </div>
 

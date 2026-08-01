@@ -27,17 +27,17 @@ export default function PipelineChart({ deals, stages }) {
           margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           barSize={40}
         >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
-          <YAxis tickFormatter={formatCurrency} axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color)" />
+          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} dy={10} />
+          <YAxis tickFormatter={formatCurrency} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
           <Tooltip 
-            cursor={{fill: '#f3f4f6'}}
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            formatter={(value) => [`Bs ${value.toLocaleString('es-BO')}`, 'Pipeline Value']}
+            cursor={{fill: 'var(--bg-color)'}}
+            contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-soft)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }}
+            formatter={(value) => [`Bs ${value.toLocaleString('es-BO')}`, 'Valor']}
           />
           <Bar dataKey="value" radius={[6, 6, 6, 6]}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.name === 'Negotiation' ? '#ff6b6b' : '#f3f4f6'} />
+              <Cell key={`cell-${index}`} fill={entry.name === 'Agendado' ? '#1CA9C9' : '#1E4C9A'} />
             ))}
           </Bar>
         </BarChart>

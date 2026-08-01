@@ -9,7 +9,7 @@ export default function TopDeals({ deals }) {
     .slice(0, 4);
 
   const getCustomerName = (id) => {
-    return customers.find(c => c.id === id)?.company_name || 'Unknown';
+    return customers.find(c => c.id === id)?.company_name || 'Desconocido';
   };
 
   const formatCurrency = (value) => {
@@ -29,12 +29,12 @@ export default function TopDeals({ deals }) {
               width: '40px', 
               height: '40px', 
               borderRadius: '8px', 
-              background: '#fef3c7', 
+              background: '#e0f7fa', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               fontWeight: '600',
-              color: '#d97706'
+              color: '#00838f'
             }}>
               {getCustomerName(deal.customer_id).charAt(0)}
             </div>
@@ -46,7 +46,7 @@ export default function TopDeals({ deals }) {
           <div style={{ textAlign: 'right' }}>
             <div className="text-small font-semibold">{formatCurrency(deal.amount)}</div>
             <div className="status-badge status-open" style={{ display: 'inline-block', marginTop: '4px' }}>
-              Pending
+              Pendiente
             </div>
           </div>
         </div>

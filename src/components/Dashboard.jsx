@@ -10,20 +10,12 @@ export default function Dashboard() {
   
   // Calculate KPIs
   const kpis = useMemo(() => {
-    const wonDeals = deals.filter(d => d.status === 'won');
-    const lostDeals = deals.filter(d => d.status === 'lost');
-    const openDeals = deals.filter(d => d.status === 'open');
-    
-    const totalRevenue = wonDeals.reduce((sum, deal) => sum + deal.amount, 0);
-    const totalClosed = wonDeals.length + lostDeals.length;
-    const winRate = totalClosed > 0 ? (wonDeals.length / totalClosed) * 100 : 0;
-    const avgDealSize = wonDeals.length > 0 ? totalRevenue / wonDeals.length : 0;
-
+    // Simulando ingresos para el dashboard financiero
     return {
-      totalRevenue,
-      activeDeals: openDeals.length,
-      winRate: winRate.toFixed(1),
-      avgDealSize
+      ingresosDia: 1250,
+      ingresosSemana: 8450,
+      ingresosMes: 32450,
+      serviciosHoy: 18
     };
   }, []);
 

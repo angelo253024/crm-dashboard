@@ -7,8 +7,10 @@ export default function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (email && password) {
+    if (email === 'angelo' && password === '3279869') {
       onLogin();
+    } else {
+      alert('Credenciales incorrectas');
     }
   };
 
