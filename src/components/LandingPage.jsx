@@ -7,9 +7,15 @@ export default function LandingPage() {
     <div className="landing-page">
       {/* Navigation */}
       <nav className="landing-nav">
-        <div className="landing-logo">
-          <Car size={24} />
-          <span>LAVAMÓVIL</span>
+        <div style={{ display: 'flex', alignItems: 'center', lineHeight: '1.1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '24px' }}>
+            <span style={{ color: '#1E4C9A' }}>LAVA</span>
+            <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
+            <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
+          </div>
+          <div style={{ color: '#1CA9C9', fontWeight: 700, fontSize: '12px', letterSpacing: '4px', marginLeft: '8px' }}>
+            NORTE
+          </div>
         </div>
         
         <div className="landing-links">
@@ -35,11 +41,13 @@ export default function LandingPage() {
         
         <div className="landing-title">
           <div className="landing-title-icon">
-            <Car size={48} />
+            <Droplets size={48} />
           </div>
-          <span>LAVAMÓVIL</span>
+          <span style={{ color: '#1E4C9A' }}>LAVA</span>
+          <span style={{ color: '#1CA9C9', margin: '0 -15px' }}>M</span>
+          <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
         </div>
-        <div className="landing-title" style={{ fontSize: '64px', color: '#ccc', marginTop: '-20px', marginBottom: '24px' }}>
+        <div className="landing-title" style={{ fontSize: '64px', color: '#1CA9C9', marginTop: '-20px', marginBottom: '24px', letterSpacing: '8px' }}>
           NORTE
         </div>
 
