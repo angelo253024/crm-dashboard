@@ -1,17 +1,39 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '../supabase';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === 'angelo' && password === '3279869') {
-      onLogin();
+    setLoading(true);
+    setError('');
+
+    // Busca en Supabase si el usuario/nombre coincide con la contraseña
+    const { data, error: fetchError } = await supabase
+      .from('trabajadores')
+      .select('*')
+      .ilike('nombre', email.trim())
+      .eq('password', password)
+      .single();
+
+    if (fetchError || !data) {
+      if (email === 'angelo' && password === '3279869') {
+        // Fallback for demo if the db isn't updated yet
+        onLogin({ nombre: 'Angelo Miranda', rol: 'Administrador', id: 'local-demo' });
+      } else {
+        setError('Usuario o contraseña incorrectos');
+      }
     } else {
-      alert('Credenciales incorrectas');
+      // Logueado exitosamente, pasamos el objeto del usuario a onLogin
+      onLogin(data);
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -62,8 +84,10 @@ export default function Login({ onLogin }) {
             </div>
           </div>
 
-          <button type="submit" className="login-btn">
-            Ingresar <ArrowRight size={18} />
+          {error && <div style={{ color: 'var(--accent-red, #ef4444)', fontSize: '13px', textAlign: 'center', marginBottom: '16px' }}>{error}</div>}
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? 'Cargando...' : <>Ingresar <ArrowRight size={18} /></>}
           </button>
         </form>
       </div>

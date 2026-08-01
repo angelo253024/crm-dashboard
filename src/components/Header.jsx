@@ -1,7 +1,18 @@
 import React from 'react';
 import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown } from 'lucide-react';
 
-export default function Header({ isDarkMode, toggleTheme }) {
+export default function Header({ isDarkMode, toggleTheme, user }) {
+  // Función para obtener la inicial del nombre
+  const getInitial = (name) => {
+    if (!name) return 'U';
+    return name.charAt(0).toUpperCase();
+  };
+
+  const userName = user?.nombre || 'Usuario';
+  const userRole = user?.rol || 'Administrador';
+  const userId = user?.id ? user.id.substring(0, 8) : 'Invitado';
+  const userPhoto = user?.foto_url;
+
   return (
     <header className="header">
       <div className="search-bar">
@@ -31,10 +42,25 @@ export default function Header({ isDarkMode, toggleTheme }) {
         </button>
 
         <div className="user-profile">
-          <img src="https://i.pravatar.cc/150?u=u2" alt="User" className="avatar" />
+          {userPhoto ? (
+            <img src={userPhoto} alt="User" className="avatar" />
+          ) : (
+            <div className="avatar" style={{ 
+              backgroundColor: 'var(--accent-cyan)', 
+              color: 'var(--bg-color)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '16px'
+            }}>
+              {getInitial(userName)}
+            </div>
+          )}
+          
           <div>
-            <div className="text-small font-semibold">Angelo Israel Miranda Vivero</div>
-            <div className="text-small text-muted">ID: 4827682</div>
+            <div className="text-small font-semibold">{userName}</div>
+            <div className="text-small text-muted">{userRole} - ID: {userId}</div>
           </div>
           <ChevronDown size={16} className="text-muted" />
         </div>

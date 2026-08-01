@@ -10,7 +10,7 @@ import Clientes from './components/Clientes'
 import Productos from './components/Productos'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
 
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check local storage or system preference on initial load
@@ -31,12 +31,12 @@ function App() {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  if (!user) {
+    return <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />;
   }
 
   return (
-    <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme}>
+    <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/citas" element={<Citas />} />
