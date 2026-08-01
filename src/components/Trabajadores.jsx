@@ -110,47 +110,90 @@ export default function Trabajadores() {
     }
   };
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div className="card" style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h2 className="text-h2">Equipo de Trabajo</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-              <Users size={20} className="text-muted" />
-              <span className="text-body font-semibold">Total de Usuarios/Trabajadores: {trabajadores.length}</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-secondary" onClick={() => alert("Función para Asignar Servicio pronto disponible")}>
-              Asignar Servicio
-            </button>
-            <button className="btn-primary" onClick={handleOpenAdd}>
-              <UserPlus size={16} /> Agregar Usuario
-            </button>
-          </div>
-        </div>
-        
-        <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
-              <tr>
-                <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
-                <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Nombre</th>
-                <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Rol</th>
-                <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Estado</th>
-                <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Acciones</th>
+  const [activeTab, setActiveTab] = useState('directorio');
+
+  const renderDirectorio = () => (
+    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
+          <tr>
+            <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
+            <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Nombre</th>
+            <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Rol</th>
+            <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Estado</th>
+            <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center' }}>Cargando usuarios...</td></tr>
+          ) : trabajadores.length === 0 ? (
+            <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center' }}>No hay trabajadores registrados.</td></tr>
+          ) : (
+            trabajadores.map(t => (
+              <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{t.id.substring(0, 8)}...</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {t.foto_url ? (
+                      <img src={t.foto_url} alt="User" style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent-cyan)', color: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>
+                        {t.nombre ? t.nombre.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                    )}
+                    {t.nombre}
+                  </div>
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px' }}>{t.rol}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                  <span className={`status-badge ${t.estado === 'Activo' || t.estado === 'Disponible' ? 'status-won' : 'status-open'}`}>
+                    {t.estado}
+                  </span>
+                </td>
+                <td style={{ padding: '12px 16px' }}>
+                   <button onClick={() => handleOpenEdit(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
+                     <Edit2 size={16} />
+                   </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center' }}>Cargando usuarios...</td></tr>
-              ) : trabajadores.length === 0 ? (
-                <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center' }}>No hay trabajadores registrados.</td></tr>
-              ) : (
-                trabajadores.map(t => (
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const renderHorarios = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ padding: '16px', backgroundColor: 'rgba(28, 169, 201, 0.05)', border: '1px solid var(--accent-cyan)', borderRadius: 'var(--radius-md)', color: 'var(--text-main)' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Turnos Pendientes de Hoy</h3>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Asigna horarios de trabajo a tus empleados y revisa si están pendientes o en servicio.</p>
+      </div>
+
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
+            <tr>
+              <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Trabajador</th>
+              <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Horario Asignado</th>
+              <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Estado del Turno</th>
+              <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan="4" style={{ padding: '24px', textAlign: 'center' }}>Cargando usuarios...</td></tr>
+            ) : trabajadores.length === 0 ? (
+              <tr><td colSpan="4" style={{ padding: '24px', textAlign: 'center' }}>No hay trabajadores.</td></tr>
+            ) : (
+              trabajadores.map((t, index) => {
+                // Simular algunos turnos pendientes para la UI
+                const isPending = index % 2 === 0;
+                const statusColor = isPending ? 'var(--accent-cyan)' : 'var(--accent-green)';
+                const statusText = isPending ? 'Pendiente' : 'En Servicio';
+                return (
                   <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{t.id.substring(0, 8)}...</td>
                     <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {t.foto_url ? (
@@ -163,23 +206,77 @@ export default function Trabajadores() {
                         {t.nombre}
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px' }}>{t.rol}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>
+                      08:00 AM - 04:00 PM
+                    </td>
                     <td style={{ padding: '12px 16px', fontSize: '14px' }}>
-                      <span className={`status-badge ${t.estado === 'Activo' || t.estado === 'Disponible' ? 'status-won' : 'status-open'}`}>
-                        {t.estado}
+                      <span style={{ 
+                        display: 'inline-flex', alignItems: 'center', padding: '4px 8px', borderRadius: '12px', 
+                        fontSize: '12px', fontWeight: '600', backgroundColor: `${statusColor}20`, color: statusColor 
+                      }}>
+                        {statusText}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                       <button onClick={() => handleOpenEdit(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
-                         <Edit2 size={16} />
-                       </button>
+                      <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '12px' }} onClick={() => alert("Cambiar turno - En desarrollo")}>
+                        Asignar Turno
+                      </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="card" style={{ padding: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div>
+            <h2 className="text-h2">Equipo de Trabajo</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              <Users size={20} className="text-muted" />
+              <span className="text-body font-semibold">Total de Usuarios/Trabajadores: {trabajadores.length}</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button className="btn-primary" onClick={handleOpenAdd}>
+              <UserPlus size={16} /> Agregar Usuario
+            </button>
+          </div>
         </div>
+
+        {/* Custom Tabs */}
+        <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '24px' }}>
+          <button 
+            style={{ 
+              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+              color: activeTab === 'directorio' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'directorio' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
+              transition: 'all 0.2s ease'
+            }}
+            onClick={() => setActiveTab('directorio')}
+          >
+            Directorio de Usuarios
+          </button>
+          <button 
+            style={{ 
+              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+              color: activeTab === 'horarios' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+              borderBottom: activeTab === 'horarios' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
+              transition: 'all 0.2s ease'
+            }}
+            onClick={() => setActiveTab('horarios')}
+          >
+            Horarios y Turnos Pendientes
+          </button>
+        </div>
+        
+        {activeTab === 'directorio' ? renderDirectorio() : renderHorarios()}
       </div>
 
       {showModal && (

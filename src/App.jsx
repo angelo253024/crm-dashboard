@@ -8,6 +8,7 @@ import Zonas from './components/Zonas'
 import Trabajadores from './components/Trabajadores'
 import Clientes from './components/Clientes'
 import Productos from './components/Productos'
+import LandingPage from './components/LandingPage'
 
 function App() {
   const [user, setUser] = useState(null);
@@ -31,22 +32,38 @@ function App() {
 
   const toggleTheme = () => setIsDarkMode(prev => !prev);
 
-  if (!user) {
-    return <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />;
-  }
+  // Componente envoltorio para proteger las rutas internas
+  const ProtectedRoute = ({ children }) => {
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    return (
+      <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser}>
+        {children}
+      </Layout>
+    );
+  };
 
   return (
-    <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser}>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/citas" element={<Citas />} />
-        <Route path="/zonas" element={<Zonas />} />
-        <Route path="/trabajadores" element={<Trabajadores />} />
-        <Route path="/clientes" element={<Clientes />} />
-        <Route path="/productos" element={<Productos />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      {/* Rutas Públicas */}
+      <Route path="/" element={<LandingPage />} />
+      <Route 
+        path="/login" 
+        element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
+      />
+
+      {/* Rutas Protegidas (CRM Interno) */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
+      <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
+      <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
+      <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+      <Route path="/productos" element={<ProtectedRoute><Productos /></ProtectedRoute>} />
+      
+      {/* Cualquier ruta que no exista redirige a la Landing */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
