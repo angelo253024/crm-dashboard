@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Car, Heart, Droplets, Star, ArrowRight } from 'lucide-react';
+import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun } from 'lucide-react';
 
-export default function LandingPage() {
+export default function LandingPage({ isDarkMode, toggleTheme }) {
   return (
     <div className="landing-page">
       {/* Navigation */}
@@ -33,7 +33,10 @@ export default function LandingPage() {
           <a href="#">Testimonios</a>
         </div>
         
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle theme">
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           <Link to="/login" className="btn-landing-primary">
             Acceso Empleados
           </Link>

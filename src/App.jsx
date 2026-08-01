@@ -47,7 +47,7 @@ function App() {
   return (
     <Routes>
       {/* Rutas Públicas */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
       <Route 
         path="/login" 
         element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
