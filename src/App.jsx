@@ -7,7 +7,8 @@ import Citas from './components/Citas'
 import Zonas from './components/Zonas'
 import Trabajadores from './components/Trabajadores'
 import Clientes from './components/Clientes'
-import Productos from './components/Productos'
+import AdminServicios from './components/AdminServicios'
+import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
 
 function App() {
@@ -48,6 +49,7 @@ function App() {
     <Routes>
       {/* Rutas Públicas */}
       <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+      <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
       <Route 
         path="/login" 
         element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
@@ -59,7 +61,7 @@ function App() {
       <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
       <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
       <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-      <Route path="/productos" element={<ProtectedRoute><Productos /></ProtectedRoute>} />
+      <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
       
       {/* Cualquier ruta que no exista redirige a la Landing */}
       <Route path="*" element={<Navigate to="/" replace />} />

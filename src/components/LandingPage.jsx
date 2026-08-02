@@ -83,9 +83,9 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
         </p>
 
         <div className="landing-actions">
-          <a href="#" className="btn-landing-large">
+          <Link to="/reservar" className="btn-landing-large">
             Reservar Ahora <ArrowRight size={20} />
-          </a>
+          </Link>
           <a href="#" className="landing-link-secondary">
             Conoce los paquetes
           </a>

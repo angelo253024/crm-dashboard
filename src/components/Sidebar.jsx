@@ -106,19 +106,12 @@ export default function Sidebar() {
           <CarFront size={20} />
           <span>Clientes</span>
         </NavLink>
-        <NavLink to="/productos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <Package size={20} />
-          <span>Productos</span>
+          <span>Servicios</span>
         </NavLink>
       </nav>
 
-      <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <img src="https://i.pravatar.cc/150?u=u2" alt="User" className="avatar" />
-        <div>
-          <div className="text-small font-semibold">Admin Lavamovil</div>
-          <div className="text-small text-muted" style={{ fontSize: '11px' }}>admin@lavamovil.com</div>
-        </div>
-      </div>
     </aside>
   );
 }
