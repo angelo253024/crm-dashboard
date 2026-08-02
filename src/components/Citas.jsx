@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, Database } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function Citas() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedDateStr, setSelectedDateStr] = useState(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   useEffect(() => {
     fetchReservas();
@@ -15,7 +17,6 @@ export default function Citas() {
 
   const fetchReservas = async () => {
     setLoading(true);
-    // Hacemos un join con la tabla servicios para obtener el nombre
     const { data, error } = await supabase
       .from('reservas')
       .select('*, servicios(nombre)')
@@ -25,17 +26,11 @@ export default function Citas() {
     if (error) {
       console.error('Error fetching reservas:', error);
     } else {
-      // Map database format to calendar format
       const formattedEvents = data.map(res => {
-        const dateObj = new Date(res.fecha_reserva);
-        // getDay() returns 0 for Sunday, 1 for Monday, etc. Adjusting to 0=Monday, 6=Sunday
-        let dayIndex = dateObj.getDay() - 1;
-        if (dayIndex === -1) dayIndex = 6;
-        
         return {
           id: res.id,
-          day: dayIndex,
-          time: res.hora_reserva.substring(0, 5), // 'HH:MM:SS' to 'HH:MM'
+          dateStr: res.fecha_reserva,
+          time: res.hora_reserva.substring(0, 5),
           title: res.servicios ? res.servicios.nombre : 'Servicio Personalizado',
           customer: res.cliente_nombre,
           status: res.estado,
@@ -49,7 +44,6 @@ export default function Citas() {
   };
 
   const seedReservas = async () => {
-    // Primero, traemos un servicio cualquiera para referenciarlo
     const { data: servs } = await supabase.from('servicios').select('id').limit(1);
     const serviceId = servs && servs.length > 0 ? servs[0].id : null;
 
@@ -59,7 +53,6 @@ export default function Citas() {
     }
 
     const today = new Date();
-    // Helper to get a date string relative to today
     const getRelativeDate = (offsetDays) => {
       const d = new Date(today);
       d.setDate(d.getDate() + offsetDays);
@@ -92,13 +85,59 @@ export default function Citas() {
     }
   };
 
+  const prevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let firstDayOfMonth = new Date(year, month, 1).getDay();
+  firstDayOfMonth = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+
+  const blanks = Array(firstDayOfMonth).fill(null);
+  const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const totalSlots = [...blanks, ...daysArray];
+
+  // Agrupar eventos por fecha para mostrarlos en el calendario
+  const eventsByDate = {};
+  events.forEach(ev => {
+    if (!eventsByDate[ev.dateStr]) eventsByDate[ev.dateStr] = [];
+    eventsByDate[ev.dateStr].push(ev);
+  });
+
+  const handleDayClick = (day) => {
+    if (!day) return;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setSelectedDateStr(dateStr);
+  };
+
+  const selectedDayEvents = selectedDateStr ? (eventsByDate[selectedDateStr] || []).sort((a, b) => a.time.localeCompare(b.time)) : [];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
           <h2 className="text-h2" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <CalendarIcon size={24} color="var(--accent-green)" /> Agenda Semanal
+            <CalendarIcon size={24} color="var(--accent-green)" /> Agenda Mensual
           </h2>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button className="btn-icon" onClick={prevMonth} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: 'var(--text-main)' }}>
+              <ChevronLeft size={20} />
+            </button>
+            <span style={{ fontSize: '18px', fontWeight: '600', minWidth: '150px', textAlign: 'center' }}>
+              {monthNames[month]} {year}
+            </span>
+            <button className="btn-icon" onClick={nextMonth} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: 'var(--text-main)' }}>
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
              {events.length === 0 && !loading && (
                <button className="btn-secondary" onClick={seedReservas}>
@@ -114,79 +153,139 @@ export default function Citas() {
         {loading ? (
           <p style={{ textAlign: 'center', padding: '40px' }}>Cargando agenda...</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px' }}>
-            {days.map((day, i) => (
-              <div key={day} style={{ minHeight: '400px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-color)' }}>
-                <div style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid var(--border-color)', fontWeight: '600', backgroundColor: 'var(--card-bg)', borderTopLeftRadius: 'var(--radius-sm)', borderTopRightRadius: 'var(--radius-sm)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
+              {days.map(day => (
+                <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
                   {day}
                 </div>
-                <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {events.filter(e => e.day === i).map(ev => (
-                    <div 
-                      key={ev.id} 
-                      onClick={() => setSelectedEvent(ev)}
-                      style={{ 
-                        backgroundColor: 'var(--card-bg)', 
-                        borderLeft: `4px solid ${getStatusColor(ev.status)}`, 
-                        padding: '8px', 
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        boxShadow: 'var(--shadow-card)',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <div style={{ fontWeight: '600', marginBottom: '4px' }}>{ev.time}</div>
-                      <div style={{ color: 'var(--text-main)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{ev.title}</div>
-                      <div style={{ color: 'var(--text-muted)' }}>{ev.customer}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              {totalSlots.map((day, index) => {
+                const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
+                const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
+                
+                return (
+                  <div 
+                    key={index} 
+                    onClick={() => handleDayClick(day)}
+                    style={{ 
+                      minHeight: '100px', 
+                      border: '1px solid var(--border-color)', 
+                      borderRadius: 'var(--radius-sm)', 
+                      backgroundColor: day ? 'var(--bg-color)' : 'transparent',
+                      padding: '8px',
+                      cursor: day ? 'pointer' : 'default',
+                      opacity: day ? 1 : 0.5,
+                      transition: 'border-color 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (day) e.currentTarget.style.borderColor = 'var(--accent-green)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (day) e.currentTarget.style.borderColor = 'var(--border-color)';
+                    }}
+                  >
+                    {day && (
+                      <>
+                        <div style={{ fontWeight: '600', marginBottom: '8px', textAlign: 'right', color: 'var(--text-muted)' }}>
+                          {day}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {dayEvents.slice(0, 3).map(ev => (
+                            <div key={ev.id} style={{ 
+                              fontSize: '11px', 
+                              padding: '4px', 
+                              borderRadius: '4px', 
+                              backgroundColor: 'var(--card-bg)',
+                              borderLeft: `3px solid ${getStatusColor(ev.status)}`,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {ev.time} - {ev.title}
+                            </div>
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px' }}>
+                              +{dayEvents.length - 3} más
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {selectedEvent && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '400px', boxShadow: 'var(--shadow-soft)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <h2 className="text-h2">Detalle de Reserva</h2>
-              <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+      {selectedDateStr && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '24px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto', boxShadow: 'var(--shadow-soft)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div>
+                <h2 className="text-h2">Agenda del Día</h2>
+                <p className="text-muted" style={{ marginTop: '4px' }}>
+                  {new Date(`${selectedDateStr}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
+              <button onClick={() => setSelectedDateStr(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '8px', borderRadius: '50%', backgroundColor: 'var(--bg-color)' }}><X size={20} /></button>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Clock size={18} color="var(--accent-green)" />
-                <span className="text-body font-semibold">{days[selectedEvent.day]} a las {selectedEvent.time}</span>
+            {selectedDayEvents.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                No hay servicios agendados para este día.
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <User size={18} color="var(--accent-green)" />
-                <span className="text-body">{selectedEvent.customer}</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {selectedDayEvents.map(ev => (
+                  <div key={ev.id} style={{ 
+                    border: '1px solid var(--border-color)', 
+                    borderRadius: '8px', 
+                    padding: '16px',
+                    borderLeft: `4px solid ${getStatusColor(ev.status)}`,
+                    backgroundColor: 'var(--bg-color)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Clock size={18} color="var(--accent-green)" />
+                        <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{ev.time}</span>
+                      </div>
+                      <div style={{ color: getStatusColor(ev.status), fontWeight: '600', backgroundColor: 'var(--card-bg)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px' }}>
+                        {ev.status}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <MapPin size={16} color="var(--text-muted)" />
+                        <span className="text-body">{ev.title}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <User size={16} color="var(--text-muted)" />
+                        <span className="text-body">{ev.customer}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Car size={16} color="var(--text-muted)" />
+                        <span className="text-body">{ev.car}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs.{ev.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Car size={18} color="var(--accent-green)" />
-                <span className="text-body">{selectedEvent.car}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <MapPin size={18} color="var(--accent-green)" />
-                <span className="text-body">{selectedEvent.title}</span>
-              </div>
-              
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div className="text-small text-muted">Estado</div>
-                  <div style={{ color: getStatusColor(selectedEvent.status), fontWeight: '600' }}>{selectedEvent.status}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="text-small text-muted">Precio Total</div>
-                  <div className="text-h2" style={{ color: 'var(--accent-green)' }}>Bs.{selectedEvent.price}</div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 }
+
