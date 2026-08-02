@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -27,6 +28,8 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   const userId = user?.id ? user.id.substring(0, 8) : 'Invitado';
   const userPhoto = user?.foto_url;
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     fetchNotificaciones();
     
@@ -37,7 +40,13 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notificaciones' },
         (payload) => {
-          setNotificaciones(prev => [payload.new, ...prev].slice(0, 15)); // Mantener max 15
+          // Check if it's from today before adding
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const notifDate = new Date(payload.new.fecha);
+          if (notifDate >= today) {
+            setNotificaciones(prev => [payload.new, ...prev]);
+          }
         }
       )
       .subscribe();
@@ -48,11 +57,15 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   }, []);
 
   const fetchNotificaciones = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const { data } = await supabase
       .from('notificaciones')
       .select('*')
-      .order('fecha', { ascending: false })
-      .limit(15);
+      .gte('fecha', today.toISOString())
+      .order('fecha', { ascending: false });
+      
     if (data) setNotificaciones(data);
   };
 
@@ -103,6 +116,10 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
     }
   };
 
+  const handleNuevoServicioClick = () => {
+    navigate('/servicios', { state: { openNewModal: true } });
+  };
+
   return (
     <header className="header">
       <div className="search-bar">
@@ -118,7 +135,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
         <button className="btn-outline-cyan" style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px' }}>
           <MessageSquare size={16} /> Chatbot
         </button>
-        <button className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
+        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
           <Plus size={16} /> Nuevo Servicio
         </button>
 
@@ -156,7 +173,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
               <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
                 {notificaciones.length === 0 ? (
                   <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                    No hay notificaciones recientes.
+                    Sin notificaciones por hoy
                   </div>
                 ) : (
                   notificaciones.map(notif => (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Plus, Trash2, Edit2, Image as ImageIcon, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -19,10 +20,17 @@ export default function AdminServicios() {
   const [uploading, setUploading] = useState(false);
 
   const fileInputRef = useRef(null);
+  const location = useLocation();
 
   useEffect(() => {
     fetchServicios();
-  }, []);
+    
+    if (location.state?.openNewModal) {
+      openNewModal();
+      // Clear state so it doesn't trigger on every reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const fetchServicios = async () => {
     setLoading(true);
