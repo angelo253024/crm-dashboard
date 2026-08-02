@@ -112,11 +112,25 @@ export default function AdminServicios() {
         .update(serviceData)
         .eq('id', editingId);
       error = updateError;
+      
+      if (!error) {
+        await supabase.from('notificaciones').insert([{
+          mensaje: `Servicio modificado: ${nombre}`,
+          tipo: 'warning'
+        }]);
+      }
     } else {
       const { error: insertError } = await supabase
         .from('servicios')
         .insert([serviceData]);
       error = insertError;
+
+      if (!error) {
+        await supabase.from('notificaciones').insert([{
+          mensaje: `Nuevo servicio agregado: ${nombre}`,
+          tipo: 'success'
+        }]);
+      }
     }
 
     if (error) {

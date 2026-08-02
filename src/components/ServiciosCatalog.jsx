@@ -76,6 +76,13 @@ export default function ServiciosCatalog() {
       alert('Hubo un error al procesar tu reserva. Inténtalo de nuevo.');
     } else {
       setSuccess(true);
+      
+      // Dispatch notification
+      await supabase.from('notificaciones').insert([{
+        mensaje: `Nueva reserva: ${clienteNombre} - ${selectedService.nombre}`,
+        tipo: 'info'
+      }]);
+
       setClienteNombre('');
       setVehiculo('');
       setFechaReserva('');

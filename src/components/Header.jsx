@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Notificaciones State
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
 
   // Estados del modal de edición
   const [formData, setFormData] = useState({
@@ -22,6 +26,45 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   const userRole = user?.rol || 'Administrador';
   const userId = user?.id ? user.id.substring(0, 8) : 'Invitado';
   const userPhoto = user?.foto_url;
+
+  useEffect(() => {
+    fetchNotificaciones();
+    
+    // Suscribirse a cambios en tiempo real
+    const channel = supabase
+      .channel('notificaciones-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notificaciones' },
+        (payload) => {
+          setNotificaciones(prev => [payload.new, ...prev].slice(0, 15)); // Mantener max 15
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchNotificaciones = async () => {
+    const { data } = await supabase
+      .from('notificaciones')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(15);
+    if (data) setNotificaciones(data);
+  };
+
+  const markAllAsRead = async () => {
+    const unreadIds = notificaciones.filter(n => !n.leida).map(n => n.id);
+    if (unreadIds.length > 0) {
+      await supabase.from('notificaciones').update({ leida: true }).in('id', unreadIds);
+      setNotificaciones(notificaciones.map(n => ({ ...n, leida: true })));
+    }
+  };
+
+  const unreadCount = notificaciones.filter(n => !n.leida).length;
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -45,10 +88,18 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
       alert('Error al actualizar el perfil.');
       console.error(error);
     } else {
-      // Actualizamos el estado global del usuario para que cambie en la interfaz inmediatamente
       setUser(data[0]);
       setIsEditModalOpen(false);
       setIsProfileMenuOpen(false);
+    }
+  };
+
+  const getNotifColor = (tipo) => {
+    switch (tipo) {
+      case 'success': return '#10b981';
+      case 'warning': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      default: return 'var(--text-main)';
     }
   };
 
@@ -71,15 +122,66 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
           <Plus size={16} /> Nuevo Servicio
         </button>
 
-        {/* Notificaciones y Tema */}
-        <button className="icon-btn">
-          <Bell size={20} />
-        </button>
+        {/* Notificaciones */}
+        <div style={{ position: 'relative' }}>
+          <button className="icon-btn" onClick={() => setIsNotifMenuOpen(!isNotifMenuOpen)} style={{ position: 'relative' }}>
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <div style={{ position: 'absolute', top: 4, right: 6, width: 8, height: 8, backgroundColor: '#ef4444', borderRadius: '50%', border: '2px solid var(--bg-color)' }}></div>
+            )}
+          </button>
+
+          {isNotifMenuOpen && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: '12px',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              border: '1px solid var(--border-color)',
+              zIndex: 100,
+              width: '320px',
+              animation: 'fadeIn 0.2s ease-out'
+            }}>
+              <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Notificaciones</h3>
+                {unreadCount > 0 && (
+                  <button onClick={markAllAsRead} style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Check size={14} /> Marcar como leídas
+                  </button>
+                )}
+              </div>
+              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                {notificaciones.length === 0 ? (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No hay notificaciones recientes.
+                  </div>
+                ) : (
+                  notificaciones.map(notif => (
+                    <div key={notif.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', backgroundColor: notif.leida ? 'transparent' : 'rgba(28, 169, 201, 0.05)', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: getNotifColor(notif.tipo), marginTop: '6px', flexShrink: 0, opacity: notif.leida ? 0.3 : 1 }}></div>
+                      <div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: '4px', lineHeight: '1.4' }}>{notif.mensaje}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {new Date(notif.fecha).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         
+        {/* Tema */}
         <button className="icon-btn" onClick={toggleTheme}>
           {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
+        {/* Perfil */}
         <div style={{ position: 'relative' }}>
           <div 
             className="user-profile" 
