@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function ServiciosCatalog() {
@@ -8,6 +8,18 @@ export default function ServiciosCatalog() {
   const [categorias, setCategorias] = useState(['Todos']);
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
   const [loading, setLoading] = useState(true);
+
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+  
+  // Form State
+  const [clienteNombre, setClienteNombre] = useState('');
+  const [vehiculo, setVehiculo] = useState('');
+  const [fechaReserva, setFechaReserva] = useState('');
+  const [horaReserva, setHoraReserva] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     // Forzar el body a un fondo oscuro para el catálogo independientemente del tema de la landing
@@ -35,6 +47,48 @@ export default function ServiciosCatalog() {
     setLoading(false);
   };
 
+  const handleBook = (servicio) => {
+    setSelectedService(servicio);
+    setSuccess(false);
+    setShowModal(true);
+  };
+
+  const submitReservation = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
+
+    const { error } = await supabase.from('reservas').insert([
+      {
+        cliente_nombre: clienteNombre,
+        vehiculo: vehiculo,
+        fecha_reserva: fechaReserva,
+        hora_reserva: formattedHora,
+        servicio_id: selectedService.id,
+        precio_total: selectedService.precio,
+        estado: 'Reservado'
+      }
+    ]);
+
+    if (error) {
+      console.error('Error guardando reserva:', error);
+      alert('Hubo un error al procesar tu reserva. Inténtalo de nuevo.');
+    } else {
+      setSuccess(true);
+      setClienteNombre('');
+      setVehiculo('');
+      setFechaReserva('');
+      setHoraReserva('');
+    }
+    setIsSubmitting(false);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedService(null);
+  };
+
   const filteredServicios = categoriaActiva === 'Todos' 
     ? servicios 
     : servicios.filter(s => s.categoria === categoriaActiva);
@@ -54,7 +108,6 @@ export default function ServiciosCatalog() {
           <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
         </div>
         
-        {/* Placeholder para alinear */}
         <div style={{ width: '80px' }}></div>
       </nav>
 
@@ -129,7 +182,6 @@ export default function ServiciosCatalog() {
                   </div>
                 )}
                 
-                {/* Badge de Categoría flotante */}
                 <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', color: '#1CA9C9', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   {servicio.categoria}
                 </div>
@@ -148,7 +200,12 @@ export default function ServiciosCatalog() {
                   </div>
                   
                   {servicio.disponible !== false ? (
-                    <button style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} onMouseOut={(e) => e.target.style.backgroundColor = '#1E4C9A'}>
+                    <button 
+                      onClick={() => handleBook(servicio)}
+                      style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} 
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} 
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#1E4C9A'}
+                    >
                       Agregar
                     </button>
                   ) : (
@@ -162,6 +219,68 @@ export default function ServiciosCatalog() {
           ))}
         </div>
       )}
+
+      {/* Modal de Reserva */}
+      {showModal && selectedService && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: '#1E1E1E', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '450px', border: '1px solid #333' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff' }}>Agendar Servicio</h2>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+
+            {success ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <CheckCircle size={64} color="#1CA9C9" style={{ margin: '0 auto 16px auto' }} />
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>¡Reserva Confirmada!</h3>
+                <p style={{ color: '#aaa', marginBottom: '24px' }}>Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.</p>
+                <button onClick={closeModal} style={{ backgroundColor: '#1CA9C9', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                  Volver al Catálogo
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={submitReservation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                <div style={{ backgroundColor: '#2A2A2A', padding: '16px', borderRadius: '8px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '4px' }}>Servicio Seleccionado</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: '600', color: '#fff' }}>{selectedService.nombre}</div>
+                    <div style={{ color: '#1CA9C9', fontWeight: 'bold' }}>Bs.{selectedService.precio}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Tu Nombre</label>
+                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff' }} />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Vehículo (Marca y Modelo)</label>
+                  <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Fecha</label>
+                    <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff', colorScheme: 'dark' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Hora</label>
+                    <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff', colorScheme: 'dark' }} />
+                  </div>
+                </div>
+
+                <button type="submit" disabled={isSubmitting} style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '16px', opacity: isSubmitting ? 0.7 : 1 }}>
+                  {isSubmitting ? 'Procesando...' : 'Confirmar Reserva'}
+                </button>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
