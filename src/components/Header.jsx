@@ -117,7 +117,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   };
 
   const handleNuevoServicioClick = () => {
-    navigate('/servicios', { state: { openNewModal: true } });
+    if (window.location.pathname === '/servicios') {
+      window.dispatchEvent(new CustomEvent('openNewServiceModal'));
+    } else {
+      navigate('/servicios', { state: { openNewModal: true } });
+    }
   };
 
   return (

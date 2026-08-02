@@ -25,11 +25,18 @@ export default function AdminServicios() {
   useEffect(() => {
     fetchServicios();
     
+    const handleOpenModal = () => openNewModal();
+    window.addEventListener('openNewServiceModal', handleOpenModal);
+
     if (location.state?.openNewModal) {
       openNewModal();
-      // Clear state so it doesn't trigger on every reload
+      // Use navigate to clear the router state cleanly
       window.history.replaceState({}, document.title);
     }
+
+    return () => {
+      window.removeEventListener('openNewServiceModal', handleOpenModal);
+    };
   }, [location.state]);
 
   const fetchServicios = async () => {
