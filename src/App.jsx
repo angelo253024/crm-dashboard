@@ -12,8 +12,26 @@ import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(() => {
+    const savedUser = localStorage.getItem('crm_user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
 
+  const setUser = (newUser) => {
+    setUserState(newUser);
+    if (newUser) {
+      localStorage.setItem('crm_user', JSON.stringify(newUser));
+    } else {
+      localStorage.removeItem('crm_user');
+    }
+  };
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check local storage or system preference on initial load
     const saved = localStorage.getItem('theme');

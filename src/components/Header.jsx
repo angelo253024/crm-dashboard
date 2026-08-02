@@ -270,7 +270,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
                 </button>
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <button className="dropdown-item text-red" onClick={() => window.location.reload()}>
+                <button className="dropdown-item text-red" onClick={() => setUser(null)}>
                   <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>
