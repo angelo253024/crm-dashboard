@@ -125,10 +125,12 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="login-container">
-      <div className="login-card" style={{ position: 'relative' }}>
-        <Link to="/" style={{ position: 'absolute', top: '24px', left: '24px', color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: '500' }}>
-          <ArrowLeft size={16} /> Volver
-        </Link>
+      <div className="login-card">
+        <div style={{ marginBottom: '24px' }}>
+          <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: '500' }}>
+            <ArrowLeft size={16} /> Volver
+          </Link>
+        </div>
         
         {/* Logo LAVAMOVIL NORTE */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
