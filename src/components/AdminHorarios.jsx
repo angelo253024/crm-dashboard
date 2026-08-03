@@ -2,18 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { Clock, Calendar as CalendarIcon, User, RefreshCw } from 'lucide-react';
 
-export default function AdminHorarios() {
+export default function AdminHorarios({ user }) {
   const [horarios, setHorarios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fechaFiltro, setFechaFiltro] = useState(new Date().toISOString().split('T')[0]);
+  
+  const isAdmin = user?.rol === 'Administrador' || user?.rol === 'Admin';
 
   useEffect(() => {
     fetchHorarios();
-  }, [fechaFiltro]);
+  }, [user]);
 
   const fetchHorarios = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Calcular rango de fechas
+    const today = new Date();
+    const startDate = new Date();
+    if (isAdmin) {
+      startDate.setDate(today.getDate() - 30); // 30 días para Admin
+    } else {
+      startDate.setDate(today.getDate() - 7); // 7 días para Trabajador
+    }
+    
+    let query = supabase
       .from('trabajador_horarios')
       .select(`
         *,
@@ -22,10 +33,15 @@ export default function AdminHorarios() {
           estado_disponibilidad
         )
       `)
-      .eq('fecha', fechaFiltro)
+      .gte('fecha', startDate.toISOString().split('T')[0])
+      .order('fecha', { ascending: false })
       .order('hora_ingreso', { ascending: false });
 
-    if (error) {
+    if (!isAdmin && user?.id) {
+      query = query.eq('trabajador_id', user.id);
+    }
+
+    const { data, error } = await query;
       console.error(error);
     } else {
       setHorarios(data || []);
@@ -48,29 +64,20 @@ export default function AdminHorarios() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="text-h1" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Clock size={28} color="var(--accent-cyan)" />
-            Control de Horarios y Asistencia
+            {isAdmin ? 'Control de Horarios General' : 'Mi Registro de Horarios'}
           </h1>
-          <p className="text-muted" style={{ marginTop: '4px' }}>Supervisa las horas de conexión de las motos.</p>
+          <p className="text-muted" style={{ marginTop: '4px' }}>
+            {isAdmin ? 'Mostrando registros de los últimos 30 días.' : 'Mostrando tus registros de los últimos 7 días.'}
+          </p>
         </div>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ position: 'relative' }}>
-            <CalendarIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input 
-              type="date" 
-              value={fechaFiltro}
-              onChange={(e) => setFechaFiltro(e.target.value)}
-              style={{ padding: '10px 10px 10px 36px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', outline: 'none' }}
-            />
-          </div>
-          <button onClick={fetchHorarios} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}>
-            <RefreshCw size={16} /> Refrescar
-          </button>
-        </div>
+        <button onClick={fetchHorarios} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}>
+          <RefreshCw size={16} /> Refrescar
+        </button>
       </div>
 
       <div className="card">
@@ -78,8 +85,8 @@ export default function AdminHorarios() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Trabajador</th>
-                <th>Estado Actual</th>
+                <th>Fecha</th>
+                {isAdmin && <th>Trabajador</th>}
                 <th>Hora de Ingreso</th>
                 <th>Hora de Salida</th>
                 <th>Tiempo Total</th>
@@ -94,26 +101,32 @@ export default function AdminHorarios() {
                 <tr>
                   <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No hay registros de asistencia para esta fecha.
+                  <td colSpan={isAdmin ? "5" : "4"} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                    No hay registros de asistencia para este periodo.
                   </td>
                 </tr>
               ) : (
                 horarios.map((h) => (
                   <tr key={h.id}>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <User size={16} />
+                      <span style={{ fontWeight: '500' }}>
+                        {new Date(h.fecha).toLocaleDateString()}
+                      </span>
+                    </td>
+                    {isAdmin && (
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ padding: '6px', backgroundColor: 'var(--card-bg)', borderRadius: '50%' }}>
+                            <User size={16} color="var(--text-muted)" />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: '600' }}>{h.trabajadores?.nombre}</div>
+                          </div>
                         </div>
-                        <span style={{ fontWeight: '500' }}>{h.trabajadores?.nombre || 'Desconocido'}</span>
-                      </div>
-                    </td>
+                      </td>
+                    )}
                     <td>
-                      {h.trabajadores?.estado_disponibilidad === 'disponible' && <span style={{ color: '#10b981', fontWeight: '600' }}>Disponible</span>}
-                      {h.trabajadores?.estado_disponibilidad === 'ocupado' && <span style={{ color: '#f59e0b', fontWeight: '600' }}>Ocupado</span>}
-                      {h.trabajadores?.estado_disponibilidad === 'inactivo' && <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Inactivo</span>}
-                    </td>
-                    <td>
-                      <div style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontWeight: 'bold', fontSize: '13px' }}>
+                      <div style={{ display: 'inline-flex', padding: '4px 8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent-green)', borderRadius: '4px', fontSize: '13px', fontWeight: '600' }}>
                         {formatearHora(h.hora_ingreso)}
                       </div>
                     </td>

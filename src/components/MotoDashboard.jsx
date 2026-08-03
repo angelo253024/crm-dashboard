@@ -1,13 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { MapPin, Check, X, Bell, User, Banknote } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send } from 'lucide-react';
 import KpiCards from './KpiCards';
+
+// --- Inline Chat Component for Worker ---
+function MotoChat({ sessionId, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    fetchMessages();
+    const channel = supabase
+      .channel(`chat_${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+      
+    return () => supabase.removeChannel(channel);
+  }, [sessionId]);
+
+  const fetchMessages = async () => {
+    const { data } = await supabase.from('mensajes').select('*').eq('session_id', sessionId).order('created_at', { ascending: true });
+    if (data) setMessages(data);
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    
+    const msg = input.trim();
+    setInput('');
+    
+    await supabase.from('mensajes').insert([{
+      session_id: sessionId,
+      contenido: msg,
+      rol: 'bot' // Enviamos como bot para que le llegue al cliente
+    }]);
+  };
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '350px', backgroundColor: 'var(--card-bg)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 9999, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '400px' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: '12px 12px 0 0' }}>
+        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con Cliente</h4>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#000' }}><X size={18} /></button>
+      </div>
+      
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'rgba(28, 169, 201, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : 'none' }}>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? 'var(--text-muted)' : 'var(--accent-cyan)', display: 'block', marginBottom: '2px' }}>
+              {m.rol === 'user' ? 'Cliente' : 'Tú'}
+            </span>
+            {m.contenido}
+          </div>
+        ))}
+      </div>
+      
+      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
+        <input 
+          type="text" 
+          value={input} 
+          onChange={e => setInput(e.target.value)} 
+          placeholder="Escribe al cliente..." 
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
+        />
+        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <Send size={16} />
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default function MotoDashboard({ user }) {
   const [estado, setEstado] = useState('inactivo');
   const [reservas, setReservas] = useState([]);
   const [todasReservas, setTodasReservas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeChatSession, setActiveChatSession] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -251,14 +322,25 @@ export default function MotoDashboard({ user }) {
                     </button>
                   </>
                 ) : (
-                  <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                    <Check size={18} /> Marcar Lavado como Terminado
-                  </button>
+                  <>
+                    <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                      <Check size={18} /> Marcar Lavado Terminado
+                    </button>
+                    {res.chat_session_id && (
+                      <button onClick={() => setActiveChatSession(res.chat_session_id)} style={{ padding: '12px', backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                        <MessageSquare size={18} /> Abrir Chat Cliente
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           ))}
         </div>
+      )}
+      
+      {activeChatSession && (
+        <MotoChat sessionId={activeChatSession} onClose={() => setActiveChatSession(null)} />
       )}
     </div>
   );

@@ -101,12 +101,16 @@ export default function Sidebar({ user }) {
           <Home size={20} />
           <span>Resumen</span>
         </NavLink>
+        <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <CalendarClock size={20} />
+          <span>Citas / Agenda</span>
+        </NavLink>
+        <NavLink to="/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Clock size={20} />
+          <span>Horarios</span>
+        </NavLink>
         {(user?.rol === 'Administrador' || user?.rol === 'Admin') && (
           <>
-            <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <CalendarClock size={20} />
-              <span>Citas / Agenda</span>
-            </NavLink>
             <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <Map size={20} />
               <span>Mapa / Zonas</span>
@@ -127,17 +131,24 @@ export default function Sidebar({ user }) {
               <Tag size={20} />
               <span>Promos</span>
             </NavLink>
+          </>
+        )}
+      </nav>
+
+      {/* ADMIN-ONLY SECTION */}
+      {(user?.rol === 'Administrador' || user?.rol === 'Admin') && (
+        <div style={{ marginTop: '24px' }}>
+          <div style={{ padding: '0 24px', marginBottom: '8px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+            Avanzado
+          </div>
+          <nav className="nav-menu">
             <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <Bot size={20} />
               <span>Admin Bot</span>
             </NavLink>
-            <NavLink to="/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <Clock size={20} />
-              <span>Horarios</span>
-            </NavLink>
-          </>
-        )}
-      </nav>
+          </nav>
+        </div>
+      )}
 
     </aside>
   );

@@ -32,6 +32,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
 
   useEffect(() => {
     fetchNotificaciones();
+    checkRetentionPolicy();
     
     // Suscribirse a cambios en tiempo real
     const channel = supabase
@@ -55,6 +56,42 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const checkRetentionPolicy = async () => {
+    if (user?.rol !== 'Administrador' && user?.rol !== 'Admin') return;
+
+    const today = new Date();
+    const day = today.getDate();
+    
+    // Notificar al admin a final de mes (27 en adelante)
+    if (day >= 27) {
+      const todayStr = today.toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('notificaciones')
+        .select('id')
+        .gte('fecha', todayStr)
+        .eq('titulo', 'Borrado Mensual de Horarios');
+        
+      if (!data || data.length === 0) {
+        await supabase.from('notificaciones').insert([{
+          titulo: 'Borrado Mensual de Horarios',
+          mensaje: `Aviso del Sistema: El día 1 se borrarán automáticamente los registros de horarios con más de 30 días de antigüedad para no saturar el sistema.`,
+          tipo: 'warning'
+        }]);
+      }
+    }
+    
+    // Ejecutar limpieza a principios de mes (días 1 al 3)
+    if (day <= 3) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      await supabase
+        .from('trabajador_horarios')
+        .delete()
+        .lt('fecha', thirtyDaysAgo.toISOString().split('T')[0]);
+    }
+  };
 
   const fetchNotificaciones = async () => {
     const today = new Date();

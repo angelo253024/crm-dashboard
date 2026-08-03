@@ -87,7 +87,7 @@ function App() {
         <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
         <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
         <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
-        <Route path="/horarios" element={<ProtectedRoute><AdminHorarios /></ProtectedRoute>} />
+        <Route path="/horarios" element={<ProtectedRoute><AdminHorarios user={user} /></ProtectedRoute>} />
         
         {/* Cualquier ruta que no exista redirige a la Landing */}
         <Route path="*" element={<Navigate to="/" replace />} />

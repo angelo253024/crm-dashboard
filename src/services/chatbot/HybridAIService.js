@@ -45,10 +45,11 @@ export class HybridAIService {
             servicio: 'Lavado a Domicilio (Chatbot)',
             estado_reserva: 'asignado',
             trabajador_id: motoAsignada.id,
-            ubicacion_gps: userMessage
+            ubicacion_gps: userMessage,
+            chat_session_id: sessionId
           }]);
           
-          finalResponse = `¡Perfecto! Hemos despachado a la moto de **${motoAsignada.nombre}**. Va en camino a tu ubicación. 🏍️💨`;
+          finalResponse = `¡Perfecto! Lo atenderá **${motoAsignada.nombre}**. Él va en camino a tu ubicación y puede escribirte por este mismo chat. 🏍️💨`;
           source = 'supabase';
         } else {
           finalResponse = "En este momento todos nuestros lavadores están ocupados. Por favor intenta de nuevo en unos minutos. 🕒";
