@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, Polyline } from 'react-leaflet';
 import { MapPin, Navigation, Clock } from 'lucide-react';
 
 // Componente para capturar clics en el mapa y agregar marcadores
@@ -66,6 +66,49 @@ export default function Zonas() {
   const [markers, setMarkers] = useState([
     { id: 1, lat: -17.7833, lng: -63.1821, trabajador: 'Angelo Miranda', estado: 'En Proceso' }
   ]);
+  const [isOptimized, setIsOptimized] = useState(false);
+
+  const handleLimpiar = () => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar todas las ubicaciones y rutas del mapa?')) {
+      setMarkers([]);
+      setIsOptimized(false);
+    }
+  };
+
+  const handleOptimizar = () => {
+    if (markers.length < 2) {
+      alert('⚠️ Necesitas al menos 2 servicios en el mapa para poder optimizar una ruta inteligente.');
+      return;
+    }
+    
+    // Algoritmo TSP: Nearest Neighbor (Vecino más cercano) para rutas profesionales
+    const unvisited = [...markers];
+    const optimizedRoute = [];
+    
+    // Inicia con el primer punto (podría ser la base de operaciones)
+    let current = unvisited.shift();
+    optimizedRoute.push(current);
+    
+    while(unvisited.length > 0) {
+      let nearestIdx = 0;
+      let minDistance = Infinity;
+      
+      for (let i = 0; i < unvisited.length; i++) {
+        // Distancia euclidiana rápida (suficiente para distancias cortas de ciudad)
+        const dist = Math.hypot(current.lat - unvisited[i].lat, current.lng - unvisited[i].lng);
+        if (dist < minDistance) {
+          minDistance = dist;
+          nearestIdx = i;
+        }
+      }
+      
+      current = unvisited.splice(nearestIdx, 1)[0];
+      optimizedRoute.push(current);
+    }
+    
+    setMarkers(optimizedRoute);
+    setIsOptimized(true);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -78,10 +121,10 @@ export default function Zonas() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-secondary">
+            <button className="btn-secondary" onClick={handleLimpiar}>
               Limpiar Zonas
             </button>
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={handleOptimizar} style={{ backgroundColor: 'var(--accent-blue)', color: '#fff' }}>
               <Navigation size={16} /> Optimizar Rutas
             </button>
           </div>
@@ -98,7 +141,17 @@ export default function Zonas() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <LocationMarker markers={markers} setMarkers={setMarkers} />
+            <LocationMarker markers={markers} setMarkers={(m) => { setMarkers(m); setIsOptimized(false); }} />
+            
+            {isOptimized && markers.length > 1 && (
+              <Polyline 
+                positions={markers.map(m => [m.lat, m.lng])} 
+                color="var(--accent-blue)" 
+                weight={4} 
+                dashArray="8, 10" 
+                opacity={0.8}
+              />
+            )}
           </MapContainer>
         </div>
       </div>
