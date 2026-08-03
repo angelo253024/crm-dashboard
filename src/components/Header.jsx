@@ -136,7 +136,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
         <button className="btn-secondary" style={{ display: 'none', alignItems: 'center', gap: '8px', padding: '8px 12px', fontSize: '13px' }}>
           <MapPin size={16} /> Notificar Llegada
         </button>
-        <button className="btn-outline-cyan" style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px' }}>
+        <button 
+          className="btn-outline-cyan" 
+          onClick={() => window.dispatchEvent(new CustomEvent('openChatBot'))}
+          style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px' }}
+        >
           <MessageSquare size={16} /> Chatbot
         </button>
         <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>

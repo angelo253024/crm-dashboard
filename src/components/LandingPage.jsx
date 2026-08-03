@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun } from 'lucide-react';
+import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun, MessageSquare } from 'lucide-react';
 
 export default function LandingPage({ isDarkMode, toggleTheme }) {
   return (
@@ -82,13 +82,18 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           productos ecológicos y atención personalizada en cualquier parte de Santa Cruz.
         </p>
 
-        <div className="landing-actions">
+        <div className="landing-actions" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Link to="/reservar" className="btn-landing-large">
             Reservar Ahora <ArrowRight size={20} />
           </Link>
-          <a href="#" className="landing-link-secondary">
-            Conoce los paquetes
-          </a>
+          <button 
+            className="btn-landing-large" 
+            style={{ backgroundColor: 'transparent', color: 'var(--accent-cyan)', border: '1px solid var(--accent-cyan)' }}
+            onClick={() => window.dispatchEvent(new CustomEvent('openChatBot'))}
+          >
+            <MessageSquare size={20} style={{ marginRight: '8px' }} />
+            Asistente IA
+          </button>
         </div>
 
         {/* Stats */}

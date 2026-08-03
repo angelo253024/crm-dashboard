@@ -18,6 +18,13 @@ export default function ChatBotWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, statusMessage]);
 
+  // Listen for global open events
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('openChatBot', handleOpen);
+    return () => window.removeEventListener('openChatBot', handleOpen);
+  }, []);
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
