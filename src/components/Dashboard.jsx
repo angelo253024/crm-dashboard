@@ -19,12 +19,21 @@ export default function Dashboard({ user }) {
   const [reservas, setReservas] = useState([]);
   const [trabajadores, setTrabajadores] = useState([]);
   const [selectedTrabajador, setSelectedTrabajador] = useState('todos');
+  const [allServicios, setAllServicios] = useState([]);
   
   useEffect(() => {
     fetchPromos();
     fetchReservas();
     fetchTrabajadores();
+    fetchServicios();
   }, []);
+
+  const fetchServicios = async () => {
+    const { data } = await supabase.from('servicios').select('nombre');
+    if (data) {
+      setAllServicios(data.map(s => s.nombre));
+    }
+  };
 
   const fetchTrabajadores = async () => {
     const { data } = await supabase.from('trabajadores').select('id, nombre');
@@ -118,10 +127,13 @@ export default function Dashboard({ user }) {
     return list || [];
   }, [finanzasDetalladas, filtroActivo]);
 
-  const uniqueServicios = useMemo(() => {
-    const s = new Set(serviciosParaFiltro.map(x => x.servicio).filter(Boolean));
-    return Array.from(s);
-  }, [serviciosParaFiltro]);
+  const dropdownServicios = useMemo(() => {
+    const s = new Set([
+      ...allServicios,
+      ...reservas.map(x => x.servicio).filter(Boolean)
+    ]);
+    return Array.from(s).sort();
+  }, [allServicios, reservas]);
 
   const serviciosMostrados = useMemo(() => {
     let list = [...serviciosParaFiltro];
@@ -323,7 +335,7 @@ export default function Dashboard({ user }) {
                         style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
                       >
                         <option value="todos">Todos los servicios</option>
-                        {uniqueServicios.map(serv => (
+                        {dropdownServicios.map(serv => (
                           <option key={serv} value={serv}>{serv}</option>
                         ))}
                       </select>
