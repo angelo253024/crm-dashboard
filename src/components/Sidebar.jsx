@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot } from 'lucide-react';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Clock } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ user }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
   return (
@@ -129,6 +129,12 @@ export default function Sidebar() {
           <Bot size={20} />
           <span>Admin Bot</span>
         </NavLink>
+        {(user?.rol === 'Administrador' || user?.rol === 'Admin') && (
+          <NavLink to="/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Clock size={20} />
+            <span>Horarios</span>
+          </NavLink>
+        )}
       </nav>
 
     </aside>

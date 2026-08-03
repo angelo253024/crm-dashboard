@@ -18,6 +18,13 @@ export default function ChatBotWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, statusMessage]);
 
+  // Escuchar el evento de apertura externa (ej. desde Login)
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-chatbot', handleOpen);
+    return () => window.removeEventListener('open-chatbot', handleOpen);
+  }, []);
+
   // Listen for global open events
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);

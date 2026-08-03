@@ -26,9 +26,38 @@ export class HybridAIService {
       onStatusUpdate("Analizando intención...");
       const intent = IntentClassifier.classify(userMessage);
 
-      onStatusUpdate("Consultando Base de Datos...");
-      // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
-      const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
+      // Detección especial de asignación de moto (Si manda ubicación)
+      const isLocation = userMessage.toLowerCase().includes('ubicacion') || userMessage.toLowerCase().includes('ubicación') || userMessage.toLowerCase().includes('estoy en') || userMessage.toLowerCase().includes('avenida') || userMessage.toLowerCase().includes('calle') || userMessage.toLowerCase().includes('barrio');
+      
+      if (intent === 'reservar' && isLocation) {
+        onStatusUpdate("Buscando moto disponible...");
+        const { data: motos } = await supabase
+          .from('trabajadores')
+          .select('id, nombre')
+          .eq('estado_disponibilidad', 'disponible')
+          .limit(1);
+
+        if (motos && motos.length > 0) {
+          const motoAsignada = motos[0];
+          // Asignar reserva
+          await supabase.from('reservas').insert([{
+            cliente_nombre: sessionId === 'web-session' ? 'Cliente Web' : sessionId,
+            servicio: 'Lavado a Domicilio (Chatbot)',
+            estado_reserva: 'asignado',
+            trabajador_id: motoAsignada.id,
+            ubicacion_gps: userMessage
+          }]);
+          
+          finalResponse = `¡Perfecto! Hemos despachado a la moto de **${motoAsignada.nombre}**. Va en camino a tu ubicación. 🏍️💨`;
+          source = 'supabase';
+        } else {
+          finalResponse = "En este momento todos nuestros lavadores están ocupados. Por favor intenta de nuevo en unos minutos. 🕒";
+          source = 'supabase';
+        }
+      } else {
+        onStatusUpdate("Consultando Base de Datos...");
+        // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
+        const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
       
       if (localResponse) {
         finalResponse = localResponse;

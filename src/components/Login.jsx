@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft, MessageCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 import { Link } from 'react-router-dom';
 
@@ -102,7 +102,21 @@ export default function Login({ onLogin }) {
     if (fetchError || !data) {
       setError('Usuario o contraseña incorrectos');
     } else {
-      // Logueado exitosamente, pasamos el objeto del usuario a onLogin
+      // Logueado exitosamente, registramos hora_ingreso (Reloj Checador)
+      await supabase
+        .from('trabajador_horarios')
+        .insert([{
+          trabajador_id: data.id,
+          hora_ingreso: new Date().toISOString()
+        }]);
+        
+      // Cambiamos su estado a disponible
+      await supabase
+        .from('trabajadores')
+        .update({ estado_disponibilidad: 'disponible' })
+        .eq('id', data.id);
+
+      // Pasamos el objeto del usuario a onLogin
       onLogin(data);
     }
     
@@ -137,6 +151,39 @@ export default function Login({ onLogin }) {
               NORTE
             </div>
           </div>
+        </div>
+
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            // Disparar evento personalizado para que el widget se abra
+            window.dispatchEvent(new CustomEvent('open-chatbot'));
+          }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#25D366',
+            color: 'white',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            marginBottom: '24px',
+            boxShadow: '0 4px 6px rgba(37, 211, 102, 0.2)'
+          }}
+        >
+          <MessageCircle size={20} />
+          Pedir por Chatbot Inteligente
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
+          <span style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: '500' }}>O ACCESO PERSONAL</span>
+          <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-color)' }}></div>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">

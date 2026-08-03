@@ -10,6 +10,7 @@ import Clientes from './components/Clientes'
 import AdminServicios from './components/AdminServicios'
 import AdminPromos from './components/AdminPromos'
 import AdminBot from './components/AdminBot'
+import AdminHorarios from './components/AdminHorarios'
 import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
 import ChatBotWidget from './components/ChatBotWidget'
@@ -78,7 +79,7 @@ function App() {
         />
 
         {/* Rutas Protegidas (CRM Interno) */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard user={user} /></ProtectedRoute>} />
         <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
         <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
         <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
@@ -86,6 +87,7 @@ function App() {
         <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
         <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
         <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
+        <Route path="/horarios" element={<ProtectedRoute><AdminHorarios /></ProtectedRoute>} />
         
         {/* Cualquier ruta que no exista redirige a la Landing */}
         <Route path="*" element={<Navigate to="/" replace />} />

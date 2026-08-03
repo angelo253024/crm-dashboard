@@ -107,6 +107,38 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
     }
   };
 
+  const handleLogout = async () => {
+    if (user && user.id !== 'local-demo') {
+      try {
+        // Buscar si hay un registro de hora_ingreso de hoy sin hora_salida
+        const { data: horarios } = await supabase
+          .from('trabajador_horarios')
+          .select('id')
+          .eq('trabajador_id', user.id)
+          .is('hora_salida', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+  
+        if (horarios && horarios.length > 0) {
+          await supabase
+            .from('trabajador_horarios')
+            .update({ hora_salida: new Date().toISOString() })
+            .eq('id', horarios[0].id);
+        }
+        
+        // Cambiar estado a inactivo
+        await supabase
+          .from('trabajadores')
+          .update({ estado_disponibilidad: 'inactivo' })
+          .eq('id', user.id);
+      } catch (err) {
+        console.error("Error al cerrar sesión:", err);
+      }
+    }
+    
+    setUser(null);
+  };
+
   const getNotifColor = (tipo) => {
     switch (tipo) {
       case 'success': return '#10b981';
@@ -274,7 +306,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
                 </button>
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <button className="dropdown-item text-red" onClick={() => setUser(null)}>
+                <button className="dropdown-item text-red" onClick={handleLogout}>
                   <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>

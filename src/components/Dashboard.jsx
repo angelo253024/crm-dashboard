@@ -6,8 +6,9 @@ import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
 import SalesTrendChart from './SalesTrendChart';
 import TopDeals from './TopDeals';
+import MotoDashboard from './MotoDashboard';
 
-export default function Dashboard() {
+export default function Dashboard({ user }) {
   const navigate = useNavigate();
   const [showFinanzasModal, setShowFinanzasModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -85,6 +86,10 @@ export default function Dashboard() {
   }, [selectedDate, reservas]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
+
+  if (user && user.rol !== 'Administrador' && user.rol !== 'Admin') {
+    return <MotoDashboard user={user} />;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
