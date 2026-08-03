@@ -15,6 +15,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   
   // Form State
   const [clienteNombre, setClienteNombre] = useState('');
+  const [clienteTelefono, setClienteTelefono] = useState('');
+  const [ubicacionGps, setUbicacionGps] = useState('');
   const [vehiculo, setVehiculo] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
@@ -44,6 +46,21 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setShowModal(true);
   };
 
+  const handleGetLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUbicacionGps(`${position.coords.latitude},${position.coords.longitude}`);
+        },
+        (error) => {
+          alert('No se pudo obtener la ubicación automáticamente. Por favor, escribe tu dirección manualmente.');
+        }
+      );
+    } else {
+      alert('Tu navegador no soporta geolocalización.');
+    }
+  };
+
   const submitReservation = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -53,6 +70,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const { error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: clienteNombre,
+        cliente_telefono: clienteTelefono,
+        ubicacion_gps: ubicacionGps,
         vehiculo: vehiculo,
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
@@ -75,6 +94,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }]);
 
       setClienteNombre('');
+      setClienteTelefono('');
+      setUbicacionGps('');
       setVehiculo('');
       setFechaReserva('');
       setHoraReserva('');
@@ -206,6 +227,18 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   {servicio.nombre}
                 </h3>
                 
+                {servicio.descripcion && (
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+                    {servicio.descripcion}
+                  </p>
+                )}
+                
+                {servicio.tiempo_estimado && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontWeight: 'bold' }}>
+                    <Clock size={14} /> <span>{servicio.tiempo_estimado}</span>
+                  </div>
+                )}
+                
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
                   <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
@@ -263,9 +296,23 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
+                    <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Teléfono / Celular</label>
+                    <input type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} required placeholder="Ej. 70012345" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  </div>
+                </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
-                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    <span>Dirección del Domicilio / Ubicación</span>
+                    <button type="button" onClick={handleGetLocation} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}>📍 Usar GPS actual</button>
+                  </label>
+                  <input type="text" value={ubicacionGps} onChange={(e) => setUbicacionGps(e.target.value)} required placeholder="Ej. Av. Banzer 4to Anillo o enviar GPS" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
                 
                 <div>

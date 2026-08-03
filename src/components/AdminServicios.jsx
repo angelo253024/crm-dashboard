@@ -16,6 +16,8 @@ export default function AdminServicios() {
   const [codigo, setCodigo] = useState('');
   const [categoria, setCategoria] = useState('Lavado Clásico');
   const [precio, setPrecio] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [tiempoEstimado, setTiempoEstimado] = useState('');
   const [disponible, setDisponible] = useState(true);
   const [imagenUrl, setImagenUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -89,6 +91,8 @@ export default function AdminServicios() {
     setCodigo('');
     setCategoria('Lavado Clásico');
     setPrecio('');
+    setDescripcion('');
+    setTiempoEstimado('');
     setDisponible(true);
     setImagenUrl('');
     setEditingId(null);
@@ -104,6 +108,8 @@ export default function AdminServicios() {
     setCodigo(servicio.codigo || '');
     setCategoria(servicio.categoria || 'Lavado Clásico');
     setPrecio(servicio.precio || '');
+    setDescripcion(servicio.descripcion || '');
+    setTiempoEstimado(servicio.tiempo_estimado || '');
     setDisponible(servicio.disponible !== false); // Default true if undefined
     setImagenUrl(servicio.imagen_url || '');
     setEditingId(servicio.id);
@@ -119,6 +125,8 @@ export default function AdminServicios() {
       codigo,
       categoria,
       precio: parseFloat(precio),
+      descripcion,
+      tiempo_estimado: tiempoEstimado,
       disponible,
       imagen_url: imagenUrl
     };
@@ -318,6 +326,27 @@ export default function AdminServicios() {
                     style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
                   />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label>Descripción</label>
+                <textarea 
+                  value={descripcion} 
+                  onChange={(e) => setDescripcion(e.target.value)} 
+                  placeholder="Ej. Lavado exterior e interior para autos pequeños..."
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px', minHeight: '60px', resize: 'vertical' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Tiempo Estimado</label>
+                <input 
+                  type="text" 
+                  value={tiempoEstimado} 
+                  onChange={(e) => setTiempoEstimado(e.target.value)} 
+                  placeholder="Ej. 1 hora, 45 min..."
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                />
               </div>
 
               <div className="form-group">
