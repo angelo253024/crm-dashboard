@@ -235,6 +235,13 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           </div>
         </div>
       </main>
+
+      {/* Lateral Ad */}
+      <div style={{ flex: '0 0 320px', maxWidth: '400px' }}>
+        <PromoAd onBook={() => navigate('/reservar', { state: { openService: 'CLAS-P00' } })} />
+      </div>
+
+      </div>
     </div>
   );
 }
