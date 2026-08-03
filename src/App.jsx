@@ -9,8 +9,10 @@ import Trabajadores from './components/Trabajadores'
 import Clientes from './components/Clientes'
 import AdminServicios from './components/AdminServicios'
 import AdminPromos from './components/AdminPromos'
+import AdminBot from './components/AdminBot'
 import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
+import ChatBotWidget from './components/ChatBotWidget'
 
 function App() {
   const [user, setUserState] = useState(() => {
@@ -65,27 +67,31 @@ function App() {
   };
 
   return (
-    <Routes>
-      {/* Rutas Públicas */}
-      <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
-      <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
-      <Route 
-        path="/login" 
-        element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
-      />
+    <>
+      <Routes>
+        {/* Rutas Públicas */}
+        <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+        <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+        <Route 
+          path="/login" 
+          element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
+        />
 
-      {/* Rutas Protegidas (CRM Interno) */}
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
-      <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
-      <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
-      <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-      <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
-      <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
-      
-      {/* Cualquier ruta que no exista redirige a la Landing */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Rutas Protegidas (CRM Interno) */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
+        <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
+        <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
+        <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+        <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
+        <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
+        <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
+        
+        {/* Cualquier ruta que no exista redirige a la Landing */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <ChatBotWidget />
+    </>
   )
 }
 

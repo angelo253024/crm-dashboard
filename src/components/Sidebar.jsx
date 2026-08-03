@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag } from 'lucide-react';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot } from 'lucide-react';
 
 export default function Sidebar() {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
@@ -124,6 +124,10 @@ export default function Sidebar() {
         <NavLink to="/promos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <Tag size={20} />
           <span>Promos</span>
+        </NavLink>
+        <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Bot size={20} />
+          <span>Admin Bot</span>
         </NavLink>
       </nav>
 
