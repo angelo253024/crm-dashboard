@@ -92,19 +92,30 @@ export default function ServiciosCatalog() {
     : servicios.filter(s => s.categoria === categoriaActiva);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#121212', color: '#fff', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
       {/* Navbar Simple */}
       <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '64px' }}>
         <Link to="/" style={{ color: '#aaa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#aaa'}>
           <ArrowLeft size={16} /> Volver
         </Link>
         
-        {/* Logo Textual */}
-        <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '20px' }}>
-          <span style={{ color: '#1E4C9A' }}>LAVA</span>
-          <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
-          <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
-        </div>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+          <img 
+            src="/logo.png" 
+            alt="Lavamóvil Norte" 
+            style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+          {/* Logo Textual Fallback */}
+          <div style={{ display: 'none', alignItems: 'center', fontWeight: 900, fontSize: '20px' }}>
+            <span style={{ color: 'var(--accent-dark)' }}>LAVA</span>
+            <span style={{ color: 'var(--accent-green)', margin: '0 2px' }}>M</span>
+            <span style={{ color: 'var(--accent-dark)' }}>ÓVIL</span>
+          </div>
+        </Link>
         
         <div style={{ width: '80px' }}></div>
       </nav>
