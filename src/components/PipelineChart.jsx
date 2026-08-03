@@ -1,21 +1,32 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export default function PipelineChart({ deals, stages }) {
+export default function PipelineChart({ reservas = [] }) {
   
   const data = useMemo(() => {
-    // Group amount by stage
-    const grouped = stages.map(stage => {
-      const stageDeals = deals.filter(d => d.stage_id === stage.id);
-      const totalAmount = stageDeals.reduce((sum, d) => sum + d.amount, 0);
+    // Definimos los estados esperados para mantener un orden consistente, o los extraemos dinámicamente
+    const expectedStates = ['Reservado', 'En Proceso', 'Completado', 'Cancelado'];
+    
+    // Agrupamos el monto (precio_total) por estado
+    const grouped = expectedStates.map(stateName => {
+      const stateReservas = reservas.filter(r => r.estado === stateName);
+      const totalAmount = stateReservas.reduce((sum, r) => sum + (r.precio_total || 0), 0);
       return {
-        name: stage.name,
-        value: totalAmount,
-        originalStage: stage
+        name: stateName,
+        value: totalAmount
       };
     });
+
+    // Añadir estados que no estén en la lista por defecto
+    const otherStates = [...new Set(reservas.map(r => r.estado))].filter(e => !expectedStates.includes(e));
+    otherStates.forEach(stateName => {
+      const stateReservas = reservas.filter(r => r.estado === stateName);
+      const totalAmount = stateReservas.reduce((sum, r) => sum + (r.precio_total || 0), 0);
+      grouped.push({ name: stateName || 'Desconocido', value: totalAmount });
+    });
+
     return grouped;
-  }, [deals, stages]);
+  }, [reservas]);
 
   const formatCurrency = (value) => `Bs ${(value / 1000).toFixed(0)}k`;
 

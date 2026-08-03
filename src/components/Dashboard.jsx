@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter } from 'lucide-react';
-import { deals, stages } from '../data/mockData';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -11,9 +10,11 @@ export default function Dashboard() {
   const [showFinanzasModal, setShowFinanzasModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [promos, setPromos] = useState([]);
+  const [reservas, setReservas] = useState([]);
   
   useEffect(() => {
     fetchPromos();
+    fetchReservas();
   }, []);
 
   const fetchPromos = async () => {
@@ -23,26 +24,63 @@ export default function Dashboard() {
     }
   };
 
+  const fetchReservas = async () => {
+    const { data, error } = await supabase.from('reservas').select('*');
+    if (!error && data) {
+      setReservas(data);
+    }
+  };
+
   // Calculate KPIs
   const kpis = useMemo(() => {
-    // Simulando ingresos para el dashboard financiero principal
-    return {
-      ingresosDia: 0,
-      ingresosSemana: 0,
-      ingresosMes: 0,
-      serviciosHoy: 0
-    };
-  }, []);
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Filtros de fecha básicos
+    const todayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
+    const thisMonth = new Date().toISOString().substring(0, 7);
+    const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
+    
+    // Semana actual (aproximación)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekReservas = reservas.filter(r => {
+      const d = new Date(r.fecha_reserva || r.created_at);
+      return d >= oneWeekAgo && d <= now;
+    });
 
-  // Simulador de datos basado en la fecha seleccionada
-  const finanzasDetalladas = useMemo(() => {
+    const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || 0), 0);
+
     return {
-      dia: 0,
-      semana: 0,
-      mes: 0,
-      servicios: []
+      ingresosDia: sumIngresos(todayReservas),
+      ingresosSemana: sumIngresos(weekReservas),
+      ingresosMes: sumIngresos(monthReservas),
+      serviciosHoy: todayReservas.length
     };
-  }, [selectedDate]);
+  }, [reservas]);
+
+  // Simulador de datos basado en la fecha seleccionada para el modal
+  const finanzasDetalladas = useMemo(() => {
+    const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || 0), 0);
+    
+    const dayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === selectedDate);
+    
+    const dDate = new Date(selectedDate);
+    const oneWeekAgo = new Date(dDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekReservas = reservas.filter(r => {
+      const d = new Date(r.fecha_reserva || r.created_at);
+      return d >= oneWeekAgo && d <= dDate;
+    });
+
+    const monthStr = selectedDate.substring(0, 7);
+    const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(monthStr));
+
+    return {
+      dia: sumIngresos(dayReservas),
+      semana: sumIngresos(weekReservas),
+      mes: sumIngresos(monthReservas),
+      servicios: dayReservas
+    };
+  }, [selectedDate, reservas]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
 
@@ -78,11 +116,11 @@ export default function Dashboard() {
         <div className="card">
           <div className="chart-header">
             <div>
-              <h2 className="text-h2">Valor del Pipeline por Etapa</h2>
-              <p className="text-body text-muted" style={{ marginTop: '4px' }}>Servicios activos distribuidos en tu pipeline</p>
+              <h2 className="text-h2">Valor por Estado de Reserva</h2>
+              <p className="text-body text-muted" style={{ marginTop: '4px' }}>Servicios activos distribuidos por estado</p>
             </div>
           </div>
-          <PipelineChart deals={deals.filter(d => d.status === 'open')} stages={stages} />
+          <PipelineChart reservas={reservas} />
         </div>
 
         <div className="card">
@@ -97,7 +135,7 @@ export default function Dashboard() {
           <div className="chart-header">
              <h2 className="text-h2">Tendencia de Ventas (Ingresos en el tiempo)</h2>
           </div>
-          <SalesTrendChart deals={deals} />
+          <SalesTrendChart reservas={reservas} />
       </div>
 
       {/* Modal de Ingresos Detallados */}

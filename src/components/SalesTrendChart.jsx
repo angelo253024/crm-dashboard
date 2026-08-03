@@ -1,13 +1,17 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function SalesTrendChart({ deals }) {
+export default function SalesTrendChart({ reservas = [] }) {
   const data = useMemo(() => {
-    const wonDeals = deals.filter(d => d.status === 'won');
+    // Solo contar reservas que no estén canceladas (o solo completadas, dependiento la lógica. Usaremos no canceladas por ahora)
+    const validReservas = reservas.filter(r => r.estado !== 'Cancelado');
     
     // Group by month
-    const monthlyData = wonDeals.reduce((acc, deal) => {
-      const date = new Date(deal.closed_at || deal.created_at);
+    const monthlyData = validReservas.reduce((acc, reserva) => {
+      const dateString = reserva.fecha_reserva || reserva.created_at;
+      if (!dateString) return acc;
+      
+      const date = new Date(dateString);
       const month = date.toLocaleString('es-ES', { month: 'short' });
       
       // capitalize first letter
@@ -16,7 +20,7 @@ export default function SalesTrendChart({ deals }) {
       if (!acc[monthCapitalized]) {
         acc[monthCapitalized] = { name: monthCapitalized, revenue: 0 };
       }
-      acc[monthCapitalized].revenue += deal.amount;
+      acc[monthCapitalized].revenue += (reserva.precio_total || 0);
       return acc;
     }, {});
 
@@ -25,7 +29,7 @@ export default function SalesTrendChart({ deals }) {
     return Object.values(monthlyData).sort((a, b) => {
       return monthsOrder.indexOf(a.name) - monthsOrder.indexOf(b.name);
     });
-  }, [deals]);
+  }, [reservas]);
 
   const formatCurrency = (value) => `Bs ${(value / 1000).toFixed(0)}k`;
 
