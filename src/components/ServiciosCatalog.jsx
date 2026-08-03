@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun } from 'lucide-react';
 import { supabase } from '../supabase';
 
-export default function ServiciosCatalog() {
+export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [servicios, setServicios] = useState([]);
   const [categorias, setCategorias] = useState(['Todos']);
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
@@ -117,7 +117,11 @@ export default function ServiciosCatalog() {
           </div>
         </Link>
         
-        <div style={{ width: '80px' }}></div>
+        <div style={{ width: '80px', display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle theme">
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
       </nav>
 
       {/* Header del Catálogo */}
