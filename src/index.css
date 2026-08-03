@@ -578,6 +578,7 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
+  background: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -693,68 +694,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Light mode specific landing page styles */
-body:not(.dark) .landing-page {
-  color: #0f172a;
-}
-body:not(.dark) .landing-logo-img,
-body:not(.dark) .landing-logo-hero {
-  filter: brightness(0) invert(1) hue-rotate(180deg) sepia(1) saturate(5) hue-rotate(180deg); /* Aproximación a dark blue/cyan */
-}
-/* Hacer el PromoAd más claro en modo día */
-body:not(.dark) .promo-ad-wrapper > div:first-child {
-  background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%) !important;
-}
-body:not(.dark) .theme-toggle-btn {
-  border-color: rgba(0, 0, 0, 0.2);
-  color: #0f172a;
-}
-body:not(.dark) .theme-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-body:not(.dark) .landing-links a {
-  color: #475569;
-}
-body:not(.dark) .landing-links a:hover {
-  color: #0f172a;
-}
-body:not(.dark) .landing-text {
-  color: #475569;
-}
-body:not(.dark) .landing-link-secondary {
-  color: #475569;
-}
-body:not(.dark) .landing-link-secondary:hover {
-  color: #0f172a;
-}
-body:not(.dark) .stat-card {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-}
-body:not(.dark) .stat-card::before {
-  background: linear-gradient(90deg, transparent, #1E4C9A, transparent);
-}
-body:not(.dark) .stat-label {
-  color: #475569;
-}
-body:not(.dark) .stat-value {
-  background: linear-gradient(135deg, #1E4C9A 0%, #1CA9C9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-body:not(.dark) .landing-description {
-  color: #0f172a;
-}
-body:not(.dark) .landing-subtitle {
-  color: #1E4C9A;
-}
-body:not(.dark) .btn-landing-large {
-  box-shadow: 0 8px 25px rgba(30, 76, 154, 0.2);
-}
-body:not(.dark) .btn-landing-large:hover {
-  box-shadow: 0 12px 30px rgba(30, 76, 154, 0.3);
-}
+/* Fin de los estilos claros */
 
 .btn-landing-primary:hover {
   transform: translateY(-2px);
