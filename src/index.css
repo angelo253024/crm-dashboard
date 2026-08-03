@@ -577,7 +577,7 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
-  background-color: #0b1121; /* Dark blueish background */
+  background: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -585,6 +585,7 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  background-attachment: fixed;
 }
 
 /* Water drop background effects */
@@ -595,7 +596,7 @@ body {
   left: -10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(28, 169, 201, 0.15) 0%, rgba(28, 169, 201, 0) 70%);
+  background: radial-gradient(circle, rgba(28, 169, 201, 0.25) 0%, rgba(28, 169, 201, 0) 70%);
   border-radius: 50%;
   z-index: 0;
   animation: floatBubble 8s ease-in-out infinite alternate;
@@ -607,7 +608,7 @@ body {
   right: -10%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(30, 76, 154, 0.15) 0%, rgba(30, 76, 154, 0) 70%);
+  background: radial-gradient(circle, rgba(16, 128, 196, 0.25) 0%, rgba(30, 76, 154, 0) 70%);
   border-radius: 50%;
   z-index: 0;
   animation: floatBubble 10s ease-in-out infinite alternate-reverse;
