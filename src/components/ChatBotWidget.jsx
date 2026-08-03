@@ -117,8 +117,8 @@ export default function ChatBotWidget() {
         top: 0,
         right: isOpen ? 0 : '-400px',
         width: '400px',
-        height: '100vh',
-        backgroundColor: 'var(--bg-color)',
+        height: '100dvh',
+        background: 'var(--bg-color)',
         boxShadow: '-5px 0 25px rgba(0,0,0,0.5)',
         transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: 9999,
@@ -171,7 +171,7 @@ export default function ChatBotWidget() {
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          backgroundColor: 'var(--bg-color)'
+          background: 'var(--bg-color)'
         }}>
           {messages.map((msg) => (
             <div key={msg.id} style={{ 
@@ -241,7 +241,7 @@ export default function ChatBotWidget() {
                 padding: '12px 16px',
                 borderRadius: '24px',
                 border: '1px solid var(--border-color)',
-                backgroundColor: 'var(--bg-color)',
+                background: 'var(--bg-color)',
                 color: 'var(--text-main)',
                 outline: 'none',
                 fontSize: '14px'

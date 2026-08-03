@@ -1033,3 +1033,26 @@ body:not(.dark) button[style*="var(--accent-green)"] {
     width: 100%;
   }
 }
+
+/* Modal form responsive */
+.modal-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .modal-form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Prevent iOS zoom on inputs */
+  input[type="text"],
+  input[type="tel"],
+  input[type="time"],
+  input[type="date"],
+  input[type="email"],
+  input[type="password"] {
+    font-size: 16px !important;
+  }
+}

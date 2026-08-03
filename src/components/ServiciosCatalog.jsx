@@ -309,7 +309,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="modal-form-row">
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
                     <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
@@ -333,7 +333,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
-                <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="modal-form-row">
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fecha</label>
                     <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
