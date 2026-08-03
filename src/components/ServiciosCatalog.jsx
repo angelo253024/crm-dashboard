@@ -10,6 +10,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
   const [loading, setLoading] = useState(true);
 
+  // Cliente reserva local storage
+  const [clienteReservaId, setClienteReservaId] = useState(localStorage.getItem('cliente_reserva_id') || null);
+  const [estadoMiReserva, setEstadoMiReserva] = useState(null);
+
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
@@ -28,6 +32,50 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   useEffect(() => {
     fetchServicios();
   }, []);
+
+  useEffect(() => {
+    if (clienteReservaId) {
+      checkMiReserva();
+      
+      const channel = supabase
+        .channel(`public:reservas:id=eq.${clienteReservaId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'reservas', filter: `id=eq.${clienteReservaId}` },
+          (payload) => {
+            const updated = payload.new;
+            if (updated.estado_reserva === 'completado' || updated.estado === 'Finalizado' || updated.estado_reserva === 'cancelado') {
+              localStorage.removeItem('cliente_reserva_id');
+              setClienteReservaId(null);
+              setEstadoMiReserva(null);
+            } else {
+              setEstadoMiReserva(updated);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [clienteReservaId]);
+
+  const checkMiReserva = async () => {
+    const { data } = await supabase.from('reservas').select('*').eq('id', clienteReservaId).single();
+    if (data) {
+      if (data.estado_reserva === 'completado' || data.estado === 'Finalizado' || data.estado_reserva === 'cancelado') {
+        localStorage.removeItem('cliente_reserva_id');
+        setClienteReservaId(null);
+        setEstadoMiReserva(null);
+      } else {
+        setEstadoMiReserva(data);
+      }
+    } else {
+      localStorage.removeItem('cliente_reserva_id');
+      setClienteReservaId(null);
+    }
+  };
 
   const fetchServicios = async () => {
     setLoading(true);
@@ -104,7 +152,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       trabajadorNombre = motos[0].nombre;
     }
 
-    const { error } = await supabase.from('reservas').insert([
+    const { data: reservaInsertada, error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: `${clienteNombre} (Tel: ${clienteTelefono})`,
         ubicacion_gps: ubicacionGps,
@@ -117,13 +165,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva
       }
-    ]);
+    ]).select();
 
     if (error) {
       console.error('Error guardando reserva:', error);
       alert(`Hubo un error al procesar tu reserva. Inténtalo de nuevo. Detalle: ${error.message || JSON.stringify(error)}`);
     } else {
       setSuccess(true);
+      
+      if (reservaInsertada && reservaInsertada.length > 0) {
+        const id = reservaInsertada[0].id;
+        localStorage.setItem('cliente_reserva_id', id);
+        setClienteReservaId(id);
+      }
       
       // Dispatch notification
       await supabase.from('notificaciones').insert([{
@@ -379,6 +433,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </form>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Flotante de Reserva Pendiente */}
+      {clienteReservaId && estadoMiReserva && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 90, animation: 'fadeIn 0.3s ease-out' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '16px 20px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ backgroundColor: 'var(--accent-blue)', padding: '12px', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Clock size={24} />
+            </div>
+            <div>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>Tu Lavado Activo</h4>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                {estadoMiReserva.estado_reserva === 'asignado' || estadoMiReserva.estado_reserva === 'en_camino' 
+                  ? <span style={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}>El trabajador va en camino 🏍️</span>
+                  : estadoMiReserva.estado_reserva === 'en_proceso' 
+                  ? <span style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>Lavando tu vehículo 🧽</span>
+                  : 'Buscando un trabajador disponible...'}
+              </div>
+            </div>
           </div>
         </div>
       )}

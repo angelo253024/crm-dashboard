@@ -194,6 +194,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   };
 
   const handleNuevoServicioClick = () => {
+    if (user?.rol === 'Trabajador') {
+      window.open('/', '_blank');
+      return;
+    }
+    
     if (window.location.pathname === '/servicios') {
       window.dispatchEvent(new CustomEvent('openNewServiceModal'));
     } else {
@@ -220,8 +225,8 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
         >
           <MessageSquare size={16} /> Chatbot
         </button>
-        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
-          <Plus size={16} /> Nuevo Servicio
+        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white', whiteSpace: 'nowrap' }}>
+          <Plus size={16} /> {user?.rol === 'Trabajador' ? 'Adicionar Servicio' : 'Nuevo Servicio'}
         </button>
 
         {/* Notificaciones */}
