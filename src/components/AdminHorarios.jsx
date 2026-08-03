@@ -42,6 +42,8 @@ export default function AdminHorarios({ user }) {
     }
 
     const { data, error } = await query;
+
+    if (error) {
       console.error(error);
     } else {
       setHorarios(data || []);
