@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { Clock, Calendar as CalendarIcon, User, RefreshCw } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, User, RefreshCw, Trash2 } from 'lucide-react';
 
 export default function AdminHorarios({ user }) {
   const [horarios, setHorarios] = useState([]);
@@ -64,6 +64,21 @@ export default function AdminHorarios({ user }) {
     return `${horas}h ${minutos}m`;
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este registro de horario?')) return;
+    
+    const { error } = await supabase
+      .from('trabajador_horarios')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      alert('Error al eliminar el registro: ' + error.message);
+    } else {
+      setHorarios(horarios.filter(h => h.id !== id));
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -92,16 +107,17 @@ export default function AdminHorarios({ user }) {
                 <th>Hora de Ingreso</th>
                 <th>Hora de Salida</th>
                 <th>Tiempo Total</th>
+                {isAdmin && <th>Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '32px' }}>Cargando horarios...</td>
+                  <td colSpan={isAdmin ? "6" : "5"} style={{ textAlign: 'center', padding: '32px' }}>Cargando horarios...</td>
                 </tr>
               ) : horarios.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? "5" : "4"} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={isAdmin ? "6" : "4"} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No hay registros de asistencia para este periodo.
                   </td>
                 </tr>
@@ -138,6 +154,13 @@ export default function AdminHorarios({ user }) {
                     <td style={{ fontWeight: '500' }}>
                       {calcularHoras(h.hora_ingreso, h.hora_salida)}
                     </td>
+                    {isAdmin && (
+                      <td style={{ textAlign: 'center' }}>
+                        <button onClick={() => handleDelete(h.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }} title="Eliminar registro">
+                          <Trash2 size={18} color="var(--accent-orange)" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

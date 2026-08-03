@@ -214,7 +214,7 @@ export default function Dashboard({ user }) {
       {/* Modal de Ingresos Detallados */}
       {showFinanzasModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'var(--bg-color)', padding: '0', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '900px', boxShadow: 'var(--shadow-lg)', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
+          <div style={{ background: 'var(--bg-color)', padding: '0', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '900px', boxShadow: 'var(--shadow-lg)', maxHeight: '95vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
             
             {/* Header del Modal */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 32px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)' }}>
@@ -242,7 +242,7 @@ export default function Dashboard({ user }) {
                     type="date" 
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', fontWeight: '500', outline: 'none' }}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', fontWeight: '500', outline: 'none' }}
                   />
                 </div>
                 
@@ -251,7 +251,7 @@ export default function Dashboard({ user }) {
                   <select 
                     value={selectedTrabajador} 
                     onChange={(e) => setSelectedTrabajador(e.target.value)}
-                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
                   >
                     <option value="todos">Todos</option>
                     {trabajadores.map(t => (
@@ -265,7 +265,7 @@ export default function Dashboard({ user }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }}>
                 <div 
                   onClick={() => setFiltroActivo('dia')}
-                  style={{ backgroundColor: filtroActivo === 'dia' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'dia' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ background: filtroActivo === 'dia' ? 'var(--card-bg)' : 'var(--bg-color)', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'dia' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
                 >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos del Día</div>
                   <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.dia.toLocaleString()}</div>
@@ -273,7 +273,7 @@ export default function Dashboard({ user }) {
                 
                 <div 
                   onClick={() => setFiltroActivo('semana')}
-                  style={{ backgroundColor: filtroActivo === 'semana' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'semana' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ background: filtroActivo === 'semana' ? 'var(--card-bg)' : 'var(--bg-color)', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'semana' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
                 >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos de la Semana</div>
                   <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.semana.toLocaleString()}</div>
@@ -281,7 +281,7 @@ export default function Dashboard({ user }) {
 
                 <div 
                   onClick={() => setFiltroActivo('mes')}
-                  style={{ backgroundColor: filtroActivo === 'mes' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'mes' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                  style={{ background: filtroActivo === 'mes' ? 'var(--card-bg)' : 'var(--bg-color)', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'mes' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
                 >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos del Mes</div>
                   <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.mes.toLocaleString()}</div>
@@ -312,7 +312,7 @@ export default function Dashboard({ user }) {
                         value={tablaSearch}
                         onChange={(e) => setTablaSearch(e.target.value)}
                         placeholder="Ej. Juan, María..."
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
                       />
                     </div>
                     <div style={{ flex: '1', minWidth: '200px' }}>
@@ -320,7 +320,7 @@ export default function Dashboard({ user }) {
                       <select 
                         value={tablaServicioFilter}
                         onChange={(e) => setTablaServicioFilter(e.target.value)}
-                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
                       >
                         <option value="todos">Todos los servicios</option>
                         {uniqueServicios.map(serv => (
@@ -352,7 +352,7 @@ export default function Dashboard({ user }) {
                         </tr>
                       ) : (
                         serviciosMostrados.map((s, i) => (
-                          <tr key={s.id} style={{ borderBottom: i === serviciosMostrados.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
+                          <tr key={s.id} style={{ borderBottom: i === serviciosMostrados.length - 1 ? 'none' : '1px solid var(--border-color)', background: 'var(--bg-color)' }}>
                             <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora || (s.created_at ? new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--')}</td>
                             <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente_nombre || s.cliente}</td>
                             <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.trabajadores?.nombre || 'Sin asignar'}</td>
