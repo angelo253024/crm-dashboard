@@ -132,12 +132,12 @@ export default function Sidebar({ user }) {
           <Clock size={20} />
           <span>Horarios</span>
         </NavLink>
+        <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Map size={20} />
+          <span>Mapa / Zonas</span>
+        </NavLink>
         {(user?.rol === 'Administrador' || user?.rol === 'Admin') && (
           <>
-            <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <Map size={20} />
-              <span>Mapa / Zonas</span>
-            </NavLink>
             <NavLink to="/trabajadores" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <Users size={20} />
               <span>Trabajadores</span>

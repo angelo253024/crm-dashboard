@@ -106,6 +106,32 @@ export default function MotoDashboard({ user }) {
     }
   }, [user]);
 
+  useEffect(() => {
+    let watchId;
+    if (user && estado !== 'inactivo' && navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            await supabase.from('trabajadores').update({
+              latitud: latitude,
+              longitud: longitude,
+              ultima_actualizacion_gps: new Date().toISOString()
+            }).eq('id', user.id);
+          } catch(e) {}
+        },
+        (error) => {
+          console.error("Error GPS:", error);
+        },
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      );
+    }
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [estado, user]);
+
   const fetchTrabajadorEstado = async () => {
     const { data } = await supabase.from('trabajadores').select('estado_disponibilidad').eq('id', user.id).single();
     if (data) {
@@ -122,7 +148,7 @@ export default function MotoDashboard({ user }) {
     
     if (data) {
       setTodasReservas(data);
-      setReservas(data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino'));
+      setReservas(data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino' || r.estado_reserva === 'en_proceso'));
     }
     setLoading(false);
   };
@@ -149,23 +175,27 @@ export default function MotoDashboard({ user }) {
     };
   }, [todasReservas]);
 
-  const toggleEstado = async () => {
-    const nuevoEstado = estado === 'disponible' ? 'ocupado' : 'disponible';
+  const changeEstado = async (nuevoEstado) => {
     setEstado(nuevoEstado);
     await supabase.from('trabajadores').update({ estado_disponibilidad: nuevoEstado }).eq('id', user.id);
   };
 
   const aceptarReserva = async (id) => {
     await supabase.from('reservas').update({ estado_reserva: 'en_camino' }).eq('id', id);
-    // Marcar como ocupado automáticamente al aceptar un trabajo
     setEstado('ocupado');
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'ocupado' }).eq('id', user.id);
+    fetchReservasAsignadas();
+  };
+  
+  const llegueAlLugar = async (id) => {
+    await supabase.from('reservas').update({ estado_reserva: 'en_proceso' }).eq('id', id);
+    setEstado('en_proceso');
+    await supabase.from('trabajadores').update({ estado_disponibilidad: 'en_proceso' }).eq('id', user.id);
     fetchReservasAsignadas();
   };
 
   const completarReserva = async (id) => {
     await supabase.from('reservas').update({ estado_reserva: 'completado' }).eq('id', id);
-    // Volver a disponible tras completar
     setEstado('disponible');
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'disponible' }).eq('id', user.id);
     fetchReservasAsignadas();
@@ -222,53 +252,37 @@ export default function MotoDashboard({ user }) {
 
       <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: estado === 'disponible' ? 'rgba(16, 185, 129, 0.2)' : estado === 'ocupado' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <User size={24} color={estado === 'disponible' ? '#10b981' : estado === 'ocupado' ? '#f59e0b' : '#ef4444'} />
+          <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: estado === 'disponible' ? 'rgba(16, 185, 129, 0.2)' : estado === 'en_proceso' ? 'rgba(250, 204, 21, 0.2)' : estado === 'ocupado' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <User size={24} color={estado === 'disponible' ? '#10b981' : estado === 'en_proceso' ? '#eab308' : estado === 'ocupado' ? '#f59e0b' : '#ef4444'} />
           </div>
           <div>
             <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>Estado Actual</h3>
-            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0', textTransform: 'capitalize' }}>{estado}</p>
+            <p style={{ color: 'var(--text-muted)', margin: '4px 0 0 0', textTransform: 'capitalize' }}>{estado.replace('_', ' ')}</p>
           </div>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-muted)' }}>
-            {estado === 'disponible' ? 'Modo Disponible Activado' : 'Estás Ocupado'}
-          </span>
-          <label style={{ position: 'relative', display: 'inline-block', width: '60px', height: '34px' }}>
-            <input 
-              type="checkbox" 
-              checked={estado === 'disponible'} 
-              onChange={toggleEstado} 
-              style={{ opacity: 0, width: 0, height: 0 }}
-            />
-            <span style={{
-              position: 'absolute',
+          <select 
+            value={estado}
+            onChange={(e) => changeEstado(e.target.value)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: 'none',
+              fontWeight: 'bold',
+              backgroundColor: estado === 'disponible' ? '#10b981' : estado === 'en_proceso' ? '#facc15' : estado === 'ocupado' ? '#f59e0b' : '#ef4444',
+              color: estado === 'en_proceso' ? '#000' : '#fff',
               cursor: 'pointer',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: estado === 'disponible' ? '#10b981' : '#f59e0b',
-              transition: '.4s',
-              borderRadius: '34px',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 5px'
-            }}>
-              <span style={{
-                position: 'absolute',
-                content: '""',
-                height: '26px',
-                width: '26px',
-                left: estado === 'disponible' ? '30px' : '4px',
-                bottom: '4px',
-                backgroundColor: 'white',
-                transition: '.4s',
-                borderRadius: '50%'
-              }}></span>
-            </span>
-          </label>
+              outline: 'none',
+              appearance: 'none',
+              textAlign: 'center'
+            }}
+          >
+            <option value="disponible">🟢 Disponible</option>
+            <option value="ocupado">🟠 Ocupado (En camino)</option>
+            <option value="en_proceso">🟡 En Proceso (Lavando)</option>
+            <option value="inactivo">🔴 Inactivo / Fuera</option>
+          </select>
         </div>
       </div>
 
@@ -311,7 +325,7 @@ export default function MotoDashboard({ user }) {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {res.estado_reserva === 'asignado' ? (
                   <>
                     <button onClick={() => aceptarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
@@ -321,6 +335,10 @@ export default function MotoDashboard({ user }) {
                       <X size={18} /> Rechazar
                     </button>
                   </>
+                ) : res.estado_reserva === 'en_camino' ? (
+                  <button onClick={() => llegueAlLugar(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#facc15', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <MapPin size={18} /> Llegué al Lugar
+                  </button>
                 ) : (
                   <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                     <Check size={18} /> Marcar Lavado Terminado

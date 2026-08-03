@@ -81,7 +81,7 @@ function App() {
         {/* Rutas Protegidas (CRM Interno) */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard user={user} /></ProtectedRoute>} />
         <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
-        <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
+        <Route path="/zonas" element={<ProtectedRoute><Zonas user={user} /></ProtectedRoute>} />
         <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
         <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
         <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
