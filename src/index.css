@@ -29,8 +29,8 @@
 }
 
 .dark {
-  --bg-color: #0b1121; 
-  --card-bg: #111827;
+  --bg-color: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
+  --card-bg: rgba(17, 24, 39, 0.85); /* Slightly transparent cards to see the water */
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --text-light: #64748b;
@@ -54,7 +54,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: var(--bg-color);
+  background: var(--bg-color);
+  background-attachment: fixed;
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
 }
