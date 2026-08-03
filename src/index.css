@@ -697,6 +697,14 @@ body {
 body:not(.dark) .landing-page {
   color: #0f172a;
 }
+body:not(.dark) .landing-logo-img,
+body:not(.dark) .landing-logo-hero {
+  filter: brightness(0) invert(1) hue-rotate(180deg) sepia(1) saturate(5) hue-rotate(180deg); /* Aproximación a dark blue/cyan */
+}
+/* Hacer el PromoAd más claro en modo día */
+body:not(.dark) .promo-ad-wrapper > div:first-child {
+  background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%) !important;
+}
 body:not(.dark) .theme-toggle-btn {
   border-color: rgba(0, 0, 0, 0.2);
   color: #0f172a;
