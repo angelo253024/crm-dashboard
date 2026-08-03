@@ -11,6 +11,9 @@ import MotoDashboard from './MotoDashboard';
 export default function Dashboard({ user }) {
   const navigate = useNavigate();
   const [showFinanzasModal, setShowFinanzasModal] = useState(false);
+  const [showFiltrosTabla, setShowFiltrosTabla] = useState(false);
+  const [tablaSearch, setTablaSearch] = useState('');
+  const [tablaServicioFilter, setTablaServicioFilter] = useState('todos');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [promos, setPromos] = useState([]);
   const [reservas, setReservas] = useState([]);
@@ -99,11 +102,42 @@ export default function Dashboard({ user }) {
       dia: sumIngresos(dayReservas),
       semana: sumIngresos(weekReservas),
       mes: sumIngresos(monthReservas),
-      servicios: dayReservas
+      dayReservas,
+      weekReservas,
+      monthReservas
     };
   }, [selectedDate, reservas, selectedTrabajador]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
+
+  const serviciosParaFiltro = useMemo(() => {
+    let list = [];
+    if (filtroActivo === 'dia') list = finanzasDetalladas.dayReservas;
+    else if (filtroActivo === 'semana') list = finanzasDetalladas.weekReservas;
+    else if (filtroActivo === 'mes') list = finanzasDetalladas.monthReservas;
+    return list || [];
+  }, [finanzasDetalladas, filtroActivo]);
+
+  const uniqueServicios = useMemo(() => {
+    const s = new Set(serviciosParaFiltro.map(x => x.servicio).filter(Boolean));
+    return Array.from(s);
+  }, [serviciosParaFiltro]);
+
+  const serviciosMostrados = useMemo(() => {
+    let list = [...serviciosParaFiltro];
+
+    if (tablaSearch) {
+      const search = tablaSearch.toLowerCase();
+      list = list.filter(s => 
+        (s.cliente_nombre || s.cliente || '').toLowerCase().includes(search) ||
+        (s.trabajadores?.nombre || '').toLowerCase().includes(search)
+      );
+    }
+    if (tablaServicioFilter !== 'todos') {
+      list = list.filter(s => s.servicio === tablaServicioFilter);
+    }
+    return list;
+  }, [serviciosParaFiltro, tablaSearch, tablaServicioFilter]);
 
   if (user && user.rol !== 'Administrador' && user.rol !== 'Admin') {
     return <MotoDashboard user={user} />;
@@ -193,7 +227,7 @@ export default function Dashboard({ user }) {
                 </h2>
                 <p className="text-muted" style={{ fontSize: '14px', marginTop: '4px' }}>Desglose financiero por fecha seleccionada</p>
               </div>
-              <button onClick={() => setShowFinanzasModal(false)} style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              <button onClick={() => { setShowFinanzasModal(false); setShowFiltrosTabla(false); }} style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
                 <X size={18} />
               </button>
             </div>
@@ -256,14 +290,46 @@ export default function Dashboard({ user }) {
 
               {/* Tabla Detallada */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', position: 'relative' }}>
                   <h3 style={{ fontSize: '18px', fontWeight: '600' }}>
                     Servicios Completados {filtroActivo === 'dia' ? 'este Día' : filtroActivo === 'semana' ? 'esta Semana' : 'este Mes'}
                   </h3>
-                  <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => setShowFiltrosTabla(!showFiltrosTabla)}
+                    style={{ padding: '6px 12px', fontSize: '13px', backgroundColor: showFiltrosTabla ? 'var(--card-bg)' : '' }}
+                  >
                     <Filter size={14} /> Filtrar
                   </button>
                 </div>
+                
+                {showFiltrosTabla && (
+                  <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1', minWidth: '200px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>Buscar por Cliente o Trabajador</label>
+                      <input 
+                        type="text" 
+                        value={tablaSearch}
+                        onChange={(e) => setTablaSearch(e.target.value)}
+                        placeholder="Ej. Juan, María..."
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ flex: '1', minWidth: '200px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>Filtrar por Servicio</label>
+                      <select 
+                        value={tablaServicioFilter}
+                        onChange={(e) => setTablaServicioFilter(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
+                      >
+                        <option value="todos">Todos los servicios</option>
+                        {uniqueServicios.map(serv => (
+                          <option key={serv} value={serv}>{serv}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
                 
                 <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -278,22 +344,30 @@ export default function Dashboard({ user }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {finanzasDetalladas.servicios.map((s, i) => (
-                        <tr key={s.id} style={{ borderBottom: i === finanzasDetalladas.servicios.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.trabajadores?.nombre || 'Sin asignar'}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px' }}>
-                            <span style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
-                              {s.servicio}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>Efectivo/QR</td>
-                          <td style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', textAlign: 'right', color: 'var(--accent-green)' }}>
-                            Bs {s.precio}
+                      {serviciosMostrados.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            No se encontraron servicios que coincidan con los filtros.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        serviciosMostrados.map((s, i) => (
+                          <tr key={s.id} style={{ borderBottom: i === serviciosMostrados.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora || (s.created_at ? new Date(s.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--')}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente_nombre || s.cliente}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.trabajadores?.nombre || 'Sin asignar'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                              <span style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
+                                {s.servicio}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>Efectivo/QR</td>
+                            <td style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', textAlign: 'right', color: 'var(--accent-green)' }}>
+                              Bs {s.precio_total || s.precio || 0}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
