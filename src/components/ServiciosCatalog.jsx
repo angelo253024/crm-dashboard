@@ -22,16 +22,7 @@ export default function ServiciosCatalog() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Forzar el body a un fondo oscuro para el catálogo independientemente del tema de la landing
-    document.body.style.backgroundColor = '#121212';
-    document.body.style.color = '#ffffff';
     fetchServicios();
-
-    return () => {
-      // Limpiar los estilos al salir
-      document.body.style.backgroundColor = '';
-      document.body.style.color = '';
-    }
   }, []);
 
   const fetchServicios = async () => {
@@ -121,12 +112,12 @@ export default function ServiciosCatalog() {
       {/* Header del Catálogo */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-          <Droplets size={32} color="#1CA9C9" />
+          <Droplets size={32} color="var(--accent-green)" />
         </div>
         <h1 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '16px', letterSpacing: '-1px' }}>
-          Catálogo de <span style={{ color: '#1CA9C9' }}>Servicios</span>
+          Catálogo de <span style={{ color: 'var(--accent-green)' }}>Servicios</span>
         </h1>
-        <p style={{ color: '#888', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
           Selecciona el paquete de lavado ideal para tu vehículo. Agendaremos tu servicio a domicilio.
         </p>
       </div>
@@ -140,9 +131,9 @@ export default function ServiciosCatalog() {
             style={{
               padding: '8px 20px',
               borderRadius: '30px',
-              border: categoriaActiva === cat ? 'none' : '1px solid #333',
-              backgroundColor: categoriaActiva === cat ? '#1CA9C9' : 'transparent',
-              color: categoriaActiva === cat ? '#fff' : '#aaa',
+              border: categoriaActiva === cat ? 'none' : '1px solid var(--border-color)',
+              backgroundColor: categoriaActiva === cat ? 'var(--accent-green)' : 'transparent',
+              color: categoriaActiva === cat ? '#fff' : 'var(--text-muted)',
               fontSize: '14px',
               fontWeight: '500',
               cursor: 'pointer',
@@ -156,22 +147,22 @@ export default function ServiciosCatalog() {
 
       {/* Grid de Servicios */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Cargando catálogo...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Cargando catálogo...</div>
       ) : filteredServicios.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>No hay servicios disponibles en esta categoría.</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No hay servicios disponibles en esta categoría.</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
           {filteredServicios.map(servicio => (
             <div 
               key={servicio.id} 
               style={{
-                backgroundColor: '#1E1E1E',
+                backgroundColor: 'var(--card-bg)',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 cursor: 'pointer',
                 opacity: servicio.disponible !== false ? 1 : 0.6,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                boxShadow: 'var(--shadow-card)',
                 display: 'flex',
                 flexDirection: 'column'
               }}
@@ -179,30 +170,30 @@ export default function ServiciosCatalog() {
               onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
             >
               {/* Imagen del Servicio */}
-              <div style={{ height: '220px', backgroundColor: '#2A2A2A', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+              <div style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                 {servicio.imagen_url ? (
                   <img src={servicio.imagen_url} alt={servicio.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#555' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-muted)' }}>
                     <ImageIcon size={48} style={{ marginBottom: '8px' }} />
                     <span style={{ fontSize: '12px' }}>IMAGEN DEL SERVICIO</span>
                   </div>
                 )}
                 
-                <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', color: '#1CA9C9', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'var(--accent-dark)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
                   {servicio.categoria}
                 </div>
               </div>
 
               {/* Info del Servicio */}
               <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#fff' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
                   {servicio.nombre}
                 </h3>
                 
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
-                  <div style={{ color: '#1CA9C9', fontSize: '24px', fontWeight: '800' }}>
-                    <span style={{ fontSize: '14px', color: '#aaa', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
+                  <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
                     {servicio.precio}
                   </div>
                   
@@ -229,52 +220,52 @@ export default function ServiciosCatalog() {
 
       {/* Modal de Reserva */}
       {showModal && selectedService && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: '#1E1E1E', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '450px', border: '1px solid #333' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '450px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-card)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff' }}>Agendar Servicio</h2>
-              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={24} /></button>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Agendar Servicio</h2>
+              <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
             </div>
 
             {success ? (
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                <CheckCircle size={64} color="#1CA9C9" style={{ margin: '0 auto 16px auto' }} />
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff', marginBottom: '8px' }}>¡Reserva Confirmada!</h3>
-                <p style={{ color: '#aaa', marginBottom: '24px' }}>Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.</p>
-                <button onClick={closeModal} style={{ backgroundColor: '#1CA9C9', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                <CheckCircle size={64} color="var(--accent-green)" style={{ margin: '0 auto 16px auto' }} />
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px' }}>¡Reserva Confirmada!</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.</p>
+                <button onClick={closeModal} style={{ backgroundColor: 'var(--accent-green)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
                   Volver al Catálogo
                 </button>
               </div>
             ) : (
               <form onSubmit={submitReservation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 
-                <div style={{ backgroundColor: '#2A2A2A', padding: '16px', borderRadius: '8px', marginBottom: '8px' }}>
-                  <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '4px' }}>Servicio Seleccionado</div>
+                <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', marginBottom: '8px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>Servicio Seleccionado</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: '600', color: '#fff' }}>{selectedService.nombre}</div>
-                    <div style={{ color: '#1CA9C9', fontWeight: 'bold' }}>Bs.{selectedService.precio}</div>
+                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{selectedService.nombre}</div>
+                    <div style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>Bs.{selectedService.precio}</div>
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Tu Nombre</label>
-                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff' }} />
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
+                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Vehículo (Marca y Modelo)</label>
-                  <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff' }} />
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Vehículo (Marca y Modelo)</label>
+                  <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Fecha</label>
-                    <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff', colorScheme: 'dark' }} />
+                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fecha</label>
+                    <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '14px', color: '#aaa', marginBottom: '6px' }}>Hora</label>
-                    <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #333', backgroundColor: '#121212', color: '#fff', colorScheme: 'dark' }} />
+                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Hora</label>
+                    <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                   </div>
                 </div>
 

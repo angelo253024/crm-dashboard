@@ -1,20 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
 :root {
-  --bg-color: #f4f6f1; 
+  --bg-color: #f8fafc; 
   --card-bg: #ffffff;
-  --text-main: #111827;
-  --text-muted: #6b7280;
-  --text-light: #9ca3af;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-light: #94a3b8;
   
   /* Brand colors (LAVAMOVIL NORTE) */
   --accent-orange: #ff6b6b;
   --accent-orange-light: #ffe5e5;
-  --accent-green: #00a2e8; /* Cyan from image */
-  --accent-green-light: #e0f7fa;
-  --accent-green-text: #0076a8;
-  --accent-dark: #0f1c3f; /* Deep navy blue */
-  --border-color: #e5e7eb;
+  --accent-green: #1CA9C9; /* Cyan from image */
+  --accent-green-light: rgba(28, 169, 201, 0.1);
+  --accent-green-text: #168a9c;
+  --accent-dark: #1E4C9A; /* Deep blue from image */
+  --border-color: #e2e8f0;
   --sidebar-active-bg: #00a2e8; 
 
   --sidebar-active-text: #ffffff;
@@ -29,19 +29,19 @@
 }
 
 .dark {
-  --bg-color: #111827; 
-  --card-bg: #1f2937;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --text-light: #6b7280;
+  --bg-color: #0b1121; 
+  --card-bg: #111827;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
   
-  --border-color: #374151;
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.2);
-  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --border-color: #1e293b;
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.5);
   
   /* Mantener el branding */
-  --accent-dark: #3b82f6; /* A lighter blue for better contrast in dark mode buttons */
-  --accent-green: #22d3ee; /* Lighter cyan */
+  --accent-dark: #3b82f6;
+  --accent-green: #22d3ee;
   --accent-green-light: rgba(34, 211, 238, 0.15);
   --accent-green-text: #67e8f9;
 }
