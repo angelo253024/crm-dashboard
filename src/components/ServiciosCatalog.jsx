@@ -1,95 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Clock } from 'lucide-react';
 import { supabase } from '../supabase';
 
-const PromoAd = ({ onBook }) => {
-  return (
-    <div style={{
-      background: 'linear-gradient(135deg, #0f3d6b 0%, #1b5b96 100%)',
-      borderRadius: '24px',
-      padding: '24px',
-      color: 'white',
-      textAlign: 'center',
-      position: 'sticky',
-      top: '24px',
-      boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-      overflow: 'hidden'
-    }}>
-       {/* Fake diagonal lines using CSS background */}
-       <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.02) 20px, rgba(255,255,255,0.02) 40px)',
-          pointerEvents: 'none'
-       }} />
-
-       <div style={{ position: 'relative', zIndex: 1 }}>
-         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-           <span style={{ backgroundColor: '#fff', color: '#0f3d6b', fontSize: '10px', fontWeight: '900', padding: '2px 6px', borderRadius: '4px' }}>Ad</span>
-         </div>
-         
-         {/* Logo */}
-         <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontFamily: 'cursive, "Brush Script MT", sans-serif', fontSize: '28px', lineHeight: '1' }}>Lava</div>
-            <div style={{ fontFamily: 'cursive, "Brush Script MT", sans-serif', fontSize: '32px', color: '#1ccaff', lineHeight: '1' }}>Móvil</div>
-            <div style={{ fontSize: '10px', letterSpacing: '6px', fontWeight: 'bold', marginTop: '4px' }}>N O R T E</div>
-         </div>
-
-         {/* Car Image Placeholder */}
-         <div style={{ backgroundColor: 'rgba(255,255,255,0.1)', height: '110px', borderRadius: '12px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', marginBottom: '24px', paddingBottom: '8px', fontSize: '10px', letterSpacing: '1px', borderBottom: '2px solid #1ccaff' }}>
-           JIMNY • SUZUKI ALTO
-         </div>
-
-         {/* Text content */}
-         <div style={{ fontFamily: 'cursive, "Brush Script MT", sans-serif', fontSize: '38px', marginBottom: '8px' }}>Lavado</div>
-         <div style={{ border: '2px solid rgba(255,255,255,0.3)', borderRadius: '20px', padding: '6px 20px', display: 'inline-block', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '24px', fontSize: '14px' }}>
-           CLÁSICO
-         </div>
-
-         {/* Circle P */}
-         <div style={{ width: '64px', height: '64px', backgroundColor: '#1ccaff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', fontSize: '32px', fontWeight: '900', color: '#0f3d6b' }}>
-           P
-         </div>
-
-         <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>Ideal para autos pequeños</div>
-
-         <div style={{ fontSize: '56px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px', lineHeight: 1 }}>
-           <span style={{ fontSize: '24px' }}>Bs.</span> 60
-         </div>
-         <div style={{ fontSize: '11px', letterSpacing: '2px', fontWeight: 'bold', color: '#1ccaff', marginBottom: '24px' }}>
-           PRECIO CLÁSICO
-         </div>
-
-         {/* Premium Box */}
-         <div style={{ border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-           <div style={{ fontSize: '13px', fontWeight: 'bold' }}>VERSIÓN PREMIUM</div>
-           <div style={{ fontSize: '18px', fontWeight: '900', color: '#1ccaff' }}>Bs.120</div>
-         </div>
-
-         <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px', lineHeight: '1.4' }}>
-           *En caso de exceso de pelo o barro, se cobrará un costo adicional de 10 a 20Bs.
-         </div>
-
-         {/* CTA */}
-         <button 
-           onClick={onBook}
-           style={{ backgroundColor: '#1ccaff', color: '#0f3d6b', border: 'none', width: '100%', padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '900', cursor: 'pointer', transition: 'transform 0.2s' }}
-           onMouseOver={e => e.currentTarget.style.transform = 'scale(1.02)'}
-           onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
-         >
-           ¡Agenda tu lavado hoy!
-           <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '4px', color: '#0f3d6b' }}>
-             Visítanos en Lava Móvil Norte
-           </div>
-         </button>
-
-       </div>
-    </div>
-  )
-}
-
 export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [servicios, setServicios] = useState([]);
+  const location = useLocation();
   const [categorias, setCategorias] = useState(['Todos']);
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
   const [loading, setLoading] = useState(true);
@@ -114,16 +30,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   const fetchServicios = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching servicios:', error);
-    } else {
-      setServicios(data || []);
-      const cats = ['Todos', ...new Set((data || []).map(s => s.categoria).filter(Boolean))];
-      setCategorias(cats);
+  useEffect(() => {
+    // Si venimos de LandingPage con el state openService, abrirlo automáticamente
+    if (location.state?.openService && servicios.length > 0) {
+      const srv = servicios.find(s => s.codigo === location.state.openService);
+      if (srv) {
+        handleBook(srv);
+        // Limpiamos el state para que no se re-abra si refresca la página
+        window.history.replaceState({}, document.title);
+      }
     }
-    setLoading(false);
-  };
+  }, [location.state, servicios]);
 
   const handleBook = (servicio) => {
     setSelectedService(servicio);
@@ -272,101 +189,82 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       ) : filteredServicios.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No hay servicios disponibles en esta categoría.</div>
       ) : (
-        <div style={{ display: 'flex', gap: '32px', maxWidth: '1200px', margin: '0 auto', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          
-          {/* Columna Principal - Catálogo */}
-          <div style={{ flex: '1 1 600px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-              {filteredServicios.map(servicio => (
-                <div 
-                  key={servicio.id} 
-                  style={{
-                    backgroundColor: 'var(--card-bg)',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    cursor: 'pointer',
-                    opacity: servicio.disponible !== false ? 1 : 0.6,
-                    boxShadow: 'var(--shadow-card)',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                  onMouseOver={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(-4px)' }}
-                  onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                  {/* Imagen del Servicio */}
-                  <div style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-                    {servicio.imagen_url ? (
-                      <img src={servicio.imagen_url} alt={servicio.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-muted)' }}>
-                        <ImageIcon size={48} style={{ marginBottom: '8px' }} />
-                        <span style={{ fontSize: '12px' }}>IMAGEN DEL SERVICIO</span>
-                      </div>
-                    )}
-                    
-                    <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'var(--accent-dark)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                      {servicio.categoria}
-                    </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+          {filteredServicios.map(servicio => (
+            <div 
+              key={servicio.id} 
+              style={{
+                backgroundColor: 'var(--card-bg)',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                cursor: 'pointer',
+                opacity: servicio.disponible !== false ? 1 : 0.6,
+                boxShadow: 'var(--shadow-card)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              onMouseOver={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(-4px)' }}
+              onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              {/* Imagen del Servicio */}
+              <div style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                {servicio.imagen_url ? (
+                  <img src={servicio.imagen_url} alt={servicio.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-muted)' }}>
+                    <ImageIcon size={48} style={{ marginBottom: '8px' }} />
+                    <span style={{ fontSize: '12px' }}>IMAGEN DEL SERVICIO</span>
                   </div>
-
-                  {/* Info del Servicio */}
-                  <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
-                      {servicio.nombre}
-                    </h3>
-                    
-                    {servicio.descripcion && (
-                      <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-                        {servicio.descripcion}
-                      </p>
-                    )}
-                    
-                    {servicio.tiempo_estimado && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontWeight: 'bold' }}>
-                        <Clock size={14} /> <span>{servicio.tiempo_estimado}</span>
-                      </div>
-                    )}
-                    
-                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
-                      <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
-                        <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
-                        {servicio.precio}
-                      </div>
-                      
-                      {servicio.disponible !== false ? (
-                        <button 
-                          onClick={() => handleBook(servicio)}
-                          style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} 
-                          onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} 
-                          onMouseOut={(e) => e.target.style.backgroundColor = '#1E4C9A'}
-                        >
-                          Agregar
-                        </button>
-                      ) : (
-                        <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                          No Disponible
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                )}
+                
+                <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: 'var(--accent-dark)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {servicio.categoria}
                 </div>
-              ))}
+              </div>
+
+              {/* Info del Servicio */}
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
+                  {servicio.nombre}
+                </h3>
+                
+                {servicio.descripcion && (
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+                    {servicio.descripcion}
+                  </p>
+                )}
+                
+                {servicio.tiempo_estimado && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontWeight: 'bold' }}>
+                    <Clock size={14} /> <span>{servicio.tiempo_estimado}</span>
+                  </div>
+                )}
+                
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
+                  <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
+                    {servicio.precio}
+                  </div>
+                  
+                  {servicio.disponible !== false ? (
+                    <button 
+                      onClick={() => handleBook(servicio)}
+                      style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} 
+                      onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} 
+                      onMouseOut={(e) => e.target.style.backgroundColor = '#1E4C9A'}
+                    >
+                      Agregar
+                    </button>
+                  ) : (
+                    <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      No Disponible
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Columna Lateral - Anuncio */}
-          <div style={{ flex: '1 1 320px', maxWidth: '400px', margin: '0 auto' }}>
-            <PromoAd onBook={() => {
-              const clasicoP = servicios.find(s => s.codigo === 'CLAS-P00');
-              if (clasicoP) {
-                handleBook(clasicoP);
-              } else {
-                alert('Este servicio actualmente no está disponible en el catálogo.');
-              }
-            }} />
-          </div>
-
+          ))}
         </div>
       )}
 
