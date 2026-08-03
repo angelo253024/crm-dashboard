@@ -311,7 +311,7 @@ export default function MotoDashboard({ user }) {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {res.estado_reserva === 'asignado' ? (
                   <>
                     <button onClick={() => aceptarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
@@ -322,17 +322,14 @@ export default function MotoDashboard({ user }) {
                     </button>
                   </>
                 ) : (
-                  <>
-                    <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                      <Check size={18} /> Marcar Lavado Terminado
-                    </button>
-                    {res.chat_session_id && (
-                      <button onClick={() => setActiveChatSession(res.chat_session_id)} style={{ padding: '12px', backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                        <MessageSquare size={18} /> Abrir Chat Cliente
-                      </button>
-                    )}
-                  </>
+                  <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <Check size={18} /> Marcar Lavado Terminado
+                  </button>
                 )}
+                
+                <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare size={18} /> Abrir Chat Cliente
+                </button>
               </div>
             </div>
           ))}
