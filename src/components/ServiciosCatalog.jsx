@@ -82,8 +82,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     const { error } = await supabase.from('reservas').insert([
       {
-        cliente_nombre: clienteNombre,
-        cliente_telefono: clienteTelefono,
+        cliente_nombre: `${clienteNombre} (Tel: ${clienteTelefono})`,
         ubicacion_gps: ubicacionGps,
         vehiculo: vehiculo,
         fecha_reserva: fechaReserva,
@@ -96,7 +95,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     if (error) {
       console.error('Error guardando reserva:', error);
-      alert('Hubo un error al procesar tu reserva. Inténtalo de nuevo.');
+      alert(`Hubo un error al procesar tu reserva. Inténtalo de nuevo. Detalle: ${error.message || JSON.stringify(error)}`);
     } else {
       setSuccess(true);
       
