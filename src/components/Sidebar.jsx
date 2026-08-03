@@ -101,39 +101,41 @@ export default function Sidebar({ user }) {
           <Home size={20} />
           <span>Resumen</span>
         </NavLink>
-        <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <CalendarClock size={20} />
-          <span>Citas / Agenda</span>
-        </NavLink>
-        <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Map size={20} />
-          <span>Mapa / Zonas</span>
-        </NavLink>
-        <NavLink to="/trabajadores" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Users size={20} />
-          <span>Trabajadores</span>
-        </NavLink>
-        <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <CarFront size={20} />
-          <span>Clientes</span>
-        </NavLink>
-        <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Package size={20} />
-          <span>Servicios</span>
-        </NavLink>
-        <NavLink to="/promos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Tag size={20} />
-          <span>Promos</span>
-        </NavLink>
-        <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Bot size={20} />
-          <span>Admin Bot</span>
-        </NavLink>
         {(user?.rol === 'Administrador' || user?.rol === 'Admin') && (
-          <NavLink to="/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <Clock size={20} />
-            <span>Horarios</span>
-          </NavLink>
+          <>
+            <NavLink to="/citas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <CalendarClock size={20} />
+              <span>Citas / Agenda</span>
+            </NavLink>
+            <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Map size={20} />
+              <span>Mapa / Zonas</span>
+            </NavLink>
+            <NavLink to="/trabajadores" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Users size={20} />
+              <span>Trabajadores</span>
+            </NavLink>
+            <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <CarFront size={20} />
+              <span>Clientes</span>
+            </NavLink>
+            <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Package size={20} />
+              <span>Servicios</span>
+            </NavLink>
+            <NavLink to="/promos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Tag size={20} />
+              <span>Promos</span>
+            </NavLink>
+            <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Bot size={20} />
+              <span>Admin Bot</span>
+            </NavLink>
+            <NavLink to="/horarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Clock size={20} />
+              <span>Horarios</span>
+            </NavLink>
+          </>
         )}
       </nav>
 

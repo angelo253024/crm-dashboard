@@ -14,11 +14,19 @@ export default function Dashboard({ user }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [promos, setPromos] = useState([]);
   const [reservas, setReservas] = useState([]);
+  const [trabajadores, setTrabajadores] = useState([]);
+  const [selectedTrabajador, setSelectedTrabajador] = useState('todos');
   
   useEffect(() => {
     fetchPromos();
     fetchReservas();
+    fetchTrabajadores();
   }, []);
+
+  const fetchTrabajadores = async () => {
+    const { data } = await supabase.from('trabajadores').select('id, nombre');
+    if (data) setTrabajadores(data);
+  };
 
   const fetchPromos = async () => {
     const { data, error } = await supabase.from('promociones').select('*');
@@ -36,17 +44,22 @@ export default function Dashboard({ user }) {
 
   // Calculate KPIs
   const kpis = useMemo(() => {
+    let filteredReservas = reservas;
+    if (selectedTrabajador !== 'todos') {
+      filteredReservas = reservas.filter(r => r.trabajador_id === selectedTrabajador);
+    }
+    
     const today = new Date().toISOString().split('T')[0];
     
     // Filtros de fecha básicos
-    const todayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
+    const todayReservas = filteredReservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
     const thisMonth = new Date().toISOString().substring(0, 7);
-    const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
+    const monthReservas = filteredReservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
     
     // Semana actual (aproximación)
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const weekReservas = reservas.filter(r => {
+    const weekReservas = filteredReservas.filter(r => {
       const d = new Date(r.fecha_reserva || r.created_at);
       return d >= oneWeekAgo && d <= now;
     });
@@ -59,23 +72,28 @@ export default function Dashboard({ user }) {
       ingresosMes: sumIngresos(monthReservas),
       serviciosHoy: todayReservas.length
     };
-  }, [reservas]);
+  }, [reservas, selectedTrabajador]);
 
   // Simulador de datos basado en la fecha seleccionada para el modal
   const finanzasDetalladas = useMemo(() => {
-    const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || 0), 0);
+    let filteredReservas = reservas;
+    if (selectedTrabajador !== 'todos') {
+      filteredReservas = reservas.filter(r => r.trabajador_id === selectedTrabajador);
+    }
+
+    const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || r.precio || 0), 0);
     
-    const dayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === selectedDate);
+    const dayReservas = filteredReservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === selectedDate);
     
     const dDate = new Date(selectedDate);
     const oneWeekAgo = new Date(dDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const weekReservas = reservas.filter(r => {
+    const weekReservas = filteredReservas.filter(r => {
       const d = new Date(r.fecha_reserva || r.created_at);
       return d >= oneWeekAgo && d <= dDate;
     });
 
     const monthStr = selectedDate.substring(0, 7);
-    const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(monthStr));
+    const monthReservas = filteredReservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(monthStr));
 
     return {
       dia: sumIngresos(dayReservas),
@@ -83,7 +101,7 @@ export default function Dashboard({ user }) {
       mes: sumIngresos(monthReservas),
       servicios: dayReservas
     };
-  }, [selectedDate, reservas]);
+  }, [selectedDate, reservas, selectedTrabajador]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
 
@@ -116,6 +134,20 @@ export default function Dashboard({ user }) {
         <div className="chart-header">
           <h2 className="text-h2">Visión General del Rendimiento</h2>
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+          <select 
+            value={selectedTrabajador} 
+            onChange={(e) => setSelectedTrabajador(e.target.value)}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', outline: 'none' }}
+          >
+            <option value="todos">Todos los Trabajadores</option>
+            {trabajadores.map(t => (
+              <option key={t.id} value={t.id}>{t.nombre}</option>
+            ))}
+          </select>
+        </div>
+
         <KpiCards kpis={kpis} onCardClick={(type) => { setFiltroActivo(type); setShowFinanzasModal(true); }} />
       </div>
 

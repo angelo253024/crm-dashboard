@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { MapPin, Check, X, Bell, User } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote } from 'lucide-react';
+import KpiCards from './KpiCards';
 
 export default function MotoDashboard({ user }) {
   const [estado, setEstado] = useState('inactivo');
   const [reservas, setReservas] = useState([]);
+  const [todasReservas, setTodasReservas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,14 +47,36 @@ export default function MotoDashboard({ user }) {
       .from('reservas')
       .select('*')
       .eq('trabajador_id', user.id)
-      .in('estado_reserva', ['asignado', 'en_camino'])
       .order('created_at', { ascending: false });
     
     if (data) {
-      setReservas(data);
+      setTodasReservas(data);
+      setReservas(data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino'));
     }
     setLoading(false);
   };
+
+  const kpis = React.useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayReservas = todasReservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
+    const thisMonth = new Date().toISOString().substring(0, 7);
+    const monthReservas = todasReservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekReservas = todasReservas.filter(r => {
+      const d = new Date(r.fecha_reserva || r.created_at);
+      return d >= oneWeekAgo && d <= now;
+    });
+
+    const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || r.precio || 0), 0);
+
+    return {
+      ingresosDia: sumIngresos(todayReservas),
+      ingresosSemana: sumIngresos(weekReservas),
+      ingresosMes: sumIngresos(monthReservas),
+      serviciosHoy: todayReservas.filter(r => r.estado_reserva === 'completado').length
+    };
+  }, [todasReservas]);
 
   const toggleEstado = async () => {
     const nuevoEstado = estado === 'disponible' ? 'ocupado' : 'disponible';
@@ -118,6 +142,11 @@ export default function MotoDashboard({ user }) {
         <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
           <Bell size={16} /> Activar Notificaciones
         </button>
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <h2 className="text-h2" style={{ marginBottom: '16px' }}>Tus Ingresos Generados</h2>
+        <KpiCards kpis={kpis} />
       </div>
 
       <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-color)' }}>

@@ -13,6 +13,7 @@ export default function AdminServicios() {
   
   // Form State
   const [nombre, setNombre] = useState('');
+  const [codigo, setCodigo] = useState('');
   const [categoria, setCategoria] = useState('Lavado Clásico');
   const [precio, setPrecio] = useState('');
   const [disponible, setDisponible] = useState(true);
@@ -85,6 +86,7 @@ export default function AdminServicios() {
 
   const resetForm = () => {
     setNombre('');
+    setCodigo('');
     setCategoria('Lavado Clásico');
     setPrecio('');
     setDisponible(true);
@@ -99,6 +101,7 @@ export default function AdminServicios() {
 
   const openEditModal = (servicio) => {
     setNombre(servicio.nombre || '');
+    setCodigo(servicio.codigo || '');
     setCategoria(servicio.categoria || 'Lavado Clásico');
     setPrecio(servicio.precio || '');
     setDisponible(servicio.disponible !== false); // Default true if undefined
@@ -113,6 +116,7 @@ export default function AdminServicios() {
     
     const serviceData = {
       nombre,
+      codigo,
       categoria,
       precio: parseFloat(precio),
       disponible,
@@ -217,7 +221,10 @@ export default function AdminServicios() {
                 
                 <div style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <h3 className="text-body font-semibold" style={{ lineHeight: '1.2' }}>{s.nombre}</h3>
+                    <div>
+                      <h3 className="text-body font-semibold" style={{ lineHeight: '1.2' }}>{s.nombre}</h3>
+                      {s.codigo && <span style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'inline-block', marginTop: '4px' }}>{s.codigo}</span>}
+                    </div>
                     <span className="font-bold" style={{ color: 'var(--accent-green)' }}>Bs.{s.precio}</span>
                   </div>
                   <div className="text-small text-muted" style={{ marginBottom: '16px' }}>{s.categoria}</div>
@@ -260,15 +267,27 @@ export default function AdminServicios() {
             
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              <div className="form-group">
-                <label>Nombre del Servicio</label>
-                <input 
-                  type="text" 
-                  value={nombre} 
-                  onChange={(e) => setNombre(e.target.value)} 
-                  required 
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
-                />
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div className="form-group" style={{ flex: 2 }}>
+                  <label>Nombre del Servicio</label>
+                  <input 
+                    type="text" 
+                    value={nombre} 
+                    onChange={(e) => setNombre(e.target.value)} 
+                    required 
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                  />
+                </div>
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label>Código</label>
+                  <input 
+                    type="text" 
+                    value={codigo} 
+                    onChange={(e) => setCodigo(e.target.value)} 
+                    placeholder="Ej. LAV-001"
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '16px' }}>
