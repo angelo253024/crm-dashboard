@@ -81,8 +81,9 @@ export class HybridAIService {
           // Guardar en caché para futuras consultas asíncronamente
           CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
         }
+        }
       }
-
+      
     } catch (error) {
       console.error("Error en HybridAIService:", error);
       finalResponse = "Ocurrió un error inesperado al procesar tu mensaje.";
