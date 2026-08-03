@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check, Users } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
@@ -10,6 +10,10 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   // Notificaciones State
   const [notificaciones, setNotificaciones] = useState([]);
   const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
+
+  // Trabajadores State
+  const [trabajadores, setTrabajadores] = useState([]);
+  const [isWorkersMenuOpen, setIsWorkersMenuOpen] = useState(false);
 
   // Estados del modal de edición
   const [formData, setFormData] = useState({
@@ -32,7 +36,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
 
   useEffect(() => {
     fetchNotificaciones();
-    checkRetentionPolicy();
+    fetchTrabajadores();
     
     // Suscribirse a cambios en tiempo real
     const channel = supabase
@@ -47,58 +51,35 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
           const notifDate = new Date(payload.new.fecha);
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
-            
-            // Mostrar el pop-up automáticamente
-            setIsNotifMenuOpen(true);
-            
-            // Ocultarlo después de 6 segundos automáticamente
-            setTimeout(() => {
-              setIsNotifMenuOpen(false);
-            }, 6000);
           }
+        }
+      )
+      .subscribe();
+
+    const channelTrabajadores = supabase
+      .channel('trabajadores-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'trabajadores' },
+        (payload) => {
+          fetchTrabajadores();
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(channelTrabajadores);
     };
   }, []);
 
-  const checkRetentionPolicy = async () => {
-    if (user?.rol !== 'Administrador' && user?.rol !== 'Admin') return;
-
-    const today = new Date();
-    const day = today.getDate();
-    
-    // Notificar al admin a final de mes (27 en adelante)
-    if (day >= 27) {
-      const todayStr = today.toISOString().split('T')[0];
-      const { data } = await supabase
-        .from('notificaciones')
-        .select('id')
-        .gte('fecha', todayStr)
-        .eq('titulo', 'Borrado Mensual de Horarios');
-        
-      if (!data || data.length === 0) {
-        await supabase.from('notificaciones').insert([{
-          titulo: 'Borrado Mensual de Horarios',
-          mensaje: `Aviso del Sistema: El día 1 se borrarán automáticamente los registros de horarios con más de 30 días de antigüedad para no saturar el sistema.`,
-          tipo: 'warning'
-        }]);
-      }
-    }
-    
-    // Ejecutar limpieza a principios de mes (días 1 al 3)
-    if (day <= 3) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const fetchTrabajadores = async () => {
+    const { data } = await supabase
+      .from('trabajadores')
+      .select('*')
+      .order('nombre', { ascending: true });
       
-      await supabase
-        .from('trabajador_horarios')
-        .delete()
-        .lt('fecha', thirtyDaysAgo.toISOString().split('T')[0]);
-    }
+    if (data) setTrabajadores(data);
   };
 
   const fetchNotificaciones = async () => {
@@ -152,38 +133,6 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
     }
   };
 
-  const handleLogout = async () => {
-    if (user && user.id !== 'local-demo') {
-      try {
-        // Buscar si hay un registro de hora_ingreso de hoy sin hora_salida
-        const { data: horarios } = await supabase
-          .from('trabajador_horarios')
-          .select('id')
-          .eq('trabajador_id', user.id)
-          .is('hora_salida', null)
-          .order('created_at', { ascending: false })
-          .limit(1);
-  
-        if (horarios && horarios.length > 0) {
-          await supabase
-            .from('trabajador_horarios')
-            .update({ hora_salida: new Date().toISOString() })
-            .eq('id', horarios[0].id);
-        }
-        
-        // Cambiar estado a inactivo
-        await supabase
-          .from('trabajadores')
-          .update({ estado_disponibilidad: 'inactivo' })
-          .eq('id', user.id);
-      } catch (err) {
-        console.error("Error al cerrar sesión:", err);
-      }
-    }
-    
-    setUser(null);
-  };
-
   const getNotifColor = (tipo) => {
     switch (tipo) {
       case 'success': return '#10b981';
@@ -194,11 +143,6 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
   };
 
   const handleNuevoServicioClick = () => {
-    if (user?.rol === 'Trabajador') {
-      window.open('/', '_blank');
-      return;
-    }
-    
     if (window.location.pathname === '/servicios') {
       window.dispatchEvent(new CustomEvent('openNewServiceModal'));
     } else {
@@ -225,9 +169,72 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
         >
           <MessageSquare size={16} /> Chatbot
         </button>
-        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white', whiteSpace: 'nowrap' }}>
-          <Plus size={16} /> {user?.rol === 'Trabajador' ? 'Adicionar Servicio' : 'Nuevo Servicio'}
+        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
+          <Plus size={16} /> Nuevo Servicio
         </button>
+
+        {/* Trabajadores Status Button */}
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={() => setIsWorkersMenuOpen(!isWorkersMenuOpen)}
+            style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
+          >
+            <Users size={16} className="text-muted" /> Trabajadores
+          </button>
+
+          {isWorkersMenuOpen && (
+            <div style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: '12px',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+              border: '1px solid var(--border-color)',
+              zIndex: 100,
+              width: '280px',
+              animation: 'fadeIn 0.2s ease-out'
+            }}>
+              <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Estado del Personal</h3>
+              </div>
+              <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                {trabajadores.length === 0 ? (
+                  <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No hay trabajadores
+                  </div>
+                ) : (
+                  trabajadores.map(t => (
+                    <div key={t.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {t.foto_url ? (
+                          <img src={t.foto_url} alt={t.nombre} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent-cyan)', color: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>
+                            {getInitial(t.nombre)}
+                          </div>
+                        )}
+                        <span style={{ fontSize: '13px', fontWeight: '500' }}>{t.nombre}</span>
+                      </div>
+                      <span style={{ 
+                        fontSize: '11px', 
+                        fontWeight: '600',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        backgroundColor: t.estado === 'Ocupado' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        color: t.estado === 'Ocupado' ? '#ef4444' : '#10b981'
+                      }}>
+                        {t.estado === 'Ocupado' ? 'Ocupado' : (t.estado || 'Disponible')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Notificaciones */}
         <div style={{ position: 'relative' }}>
@@ -356,7 +363,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
                 </button>
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <button className="dropdown-item text-red" onClick={handleLogout}>
+                <button className="dropdown-item text-red" onClick={() => setUser(null)}>
                   <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>

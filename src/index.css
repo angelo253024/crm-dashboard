@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
 :root {
-  --bg-color: linear-gradient(145deg, #e0f2fe 0%, #bae6fd 50%, #e0f2fe 100%); 
-  --card-bg: rgba(255, 255, 255, 0.85);
+  --bg-color: #f8fafc; 
+  --card-bg: #ffffff;
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-light: #94a3b8;
@@ -29,8 +29,8 @@
 }
 
 .dark {
-  --bg-color: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
-  --card-bg: rgba(17, 24, 39, 0.85); /* Slightly transparent cards to see the water */
+  --bg-color: #0b1121; 
+  --card-bg: #111827;
   --text-main: #ffffff;
   --text-muted: #94a3b8;
   --text-light: #64748b;
@@ -54,8 +54,7 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: var(--bg-color);
-  background-attachment: fixed;
+  background-color: var(--bg-color);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
 }
@@ -87,7 +86,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100dvh;
+  height: 100vh;
   width: 100vw;
   background-color: #111827; /* Dark background */
   position: relative;
@@ -114,16 +113,8 @@ body {
   padding: 40px;
   width: 100%;
   max-width: 400px;
-  margin: 16px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   z-index: 1;
-}
-
-@media (max-width: 480px) {
-  .login-card {
-    padding: 32px 24px;
-    margin: 16px;
-  }
 }
 
 .login-form {
@@ -586,6 +577,7 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
+  background-color: #0b1121; /* Dark blueish background */
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -593,7 +585,6 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  background-attachment: fixed;
 }
 
 /* Water drop background effects */
@@ -604,7 +595,7 @@ body {
   left: -10%;
   width: 500px;
   height: 500px;
-  background: radial-gradient(circle, rgba(28, 169, 201, 0.25) 0%, rgba(28, 169, 201, 0) 70%);
+  background: radial-gradient(circle, rgba(28, 169, 201, 0.15) 0%, rgba(28, 169, 201, 0) 70%);
   border-radius: 50%;
   z-index: 0;
   animation: floatBubble 8s ease-in-out infinite alternate;
@@ -616,7 +607,7 @@ body {
   right: -10%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(16, 128, 196, 0.25) 0%, rgba(30, 76, 154, 0) 70%);
+  background: radial-gradient(circle, rgba(30, 76, 154, 0.15) 0%, rgba(30, 76, 154, 0) 70%);
   border-radius: 50%;
   z-index: 0;
   animation: floatBubble 10s ease-in-out infinite alternate-reverse;
@@ -701,12 +692,11 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Light mode overrides for landing page */
+/* Light mode specific landing page styles */
 body:not(.dark) .landing-page {
+  background-color: #f8fafc;
   color: #0f172a;
 }
-/* No logo filter here, keep it original */
-
 body:not(.dark) .theme-toggle-btn {
   border-color: rgba(0, 0, 0, 0.2);
   color: #0f172a;
@@ -723,34 +713,39 @@ body:not(.dark) .landing-links a:hover {
 body:not(.dark) .landing-text {
   color: #475569;
 }
-body:not(.dark) .landing-subtitle {
-  color: #1E4C9A;
+body:not(.dark) .landing-link-secondary {
+  color: #475569;
+}
+body:not(.dark) .landing-link-secondary:hover {
+  color: #0f172a;
 }
 body:not(.dark) .stat-card {
-  background-color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+body:not(.dark) .stat-card::before {
+  background: linear-gradient(90deg, transparent, #1E4C9A, transparent);
 }
 body:not(.dark) .stat-label {
   color: #475569;
 }
 body:not(.dark) .stat-value {
+  background: linear-gradient(135deg, #1E4C9A 0%, #1CA9C9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+body:not(.dark) .landing-description {
+  color: #0f172a;
+}
+body:not(.dark) .landing-subtitle {
   color: #1E4C9A;
 }
-body:not(.dark) .btn-landing-primary {
-  background: #1E4C9A; /* Dark blue for better contrast in light mode */
-  box-shadow: 0 4px 15px rgba(30, 76, 154, 0.3);
+body:not(.dark) .btn-landing-large {
+  box-shadow: 0 8px 25px rgba(30, 76, 154, 0.2);
 }
-body:not(.dark) .btn-landing-secondary {
-  background: rgba(255, 255, 255, 0.8);
-  color: #1E4C9A;
-  border: 1px solid rgba(30, 76, 154, 0.2);
-}
-
-/* Fix category buttons in light mode (since active is cyan, we change it to dark blue for contrast) */
-body:not(.dark) button[style*="var(--accent-green)"] {
-  background-color: #1E4C9A !important;
-  color: #ffffff !important;
+body:not(.dark) .btn-landing-large:hover {
+  box-shadow: 0 12px 30px rgba(30, 76, 154, 0.3);
 }
 
 .btn-landing-primary:hover {
@@ -1040,28 +1035,5 @@ body:not(.dark) button[style*="var(--accent-green)"] {
   
   .stat-card {
     width: 100%;
-  }
-}
-
-/* Modal form responsive */
-.modal-form-row {
-  display: flex;
-  gap: 16px;
-}
-
-@media (max-width: 600px) {
-  .modal-form-row {
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  /* Prevent iOS zoom on inputs */
-  input[type="text"],
-  input[type="tel"],
-  input[type="time"],
-  input[type="date"],
-  input[type="email"],
-  input[type="password"] {
-    font-size: 16px !important;
   }
 }

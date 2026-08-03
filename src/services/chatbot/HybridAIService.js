@@ -3,7 +3,7 @@ import { SupabaseQueryService } from './SupabaseQueryService';
 import { CacheService } from './CacheService';
 import { OpenAIService } from './OpenAIService';
 import { supabase } from '../../supabase';
-
+import { v4 as uuidv4 } from 'uuid'; // Fallback if no uuid, but we can just use standard JS random or session string
 
 /**
  * Servicio Orquestador del Bot.
@@ -26,40 +26,9 @@ export class HybridAIService {
       onStatusUpdate("Analizando intención...");
       const intent = IntentClassifier.classify(userMessage);
 
-      // Detección especial de asignación de moto (Si manda ubicación)
-      const isLocation = userMessage.toLowerCase().includes('ubicacion') || userMessage.toLowerCase().includes('ubicación') || userMessage.toLowerCase().includes('estoy en') || userMessage.toLowerCase().includes('avenida') || userMessage.toLowerCase().includes('calle') || userMessage.toLowerCase().includes('barrio');
-      
-      if (intent === 'reservar' && isLocation) {
-        onStatusUpdate("Buscando moto disponible...");
-        const { data: motos } = await supabase
-          .from('trabajadores')
-          .select('id, nombre')
-          .eq('estado_disponibilidad', 'disponible')
-          .eq('rol', 'Trabajador')
-          .limit(1);
-
-        if (motos && motos.length > 0) {
-          const motoAsignada = motos[0];
-          // Asignar reserva
-          await supabase.from('reservas').insert([{
-            cliente_nombre: sessionId === 'web-session' ? 'Cliente Web' : sessionId,
-            servicio: 'Lavado a Domicilio (Chatbot)',
-            estado_reserva: 'asignado',
-            trabajador_id: motoAsignada.id,
-            ubicacion_gps: userMessage,
-            chat_session_id: sessionId
-          }]);
-          
-          finalResponse = `¡Perfecto! Lo atenderá **${motoAsignada.nombre}**. Él va en camino a tu ubicación y puede escribirte por este mismo chat. 🏍️💨`;
-          source = 'supabase';
-        } else {
-          finalResponse = "En este momento todos nuestros lavadores están ocupados. Por favor intenta de nuevo en unos minutos. 🕒";
-          source = 'supabase';
-        }
-      } else {
-        onStatusUpdate("Consultando Base de Datos...");
-        // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
-        const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
+      onStatusUpdate("Consultando Base de Datos...");
+      // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
+      const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
       
       if (localResponse) {
         finalResponse = localResponse;
@@ -83,9 +52,8 @@ export class HybridAIService {
           // Guardar en caché para futuras consultas asíncronamente
           CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
         }
-        }
       }
-      
+
     } catch (error) {
       console.error("Error en HybridAIService:", error);
       finalResponse = "Ocurrió un error inesperado al procesar tu mensaje.";

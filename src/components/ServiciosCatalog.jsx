@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [servicios, setServicios] = useState([]);
-  const location = useLocation();
   const [categorias, setCategorias] = useState(['Todos']);
   const [categoriaActiva, setCategoriaActiva] = useState('Todos');
   const [loading, setLoading] = useState(true);
-
-  // Cliente reserva local storage
-  const [clienteReservaId, setClienteReservaId] = useState(localStorage.getItem('cliente_reserva_id') || null);
-  const [estadoMiReserva, setEstadoMiReserva] = useState(null);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -20,62 +15,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   
   // Form State
   const [clienteNombre, setClienteNombre] = useState('');
-  const [clienteTelefono, setClienteTelefono] = useState('');
-  const [ubicacionGps, setUbicacionGps] = useState('');
   const [vehiculo, setVehiculo] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isGettingGps, setIsGettingGps] = useState(false);
 
   useEffect(() => {
     fetchServicios();
   }, []);
-
-  useEffect(() => {
-    if (clienteReservaId) {
-      checkMiReserva();
-      
-      const channel = supabase
-        .channel(`public:reservas:id=eq.${clienteReservaId}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'reservas', filter: `id=eq.${clienteReservaId}` },
-          (payload) => {
-            const updated = payload.new;
-            if (updated.estado_reserva === 'completado' || updated.estado === 'Finalizado' || updated.estado_reserva === 'cancelado') {
-              localStorage.removeItem('cliente_reserva_id');
-              setClienteReservaId(null);
-              setEstadoMiReserva(null);
-            } else {
-              setEstadoMiReserva(updated);
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [clienteReservaId]);
-
-  const checkMiReserva = async () => {
-    const { data } = await supabase.from('reservas').select('*').eq('id', clienteReservaId).single();
-    if (data) {
-      if (data.estado_reserva === 'completado' || data.estado === 'Finalizado' || data.estado_reserva === 'cancelado') {
-        localStorage.removeItem('cliente_reserva_id');
-        setClienteReservaId(null);
-        setEstadoMiReserva(null);
-      } else {
-        setEstadoMiReserva(data);
-      }
-    } else {
-      localStorage.removeItem('cliente_reserva_id');
-      setClienteReservaId(null);
-    }
-  };
 
   const fetchServicios = async () => {
     setLoading(true);
@@ -90,42 +38,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setLoading(false);
   };
 
-  useEffect(() => {
-    // Si venimos de LandingPage con el state openService, abrirlo automáticamente
-    if (location.state?.openService && servicios.length > 0) {
-      const srv = servicios.find(s => s.codigo === location.state.openService);
-      if (srv) {
-        handleBook(srv);
-        // Limpiamos el state para que no se re-abra si refresca la página
-        window.history.replaceState({}, document.title);
-      }
-    }
-  }, [location.state, servicios]);
-
   const handleBook = (servicio) => {
     setSelectedService(servicio);
     setSuccess(false);
     setShowModal(true);
-  };
-
-  const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      setIsGettingGps(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUbicacionGps(`${position.coords.latitude}, ${position.coords.longitude}`);
-          setIsGettingGps(false);
-        },
-        (error) => {
-          console.error("GPS Error:", error);
-          alert('No se pudo obtener la ubicación. Asegúrate de tener el GPS encendido y haberle dado permisos al navegador.');
-          setIsGettingGps(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      alert('Tu navegador no soporta geolocalización.');
-    }
   };
 
   const submitReservation = async (e) => {
@@ -134,62 +50,31 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
-    // Buscar un trabajador disponible
-    const { data: motos } = await supabase
-      .from('trabajadores')
-      .select('id, nombre')
-      .eq('estado_disponibilidad', 'disponible')
-      .eq('rol', 'Trabajador')
-      .limit(1);
-
-    let trabajadorId = null;
-    let estadoReserva = 'pendiente';
-    let trabajadorNombre = null;
-
-    if (motos && motos.length > 0) {
-      trabajadorId = motos[0].id;
-      estadoReserva = 'asignado';
-      trabajadorNombre = motos[0].nombre;
-    }
-
-    const { data: reservaInsertada, error } = await supabase.from('reservas').insert([
+    const { error } = await supabase.from('reservas').insert([
       {
-        cliente_nombre: `${clienteNombre} (Tel: ${clienteTelefono})`,
-        ubicacion_gps: ubicacionGps,
+        cliente_nombre: clienteNombre,
         vehiculo: vehiculo,
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: selectedService.id,
         precio_total: selectedService.precio,
-        estado: 'Reservado',
-        trabajador_id: trabajadorId,
-        estado_reserva: estadoReserva
+        estado: 'Reservado'
       }
-    ]).select();
+    ]);
 
     if (error) {
       console.error('Error guardando reserva:', error);
-      alert(`Hubo un error al procesar tu reserva. Inténtalo de nuevo. Detalle: ${error.message || JSON.stringify(error)}`);
+      alert('Hubo un error al procesar tu reserva. Inténtalo de nuevo.');
     } else {
       setSuccess(true);
       
-      if (reservaInsertada && reservaInsertada.length > 0) {
-        const id = reservaInsertada[0].id;
-        localStorage.setItem('cliente_reserva_id', id);
-        setClienteReservaId(id);
-      }
-      
       // Dispatch notification
       await supabase.from('notificaciones').insert([{
-        mensaje: trabajadorNombre 
-          ? `Nueva reserva: ${clienteNombre} asignada a ${trabajadorNombre}`
-          : `Nueva reserva pendiente: ${clienteNombre} - (Sin trabajadores disponibles)`,
-        tipo: trabajadorNombre ? 'success' : 'warning'
+        mensaje: `Nueva reserva: ${clienteNombre} - ${selectedService.nombre}`,
+        tipo: 'info'
       }]);
 
       setClienteNombre('');
-      setClienteTelefono('');
-      setUbicacionGps('');
       setVehiculo('');
       setFechaReserva('');
       setHoraReserva('');
@@ -321,18 +206,6 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   {servicio.nombre}
                 </h3>
                 
-                {servicio.descripcion && (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-                    {servicio.descripcion}
-                  </p>
-                )}
-                
-                {servicio.tiempo_estimado && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px', fontWeight: 'bold' }}>
-                    <Clock size={14} /> <span>{servicio.tiempo_estimado}</span>
-                  </div>
-                )}
-                
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
                   <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
@@ -390,25 +263,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 </div>
 
-                <div className="modal-form-row">
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
-                    <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Teléfono / Celular</label>
-                    <input type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} required placeholder="Ej. 70012345" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
-                  </div>
-                </div>
-
                 <div>
-                  <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    <span>Dirección del Domicilio / Ubicación</span>
-                    <button type="button" onClick={handleGetLocation} disabled={isGettingGps} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0, opacity: isGettingGps ? 0.5 : 1 }}>
-                      {isGettingGps ? '⏳ Obteniendo...' : '📍 Usar GPS actual'}
-                    </button>
-                  </label>
-                  <input type="text" value={ubicacionGps} onChange={(e) => setUbicacionGps(e.target.value)} required placeholder="Ej. Av. Banzer 4to Anillo o enviar GPS" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
+                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
                 
                 <div>
@@ -416,7 +273,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
-                <div className="modal-form-row">
+                <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fecha</label>
                     <input type="date" value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
@@ -433,27 +290,6 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </form>
             )}
 
-          </div>
-        </div>
-      )}
-
-      {/* Flotante de Reserva Pendiente */}
-      {clienteReservaId && estadoMiReserva && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 90, animation: 'fadeIn 0.3s ease-out' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '16px 20px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ backgroundColor: 'var(--accent-blue)', padding: '12px', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Clock size={24} />
-            </div>
-            <div>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: 'bold', color: 'var(--text-main)' }}>Tu Lavado Activo</h4>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                {estadoMiReserva.estado_reserva === 'asignado' || estadoMiReserva.estado_reserva === 'en_camino' 
-                  ? <span style={{ color: 'var(--accent-blue)', fontWeight: 'bold' }}>El trabajador va en camino 🏍️</span>
-                  : estadoMiReserva.estado_reserva === 'en_proceso' 
-                  ? <span style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>Lavando tu vehículo 🧽</span>
-                  : 'Buscando un trabajador disponible...'}
-              </div>
-            </div>
           </div>
         </div>
       )}

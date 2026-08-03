@@ -13,11 +13,8 @@ export default function AdminServicios() {
   
   // Form State
   const [nombre, setNombre] = useState('');
-  const [codigo, setCodigo] = useState('');
   const [categoria, setCategoria] = useState('Lavado Clásico');
   const [precio, setPrecio] = useState('');
-  const [descripcion, setDescripcion] = useState('');
-  const [tiempoEstimado, setTiempoEstimado] = useState('');
   const [disponible, setDisponible] = useState(true);
   const [imagenUrl, setImagenUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -88,11 +85,8 @@ export default function AdminServicios() {
 
   const resetForm = () => {
     setNombre('');
-    setCodigo('');
     setCategoria('Lavado Clásico');
     setPrecio('');
-    setDescripcion('');
-    setTiempoEstimado('');
     setDisponible(true);
     setImagenUrl('');
     setEditingId(null);
@@ -105,11 +99,8 @@ export default function AdminServicios() {
 
   const openEditModal = (servicio) => {
     setNombre(servicio.nombre || '');
-    setCodigo(servicio.codigo || '');
     setCategoria(servicio.categoria || 'Lavado Clásico');
     setPrecio(servicio.precio || '');
-    setDescripcion(servicio.descripcion || '');
-    setTiempoEstimado(servicio.tiempo_estimado || '');
     setDisponible(servicio.disponible !== false); // Default true if undefined
     setImagenUrl(servicio.imagen_url || '');
     setEditingId(servicio.id);
@@ -122,11 +113,8 @@ export default function AdminServicios() {
     
     const serviceData = {
       nombre,
-      codigo,
       categoria,
       precio: parseFloat(precio),
-      descripcion,
-      tiempo_estimado: tiempoEstimado,
       disponible,
       imagen_url: imagenUrl
     };
@@ -229,10 +217,7 @@ export default function AdminServicios() {
                 
                 <div style={{ padding: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <div>
-                      <h3 className="text-body font-semibold" style={{ lineHeight: '1.2' }}>{s.nombre}</h3>
-                      {s.codigo && <span style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border-color)', display: 'inline-block', marginTop: '4px' }}>{s.codigo}</span>}
-                    </div>
+                    <h3 className="text-body font-semibold" style={{ lineHeight: '1.2' }}>{s.nombre}</h3>
                     <span className="font-bold" style={{ color: 'var(--accent-green)' }}>Bs.{s.precio}</span>
                   </div>
                   <div className="text-small text-muted" style={{ marginBottom: '16px' }}>{s.categoria}</div>
@@ -275,38 +260,15 @@ export default function AdminServicios() {
             
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div className="form-group" style={{ flex: 2 }}>
-                  <label>Nombre del Servicio</label>
-                  <input 
-                    type="text" 
-                    value={nombre} 
-                    onChange={(e) => setNombre(e.target.value)} 
-                    required 
-                    list="servicios-predefinidos"
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
-                  />
-                  <datalist id="servicios-predefinidos">
-                    <option value="Lavado Clásico" />
-                    <option value="Lavado Premium" />
-                    <option value="Limpieza de Interiores" />
-                    <option value="Lavado de Motor" />
-                    <option value="Encerado" />
-                    <option value="Pulido" />
-                    <option value="Aspirado Profundo" />
-                    <option value="Lavado Bicis y Motos" />
-                  </datalist>
-                </div>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Código</label>
-                  <input 
-                    type="text" 
-                    value={codigo} 
-                    onChange={(e) => setCodigo(e.target.value)} 
-                    placeholder="Ej. LAV-001"
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
-                  />
-                </div>
+              <div className="form-group">
+                <label>Nombre del Servicio</label>
+                <input 
+                  type="text" 
+                  value={nombre} 
+                  onChange={(e) => setNombre(e.target.value)} 
+                  required 
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '16px' }}>
@@ -315,7 +277,7 @@ export default function AdminServicios() {
                   <select 
                     value={categoria} 
                     onChange={(e) => setCategoria(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
                   >
                     <option value="Lavado Clásico">Lavado Clásico</option>
                     <option value="Lavado Premium">Lavado Premium</option>
@@ -334,30 +296,9 @@ export default function AdminServicios() {
                     required 
                     min="0"
                     step="0.1"
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
                   />
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>Descripción</label>
-                <textarea 
-                  value={descripcion} 
-                  onChange={(e) => setDescripcion(e.target.value)} 
-                  placeholder="Ej. Lavado exterior e interior para autos pequeños..."
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px', minHeight: '60px', resize: 'vertical' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Tiempo Estimado</label>
-                <input 
-                  type="text" 
-                  value={tiempoEstimado} 
-                  onChange={(e) => setTiempoEstimado(e.target.value)} 
-                  placeholder="Ej. 1 hora, 45 min..."
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
-                />
               </div>
 
               <div className="form-group">

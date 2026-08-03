@@ -42,7 +42,7 @@ export default function PipelineChart({ reservas = [] }) {
           <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} dy={10} />
           <YAxis tickFormatter={formatCurrency} axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 12 }} />
           <Tooltip 
-            cursor={{fill: 'var(--accent-green-light)'}}
+            cursor={{fill: 'var(--bg-color)'}}
             contentStyle={{ borderRadius: '8px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-soft)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }}
             formatter={(value) => [`Bs ${value.toLocaleString('es-BO')}`, 'Valor']}
           />
