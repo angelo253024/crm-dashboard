@@ -964,3 +964,66 @@ body:not(.dark) .btn-landing-large:hover {
     opacity: 0.25;
   }
 }
+
+/* === MOBILE RESPONSIVENESS === */
+@media (max-width: 768px) {
+  .landing-nav {
+    padding: 16px 20px;
+  }
+  
+  .landing-links {
+    display: none; /* Hide navigation links on small screens */
+  }
+  
+  .landing-hero {
+    padding: 32px 16px;
+  }
+  
+  .landing-logo-hero {
+    height: 80px;
+    margin-bottom: 16px;
+  }
+  
+  .landing-title {
+    font-size: 48px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .landing-title-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .landing-description {
+    font-size: 24px;
+    line-height: 1.4;
+  }
+  
+  .landing-text {
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+  
+  .landing-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  
+  .btn-landing-large {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .landing-stats {
+    flex-direction: column;
+    width: 100%;
+    gap: 16px;
+  }
+  
+  .stat-card {
+    width: 100%;
+  }
+}
