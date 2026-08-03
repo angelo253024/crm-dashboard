@@ -36,7 +36,7 @@ export default function Dashboard({ user }) {
   };
 
   const fetchReservas = async () => {
-    const { data, error } = await supabase.from('reservas').select('*');
+    const { data, error } = await supabase.from('reservas').select('*, trabajadores(nombre)');
     if (!error && data) {
       setReservas(data);
     }
@@ -200,17 +200,31 @@ export default function Dashboard({ user }) {
             
             <div style={{ padding: '32px' }}>
               {/* Selector de Fecha */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', backgroundColor: 'var(--card-bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', backgroundColor: 'var(--card-bg)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', gap: '16px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <Calendar size={20} className="text-muted" />
                   <span style={{ fontWeight: '500' }}>Seleccionar Fecha:</span>
+                  <input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', fontWeight: '500', outline: 'none' }}
+                  />
                 </div>
-                <input 
-                  type="date" 
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '15px', fontWeight: '500', outline: 'none' }}
-                />
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontWeight: '500' }}>Trabajador:</span>
+                  <select 
+                    value={selectedTrabajador} 
+                    onChange={(e) => setSelectedTrabajador(e.target.value)}
+                    style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '14px' }}
+                  >
+                    <option value="todos">Todos</option>
+                    {trabajadores.map(t => (
+                      <option key={t.id} value={t.id}>{t.nombre}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Tarjetas de Métricas */}
@@ -257,6 +271,7 @@ export default function Dashboard({ user }) {
                       <tr>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Trabajador</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Servicio Realizado</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto</th>
@@ -267,6 +282,7 @@ export default function Dashboard({ user }) {
                         <tr key={s.id} style={{ borderBottom: i === finanzasDetalladas.servicios.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.trabajadores?.nombre || 'Sin asignar'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px' }}>
                             <span style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
                               {s.servicio}
