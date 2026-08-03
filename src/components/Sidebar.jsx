@@ -8,14 +8,25 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Logo LAVAMOVIL NORTE */}
-      <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.1', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '24px' }}>
-          <span style={{ color: 'var(--accent-dark)' }}>LAVA</span>
-          <span style={{ color: 'var(--accent-green)', margin: '0 2px' }}>M</span>
-          <span style={{ color: 'var(--accent-dark)' }}>ÓVIL</span>
-        </div>
-        <div style={{ color: 'var(--accent-green)', fontWeight: 700, fontSize: '13px', letterSpacing: '4px' }}>
-          NORTE
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+        <img 
+          src="/logo.png" 
+          alt="Lavamóvil Norte" 
+          style={{ height: '60px', width: 'auto', objectFit: 'contain', cursor: 'pointer' }}
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        <div style={{ display: 'none', flexDirection: 'column', lineHeight: '1.1' }}>
+          <div style={{ display: 'flex', alignItems: 'center', fontWeight: 900, fontSize: '24px' }}>
+            <span style={{ color: 'var(--accent-dark)' }}>LAVA</span>
+            <span style={{ color: 'var(--accent-green)', margin: '0 2px' }}>M</span>
+            <span style={{ color: 'var(--accent-dark)' }}>ÓVIL</span>
+          </div>
+          <div style={{ color: 'var(--accent-green)', fontWeight: 700, fontSize: '13px', letterSpacing: '4px' }}>
+            NORTE
+          </div>
         </div>
       </div>
       
