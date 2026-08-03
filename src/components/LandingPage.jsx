@@ -153,7 +153,7 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
       </nav>
 
       {/* Hero Section Wrapper */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '40px', padding: '40px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '40px', padding: '40px 5%', maxWidth: '1400px', margin: '0 auto' }}>
         
         {/* Hero Section */}
         <main className="landing-hero" style={{ flex: '1 1 500px', maxWidth: '600px', margin: 0, padding: 0 }}>
@@ -237,7 +237,7 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
       </main>
 
       {/* Lateral Ad */}
-      <div style={{ flex: '0 0 320px', maxWidth: '400px' }}>
+      <div style={{ flex: '0 0 320px', maxWidth: '400px', marginLeft: 'auto' }}>
         <PromoAd onBook={() => navigate('/reservar', { state: { openService: 'CLAS-P00' } })} />
       </div>
 
