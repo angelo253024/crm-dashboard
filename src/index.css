@@ -578,7 +578,6 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
-  background: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -694,9 +693,58 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Light mode overrides for landing page */
+body:not(.dark) .landing-page {
+  color: #0f172a;
+}
+/* No logo filter here, keep it original */
 
+body:not(.dark) .theme-toggle-btn {
+  border-color: rgba(0, 0, 0, 0.2);
+  color: #0f172a;
+}
+body:not(.dark) .theme-toggle-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+body:not(.dark) .landing-links a {
+  color: #475569;
+}
+body:not(.dark) .landing-links a:hover {
+  color: #0f172a;
+}
+body:not(.dark) .landing-text {
+  color: #475569;
+}
+body:not(.dark) .landing-subtitle {
+  color: #1E4C9A;
+}
+body:not(.dark) .stat-card {
+  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+body:not(.dark) .stat-label {
+  color: #475569;
+}
+body:not(.dark) .stat-value {
+  color: #1E4C9A;
+}
+body:not(.dark) .btn-landing-primary {
+  background: #1E4C9A; /* Dark blue for better contrast in light mode */
+  box-shadow: 0 4px 15px rgba(30, 76, 154, 0.3);
+}
+body:not(.dark) .btn-landing-secondary {
+  background: rgba(255, 255, 255, 0.8);
+  color: #1E4C9A;
+  border: 1px solid rgba(30, 76, 154, 0.2);
+}
 
-.btn-landing-primary:hover {
+/* Fix category buttons in light mode (since active is cyan, we change it to dark blue for contrast) */
+body:not(.dark) button[style*="var(--accent-green)"] {
+  background-color: #1E4C9A !important;
+  color: #ffffff !important;
+}
+
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(28, 169, 201, 0.4);
 }
