@@ -14,10 +14,10 @@ export default function Dashboard() {
   const kpis = useMemo(() => {
     // Simulando ingresos para el dashboard financiero principal
     return {
-      ingresosDia: 1250,
-      ingresosSemana: 8450,
-      ingresosMes: 32450,
-      serviciosHoy: 18
+      ingresosDia: 0,
+      ingresosSemana: 0,
+      ingresosMes: 0,
+      serviciosHoy: 0
     };
   }, []);
 
@@ -64,7 +64,7 @@ export default function Dashboard() {
         <div className="chart-header">
           <h2 className="text-h2">Visión General del Rendimiento</h2>
         </div>
-        <KpiCards kpis={kpis} />
+        <KpiCards kpis={kpis} onCardClick={() => setShowFinanzasModal(true)} />
       </div>
 
       <div className="dashboard-grid">
