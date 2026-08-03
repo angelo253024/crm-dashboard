@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
@@ -7,6 +8,7 @@ import SalesTrendChart from './SalesTrendChart';
 import TopDeals from './TopDeals';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [showFinanzasModal, setShowFinanzasModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [promos, setPromos] = useState([]);
@@ -96,10 +98,10 @@ export default function Dashboard() {
           <button className="btn-primary" onClick={() => setShowFinanzasModal(true)} style={{ backgroundColor: 'var(--accent-green)', color: '#000' }}>
             <Banknote size={18} /> Ver Ingresos Detallados
           </button>
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => navigate('/citas')}>
             <CalendarCheck size={18} /> Agendar Cita
           </button>
-          <button className="btn-secondary">
+          <button className="btn-secondary" onClick={() => navigate('/zonas')}>
             <Map size={18} /> Ver Ruta del Día
           </button>
         </div>
