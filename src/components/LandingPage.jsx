@@ -4,16 +4,39 @@ import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun, MessageSquare } from
 
 const PromoAd = ({ onBook }) => {
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, #0f3d6b 0%, #1b5b96 100%)',
-      borderRadius: '24px',
-      padding: '24px',
-      color: 'white',
-      textAlign: 'center',
-      position: 'relative',
-      boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-      overflow: 'hidden'
-    }}>
+    <>
+      <style>
+        {`
+          .promo-ad-wrapper {
+            transition: all 0.3s ease;
+            width: 100%;
+          }
+          @media (max-width: 768px) {
+            .promo-ad-wrapper {
+              transform: scale(0.85);
+              transform-origin: top center;
+              margin-bottom: -50px;
+            }
+          }
+          @media (max-width: 480px) {
+            .promo-ad-wrapper {
+              transform: scale(0.75);
+              transform-origin: top center;
+              margin-bottom: -100px;
+            }
+          }
+        `}
+      </style>
+      <div className="promo-ad-wrapper" style={{
+        background: 'linear-gradient(135deg, #0f3d6b 0%, #1b5b96 100%)',
+        borderRadius: '24px',
+        padding: '24px',
+        color: 'white',
+        textAlign: 'center',
+        position: 'relative',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        overflow: 'hidden'
+      }}>
        {/* Fake diagonal lines using CSS background */}
        <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
@@ -82,7 +105,8 @@ const PromoAd = ({ onBook }) => {
            </div>
          </button>
        </div>
-    </div>
+      </div>
+    </>
   )
 }
 

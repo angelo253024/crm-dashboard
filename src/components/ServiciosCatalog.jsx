@@ -30,6 +30,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   const fetchServicios = async () => {
     setLoading(true);
+    const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching servicios:', error);
+    } else {
+      setServicios(data || []);
+      const cats = ['Todos', ...new Set((data || []).map(s => s.categoria).filter(Boolean))];
+      setCategorias(cats);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
     // Si venimos de LandingPage con el state openService, abrirlo automáticamente
     if (location.state?.openService && servicios.length > 0) {
