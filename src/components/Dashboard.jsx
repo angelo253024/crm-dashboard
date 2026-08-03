@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter } from 'lucide-react';
 import { deals, stages } from '../data/mockData';
+import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
 import SalesTrendChart from './SalesTrendChart';
@@ -9,7 +10,19 @@ import TopDeals from './TopDeals';
 export default function Dashboard() {
   const [showFinanzasModal, setShowFinanzasModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [promos, setPromos] = useState([]);
   
+  useEffect(() => {
+    fetchPromos();
+  }, []);
+
+  const fetchPromos = async () => {
+    const { data, error } = await supabase.from('promociones').select('*');
+    if (!error && data) {
+      setPromos(data);
+    }
+  };
+
   // Calculate KPIs
   const kpis = useMemo(() => {
     // Simulando ingresos para el dashboard financiero principal
@@ -76,7 +89,7 @@ export default function Dashboard() {
           <div className="chart-header">
              <h2 className="text-h2">Mejores Promos</h2>
           </div>
-          <TopDeals deals={deals} />
+          <TopDeals promos={promos} />
         </div>
       </div>
       
