@@ -58,7 +58,7 @@ export default function Dashboard() {
         <div className="chart-header">
           <h2 className="text-h2">Visión General del Rendimiento</h2>
         </div>
-        <KpiCards kpis={kpis} onCardClick={() => setShowFinanzasModal(true)} />
+        <KpiCards kpis={kpis} onCardClick={(type) => { setFiltroActivo(type); setShowFinanzasModal(true); }} />
       </div>
 
       <div className="dashboard-grid">
@@ -153,7 +153,9 @@ export default function Dashboard() {
               {/* Tabla Detallada */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Servicios Completados este Día</h3>
+                  <h3 style={{ fontSize: '18px', fontWeight: '600' }}>
+                    Servicios Completados {filtroActivo === 'dia' ? 'este Día' : filtroActivo === 'semana' ? 'esta Semana' : 'este Mes'}
+                  </h3>
                   <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
                     <Filter size={14} /> Filtrar
                   </button>

@@ -15,7 +15,7 @@ export default function KpiCards({ kpis, onCardClick }) {
       
       <div 
         className="kpi-card" 
-        onClick={onCardClick}
+        onClick={() => onCardClick?.('dia')}
         style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Hoy</div>
@@ -26,7 +26,7 @@ export default function KpiCards({ kpis, onCardClick }) {
 
       <div 
         className="kpi-card" 
-        onClick={onCardClick}
+        onClick={() => onCardClick?.('semana')}
         style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Semana</div>
@@ -37,7 +37,7 @@ export default function KpiCards({ kpis, onCardClick }) {
 
       <div 
         className="kpi-card" 
-        onClick={onCardClick}
+        onClick={() => onCardClick?.('mes')}
         style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Mes</div>
@@ -48,7 +48,7 @@ export default function KpiCards({ kpis, onCardClick }) {
 
       <div 
         className="kpi-card" 
-        onClick={onCardClick}
+        onClick={() => onCardClick?.('dia')}
         style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Servicios Hoy</div>
