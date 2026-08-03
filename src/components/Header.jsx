@@ -47,6 +47,14 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
           const notifDate = new Date(payload.new.fecha);
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
+            
+            // Mostrar el pop-up automáticamente
+            setIsNotifMenuOpen(true);
+            
+            // Ocultarlo después de 6 segundos automáticamente
+            setTimeout(() => {
+              setIsNotifMenuOpen(false);
+            }, 6000);
           }
         }
       )

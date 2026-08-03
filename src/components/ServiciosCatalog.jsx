@@ -23,6 +23,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [horaReserva, setHoraReserva] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [isGettingGps, setIsGettingGps] = useState(false);
 
   useEffect(() => {
     fetchServicios();
@@ -61,13 +62,18 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   const handleGetLocation = () => {
     if (navigator.geolocation) {
+      setIsGettingGps(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUbicacionGps(`${position.coords.latitude},${position.coords.longitude}`);
+          setUbicacionGps(`${position.coords.latitude}, ${position.coords.longitude}`);
+          setIsGettingGps(false);
         },
         (error) => {
-          alert('No se pudo obtener la ubicación automáticamente. Por favor, escribe tu dirección manualmente.');
-        }
+          console.error("GPS Error:", error);
+          alert('No se pudo obtener la ubicación. Asegúrate de tener el GPS encendido y haberle dado permisos al navegador.');
+          setIsGettingGps(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       alert('Tu navegador no soporta geolocalización.');
@@ -322,7 +328,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 <div>
                   <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>
                     <span>Dirección del Domicilio / Ubicación</span>
-                    <button type="button" onClick={handleGetLocation} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0 }}>📍 Usar GPS actual</button>
+                    <button type="button" onClick={handleGetLocation} disabled={isGettingGps} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', padding: 0, opacity: isGettingGps ? 0.5 : 1 }}>
+                      {isGettingGps ? '⏳ Obteniendo...' : '📍 Usar GPS actual'}
+                    </button>
                   </label>
                   <input type="text" value={ubicacionGps} onChange={(e) => setUbicacionGps(e.target.value)} required placeholder="Ej. Av. Banzer 4to Anillo o enviar GPS" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>

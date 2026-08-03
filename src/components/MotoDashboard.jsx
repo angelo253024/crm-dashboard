@@ -314,14 +314,24 @@ export default function MotoDashboard({ user }) {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '20px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '6px' }}>
                   <MapPin size={18} color="#ef4444" />
                   <span style={{ fontSize: '14px', fontFamily: 'monospace' }}>Ubicación: {res.ubicacion_gps}</span>
-                  <a 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--accent-cyan)', textDecoration: 'none', fontWeight: 'bold' }}
-                  >
-                    Abrir Mapa
-                  </a>
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                    <a 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '11px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold' }}
+                    >
+                      Google Maps
+                    </a>
+                    <a 
+                      href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps)}&navigate=yes`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.1)', fontSize: '11px', color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}
+                    >
+                      Waze
+                    </a>
+                  </div>
                 </div>
               )}
               
