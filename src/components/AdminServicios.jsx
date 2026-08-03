@@ -283,8 +283,19 @@ export default function AdminServicios() {
                     value={nombre} 
                     onChange={(e) => setNombre(e.target.value)} 
                     required 
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                    list="servicios-predefinidos"
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
                   />
+                  <datalist id="servicios-predefinidos">
+                    <option value="Lavado Clásico" />
+                    <option value="Lavado Premium" />
+                    <option value="Limpieza de Interiores" />
+                    <option value="Lavado de Motor" />
+                    <option value="Encerado" />
+                    <option value="Pulido" />
+                    <option value="Aspirado Profundo" />
+                    <option value="Lavado Bicis y Motos" />
+                  </datalist>
                 </div>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label>Código</label>
@@ -293,7 +304,7 @@ export default function AdminServicios() {
                     value={codigo} 
                     onChange={(e) => setCodigo(e.target.value)} 
                     placeholder="Ej. LAV-001"
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
                   />
                 </div>
               </div>
@@ -304,7 +315,7 @@ export default function AdminServicios() {
                   <select 
                     value={categoria} 
                     onChange={(e) => setCategoria(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
                   >
                     <option value="Lavado Clásico">Lavado Clásico</option>
                     <option value="Lavado Premium">Lavado Premium</option>
@@ -323,7 +334,7 @@ export default function AdminServicios() {
                     required 
                     min="0"
                     step="0.1"
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
                   />
                 </div>
               </div>
@@ -334,7 +345,7 @@ export default function AdminServicios() {
                   value={descripcion} 
                   onChange={(e) => setDescripcion(e.target.value)} 
                   placeholder="Ej. Lavado exterior e interior para autos pequeños..."
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px', minHeight: '60px', resize: 'vertical' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px', minHeight: '60px', resize: 'vertical' }}
                 />
               </div>
 
@@ -345,7 +356,7 @@ export default function AdminServicios() {
                   value={tiempoEstimado} 
                   onChange={(e) => setTiempoEstimado(e.target.value)} 
                   placeholder="Ej. 1 hora, 45 min..."
-                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', marginTop: '8px' }}
+                  style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--card-bg)', color: 'var(--text-main)', marginTop: '8px' }}
                 />
               </div>
 
