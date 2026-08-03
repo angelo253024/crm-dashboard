@@ -80,6 +80,12 @@ export default function MotoDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
 
+  const getTelefono = (nombreStr) => {
+    if (!nombreStr) return '';
+    const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
+    return match ? match[1].trim() : '';
+  };
+
   useEffect(() => {
     if (user) {
       fetchTrabajadorEstado();
@@ -355,9 +361,20 @@ export default function MotoDashboard({ user }) {
                   </button>
                 )}
                 
-                <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                  <MessageSquare size={18} /> Abrir Chat Cliente
+                <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare size={18} /> Chat (Web)
                 </button>
+                
+                {getTelefono(res.cliente_nombre) && (
+                  <a 
+                    href={`https://wa.me/${getTelefono(res.cliente_nombre).replace(/\s+/g, '')}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: '#25D366', color: 'white', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MessageSquare size={18} /> WhatsApp Cliente
+                  </a>
+                )}
               </div>
             </div>
           ))}

@@ -86,6 +86,23 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
+    // Buscar un trabajador disponible
+    const { data: motos } = await supabase
+      .from('trabajadores')
+      .select('id, nombre')
+      .eq('estado_disponibilidad', 'disponible')
+      .limit(1);
+
+    let trabajadorId = null;
+    let estadoReserva = 'pendiente';
+    let trabajadorNombre = null;
+
+    if (motos && motos.length > 0) {
+      trabajadorId = motos[0].id;
+      estadoReserva = 'asignado';
+      trabajadorNombre = motos[0].nombre;
+    }
+
     const { error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: `${clienteNombre} (Tel: ${clienteTelefono})`,
@@ -95,7 +112,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         hora_reserva: formattedHora,
         servicio_id: selectedService.id,
         precio_total: selectedService.precio,
-        estado: 'Reservado'
+        estado: 'Reservado',
+        trabajador_id: trabajadorId,
+        estado_reserva: estadoReserva
       }
     ]);
 
@@ -107,8 +126,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       
       // Dispatch notification
       await supabase.from('notificaciones').insert([{
-        mensaje: `Nueva reserva: ${clienteNombre} - ${selectedService.nombre}`,
-        tipo: 'info'
+        mensaje: trabajadorNombre 
+          ? `Nueva reserva: ${clienteNombre} asignada a ${trabajadorNombre}`
+          : `Nueva reserva pendiente: ${clienteNombre} - (Sin trabajadores disponibles)`,
+        tipo: trabajadorNombre ? 'success' : 'warning'
       }]);
 
       setClienteNombre('');
