@@ -23,21 +23,15 @@ export default function Dashboard() {
 
   // Simulador de datos basado en la fecha seleccionada
   const finanzasDetalladas = useMemo(() => {
-    // Generamos datos aleatorios creíbles basados en el string de la fecha para que sea "determinista" (cambie al cambiar fecha)
-    const baseAmount = selectedDate.length > 0 ? (selectedDate.charCodeAt(selectedDate.length - 1) * 50) : 1000;
-    
     return {
-      dia: baseAmount + 850,
-      semana: (baseAmount + 850) * 5.5,
-      mes: (baseAmount + 850) * 22,
-      servicios: [
-        { id: '1', cliente: 'Carlos Mendoza', servicio: 'Lavado Premium', precio: 150, hora: '09:30 AM' },
-        { id: '2', cliente: 'Flota Transporte', servicio: 'Lavado Básico x5', precio: 300, hora: '11:00 AM' },
-        { id: '3', cliente: 'Ana Rojas', servicio: 'Limpieza Interior', precio: 120, hora: '02:15 PM' },
-        { id: '4', cliente: 'Empresa XYZ', servicio: 'Suscripción Semanal', precio: 450, hora: '04:00 PM' },
-      ]
+      dia: 0,
+      semana: 0,
+      mes: 0,
+      servicios: []
     };
   }, [selectedDate]);
+
+  const [filtroActivo, setFiltroActivo] = useState('dia');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -131,28 +125,28 @@ export default function Dashboard() {
 
               {/* Tarjetas de Métricas */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }}>
-                <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div 
+                  onClick={() => setFiltroActivo('dia')}
+                  style={{ backgroundColor: filtroActivo === 'dia' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'dia' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos del Día</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Bs {finanzasDetalladas.dia.toLocaleString()}</div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--accent-green)', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
-                    <TrendingUp size={14} /> +5% vs ayer
-                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.dia.toLocaleString()}</div>
                 </div>
                 
-                <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div 
+                  onClick={() => setFiltroActivo('semana')}
+                  style={{ backgroundColor: filtroActivo === 'semana' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'semana' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos de la Semana</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Bs {finanzasDetalladas.semana.toLocaleString()}</div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--accent-green)', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
-                    <TrendingUp size={14} /> +12% vs sem. ant.
-                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.semana.toLocaleString()}</div>
                 </div>
 
-                <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                <div 
+                  onClick={() => setFiltroActivo('mes')}
+                  style={{ backgroundColor: filtroActivo === 'mes' ? 'var(--card-bg)' : 'transparent', padding: '24px', borderRadius: 'var(--radius-md)', border: `1px solid ${filtroActivo === 'mes' ? 'var(--accent-green)' : 'var(--border-color)'}`, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
                   <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '8px' }}>Ingresos del Mes</div>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Bs {finanzasDetalladas.mes.toLocaleString()}</div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--accent-green)', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '4px', fontWeight: '500' }}>
-                    <TrendingUp size={14} /> +8% vs mes ant.
-                  </div>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-main)' }}>Bs {finanzasDetalladas.mes.toLocaleString()}</div>
                 </div>
               </div>
 

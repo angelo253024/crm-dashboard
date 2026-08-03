@@ -16,7 +16,7 @@ export default function KpiCards({ kpis, onCardClick }) {
       <div 
         className="kpi-card" 
         onClick={onCardClick}
-        style={{ cursor: onCardClick ? 'pointer' : 'default', transition: 'transform 0.2s ease', '&:hover': { transform: 'translateY(-2px)' } }}
+        style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Hoy</div>
         <div className="kpi-value">
@@ -27,7 +27,7 @@ export default function KpiCards({ kpis, onCardClick }) {
       <div 
         className="kpi-card" 
         onClick={onCardClick}
-        style={{ cursor: onCardClick ? 'pointer' : 'default', transition: 'transform 0.2s ease' }}
+        style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Semana</div>
         <div className="kpi-value">
@@ -38,7 +38,7 @@ export default function KpiCards({ kpis, onCardClick }) {
       <div 
         className="kpi-card" 
         onClick={onCardClick}
-        style={{ cursor: onCardClick ? 'pointer' : 'default', transition: 'transform 0.2s ease' }}
+        style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Ingresos Mes</div>
         <div className="kpi-value">
@@ -49,7 +49,7 @@ export default function KpiCards({ kpis, onCardClick }) {
       <div 
         className="kpi-card" 
         onClick={onCardClick}
-        style={{ cursor: onCardClick ? 'pointer' : 'default', transition: 'transform 0.2s ease' }}
+        style={{ cursor: onCardClick ? 'pointer' : 'default' }}
       >
         <div className="kpi-label">Servicios Hoy</div>
         <div className="kpi-value">
