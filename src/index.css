@@ -578,7 +578,6 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
-  background: linear-gradient(145deg, #06152a 0%, #0c3359 50%, #06152a 100%);
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -696,7 +695,6 @@ body {
 
 /* Light mode specific landing page styles */
 body:not(.dark) .landing-page {
-  background-color: #f8fafc;
   color: #0f172a;
 }
 body:not(.dark) .theme-toggle-btn {
