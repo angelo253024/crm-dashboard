@@ -101,8 +101,6 @@ export default function AdminHorarios({ user }) {
                 </tr>
               ) : horarios.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                    No hay registros de asistencia para esta fecha.
                   <td colSpan={isAdmin ? "5" : "4"} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     No hay registros de asistencia para este periodo.
                   </td>
