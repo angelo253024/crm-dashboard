@@ -216,6 +216,7 @@ export default function MotoDashboard({ user }) {
         .from('trabajadores')
         .select('id')
         .eq('estado_disponibilidad', 'disponible')
+        .eq('rol', 'Trabajador')
         .neq('id', user.id)
         .limit(1);
         

@@ -91,6 +91,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       .from('trabajadores')
       .select('id, nombre')
       .eq('estado_disponibilidad', 'disponible')
+      .eq('rol', 'Trabajador')
       .limit(1);
 
     let trabajadorId = null;

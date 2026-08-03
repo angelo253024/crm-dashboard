@@ -35,6 +35,7 @@ export class HybridAIService {
           .from('trabajadores')
           .select('id, nombre')
           .eq('estado_disponibilidad', 'disponible')
+          .eq('rol', 'Trabajador')
           .limit(1);
 
         if (motos && motos.length > 0) {
