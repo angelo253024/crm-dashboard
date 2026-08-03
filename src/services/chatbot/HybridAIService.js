@@ -3,7 +3,7 @@ import { SupabaseQueryService } from './SupabaseQueryService';
 import { CacheService } from './CacheService';
 import { OpenAIService } from './OpenAIService';
 import { supabase } from '../../supabase';
-import { v4 as uuidv4 } from 'uuid'; // Fallback if no uuid, but we can just use standard JS random or session string
+
 
 /**
  * Servicio Orquestador del Bot.
