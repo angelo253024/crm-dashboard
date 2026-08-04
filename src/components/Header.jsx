@@ -151,6 +151,12 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
   };
 
   const handleNuevoServicioClick = () => {
+    if (user?.rol === 'Trabajador') {
+      // Si es un trabajador que necesita agregar un servicio extra, lo mandamos al catálogo de reservas
+      window.open('/reservar', '_blank');
+      return;
+    }
+
     if (window.location.pathname === '/servicios') {
       window.dispatchEvent(new CustomEvent('openNewServiceModal'));
     } else {
@@ -178,7 +184,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           <MessageSquare size={16} /> Chatbot
         </button>
         <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
-          <Plus size={16} /> Nuevo Servicio
+          <Plus size={16} /> {user?.rol === 'Trabajador' ? 'Agregar Extra' : 'Nuevo Servicio'}
         </button>
 
         {/* Trabajadores Status Button */}

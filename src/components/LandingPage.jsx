@@ -37,9 +37,6 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle theme">
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <Link to="/login" className="btn-landing-primary">
-            Acceso Empleados
-          </Link>
         </div>
       </nav>
 

@@ -39,6 +39,16 @@ export default function AdminBot() {
     }
   };
 
+  const handleEditFaq = async (faq) => {
+    const newKeyword = window.prompt("Edita la palabra clave (Intención):", faq.keyword);
+    if (!newKeyword) return;
+    const newRespuesta = window.prompt("Edita la respuesta automática:", faq.respuesta);
+    if (!newRespuesta) return;
+
+    await supabase.from('bot_respuestas_rapidas').update({ keyword: newKeyword, respuesta: newRespuesta }).eq('id', faq.id);
+    fetchFaqs();
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="welcome-section">
@@ -91,8 +101,9 @@ export default function AdminBot() {
                 <tr key={faq.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: 'var(--accent-blue)' }}>{faq.keyword}</td>
                   <td style={{ padding: '12px' }}>{faq.respuesta}</td>
-                  <td style={{ padding: '12px' }}>
-                    <button onClick={() => handleDeleteFaq(faq.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={18} /></button>
+                  <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
+                    <button onClick={() => handleEditFaq(faq)} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', cursor: 'pointer' }} title="Editar"><Edit size={18} /></button>
+                    <button onClick={() => handleDeleteFaq(faq.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Eliminar"><Trash2 size={18} /></button>
                   </td>
                 </tr>
               ))}
