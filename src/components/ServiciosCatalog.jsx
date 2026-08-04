@@ -60,7 +60,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       .limit(1);
 
     const trabajadorId = trabajadores && trabajadores.length > 0 ? trabajadores[0].id : null;
-    const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
+    const estadoReserva = trabajadorId ? 'asignado' : null;
 
     const { error } = await supabase.from('reservas').insert([
       {
@@ -78,7 +78,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     if (error) {
       console.error('Error guardando reserva:', error);
-      alert('Hubo un error al procesar tu reserva. Inténtalo de nuevo.');
+      alert('Hubo un error al procesar tu reserva: ' + (error.message || JSON.stringify(error)));
     } else {
       setSuccess(true);
       
