@@ -100,10 +100,52 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [success, setSuccess] = useState(false);
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
+  
+  // Active reservation loaded from local storage
+  const [activeReservaLocal, setActiveReservaLocal] = useState(null);
 
   useEffect(() => {
     fetchServicios();
+    
+    // Check local storage for active reservation
+    const savedReserva = localStorage.getItem('active_reserva_lavamovil');
+    if (savedReserva) {
+      try {
+        const parsed = JSON.parse(savedReserva);
+        setActiveReservaLocal(parsed);
+        checkReservaStatus(parsed.id);
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }, []);
+
+  // Poll for status changes every 15 seconds if there's an active reservation
+  useEffect(() => {
+    let interval;
+    if (activeReservaLocal) {
+      interval = setInterval(() => {
+        checkReservaStatus(activeReservaLocal.id);
+      }, 15000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [activeReservaLocal]);
+
+  const checkReservaStatus = async (id) => {
+    const { data, error } = await supabase.from('reservas').select('*').eq('id', id).single();
+    if (!error && data) {
+      setActiveReservaLocal(data);
+      localStorage.setItem('active_reserva_lavamovil', JSON.stringify(data));
+      
+      // If completed or cancelled, we might want to clear it after some time, but let's keep it simple
+      if (data.estado_reserva === 'completado' || data.estado === 'Cancelado') {
+        setTimeout(() => {
+          localStorage.removeItem('active_reserva_lavamovil');
+          setActiveReservaLocal(null);
+        }, 120000); // clear after 2 minutes
+      }
+    }
+  };
 
   const fetchServicios = async () => {
     setLoading(true);
@@ -139,7 +181,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       .limit(1);
 
     const trabajadorId = trabajadores && trabajadores.length > 0 ? trabajadores[0].id : null;
-    const estadoReserva = trabajadorId ? 'asignado' : null;
+    const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
+    const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random()*1000)}`;
 
     const { data: insertData, error } = await supabase.from('reservas').insert([
       {
@@ -152,7 +195,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         precio_total: selectedService.precio,
         estado: 'Reservado',
         trabajador_id: trabajadorId,
-        estado_reserva: estadoReserva
+        estado_reserva: estadoReserva,
+        chat_session_id: newChatSessionId
       }
     ]).select();
 
@@ -162,6 +206,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     } else {
       if (insertData && insertData.length > 0) {
         setConfirmedReserva(insertData[0]);
+        setActiveReservaLocal(insertData[0]);
+        localStorage.setItem('active_reserva_lavamovil', JSON.stringify(insertData[0]));
       }
       setSuccess(true);
       
@@ -259,6 +305,69 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           Selecciona el paquete de lavado ideal para tu vehículo. Agendaremos tu servicio a domicilio.
         </p>
       </div>
+
+      {/* Apartado Reserva Pendiente / Activa */}
+      {activeReservaLocal && (
+        <div style={{ maxWidth: '800px', margin: '0 auto 48px auto', backgroundColor: 'var(--card-bg)', border: '2px solid var(--accent-green)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle size={24} color="var(--accent-green)" /> Mi Reserva Activa
+            </h2>
+            <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
+              backgroundColor: 
+                activeReservaLocal.estado_reserva === 'pendiente' ? 'rgba(245, 158, 11, 0.1)' : 
+                activeReservaLocal.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' :
+                activeReservaLocal.estado_reserva === 'en_camino' ? 'rgba(16, 185, 129, 0.1)' :
+                activeReservaLocal.estado_reserva === 'en_proceso' ? 'rgba(234, 179, 8, 0.1)' :
+                activeReservaLocal.estado_reserva === 'completado' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.1)',
+              color: 
+                activeReservaLocal.estado_reserva === 'pendiente' ? '#f59e0b' : 
+                activeReservaLocal.estado_reserva === 'asignado' ? '#3b82f6' :
+                activeReservaLocal.estado_reserva === 'en_camino' ? '#10b981' :
+                activeReservaLocal.estado_reserva === 'en_proceso' ? '#eab308' :
+                activeReservaLocal.estado_reserva === 'completado' ? '#10b981' : '#6b7280'
+            }}>
+              {activeReservaLocal.estado_reserva ? activeReservaLocal.estado_reserva.replace('_', ' ').toUpperCase() : 'PENDIENTE'}
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</p>
+              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.vehiculo}</p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Fecha y Hora</p>
+              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.fecha_reserva} a las {activeReservaLocal.hora_reserva}</p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Precio</p>
+              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs. {activeReservaLocal.precio_total}</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <button 
+              onClick={() => {
+                setConfirmedReserva(activeReservaLocal);
+                setShowClientChat(true);
+              }} 
+              style={{ flex: 1, backgroundColor: '#1E4C9A', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+            >
+              <MessageSquare size={18} /> Chat con Trabajador
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('active_reserva_lavamovil');
+                setActiveReservaLocal(null);
+              }}
+              style={{ padding: '12px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filtro de Categorías */}
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '48px' }}>
@@ -448,9 +557,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       )}
 
       {/* Floating Chat For Client */}
-      {showClientChat && confirmedReserva && (
+      {showClientChat && (confirmedReserva || activeReservaLocal) && (
         <ClientChat 
-          sessionId={confirmedReserva.chat_session_id || `fallback_${confirmedReserva.id}`} 
+          sessionId={(confirmedReserva || activeReservaLocal).chat_session_id || `fallback_${(confirmedReserva || activeReservaLocal).id}`} 
           onClose={() => setShowClientChat(false)} 
         />
       )}
