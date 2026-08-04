@@ -15,6 +15,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   
   // Form State
   const [clienteNombre, setClienteNombre] = useState('');
+  const [clienteTelefono, setClienteTelefono] = useState('');
   const [vehiculo, setVehiculo] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
@@ -63,7 +64,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     const { error } = await supabase.from('reservas').insert([
       {
-        cliente_nombre: clienteNombre,
+        cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
         vehiculo: vehiculo,
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
@@ -88,6 +89,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }]);
 
       setClienteNombre('');
+      setClienteTelefono('');
       setVehiculo('');
       setFechaReserva('');
       setHoraReserva('');
@@ -279,6 +281,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
                   <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Teléfono (WhatsApp)</label>
+                  <input type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} required placeholder="Ej. 70012345" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
                 
                 <div>
