@@ -13,6 +13,7 @@ import AdminBot from './components/AdminBot'
 import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
 import ChatBotWidget from './components/ChatBotWidget'
+import MotoDashboard from './components/MotoDashboard'
 
 function App() {
   const [user, setUserState] = useState(() => {
@@ -78,7 +79,7 @@ function App() {
         />
 
         {/* Rutas Protegidas (CRM Interno) */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute>{user?.rol === 'Trabajador' ? <MotoDashboard user={user} /> : <Dashboard />}</ProtectedRoute>} />
         <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
         <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
         <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />

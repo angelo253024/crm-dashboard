@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ user }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const isTrabajador = user?.rol === 'Trabajador';
 
   return (
     <aside className="sidebar">
@@ -46,7 +47,7 @@ export default function Sidebar() {
           </div>
           <div style={{ flex: 1 }}>
             <div className="text-small font-semibold">Mi Espacio</div>
-            <div className="text-small text-muted" style={{ fontWeight: 400 }}>Plan Admin</div>
+            <div className="text-small text-muted" style={{ fontWeight: 400 }}>{isTrabajador ? 'App Trabajador' : 'Plan Admin'}</div>
           </div>
           <ChevronDown 
             size={16} 
@@ -74,7 +75,7 @@ export default function Sidebar() {
           }}>
             <div style={{ padding: '12px', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '4px' }}>CUENTA ACTUAL</div>
-              <div style={{ fontSize: '14px', fontWeight: '500' }}>Admin Lavamovil</div>
+              <div style={{ fontSize: '14px', fontWeight: '500' }}>{isTrabajador ? user?.nombre : 'Admin Lavamovil'}</div>
             </div>
             <div style={{ padding: '8px' }}>
               <button className="dropdown-item" onClick={() => alert('Configuración próximamente')}>
@@ -105,30 +106,35 @@ export default function Sidebar() {
           <CalendarClock size={20} />
           <span>Citas / Agenda</span>
         </NavLink>
-        <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Map size={20} />
-          <span>Mapa / Zonas</span>
-        </NavLink>
-        <NavLink to="/trabajadores" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Users size={20} />
-          <span>Trabajadores</span>
-        </NavLink>
-        <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <CarFront size={20} />
-          <span>Clientes</span>
-        </NavLink>
-        <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Package size={20} />
-          <span>Servicios</span>
-        </NavLink>
-        <NavLink to="/promos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Tag size={20} />
-          <span>Promos</span>
-        </NavLink>
-        <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Bot size={20} />
-          <span>Admin Bot</span>
-        </NavLink>
+        
+        {!isTrabajador && (
+          <>
+            <NavLink to="/zonas" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Map size={20} />
+              <span>Mapa / Zonas</span>
+            </NavLink>
+            <NavLink to="/trabajadores" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Users size={20} />
+              <span>Trabajadores</span>
+            </NavLink>
+            <NavLink to="/clientes" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <CarFront size={20} />
+              <span>Clientes</span>
+            </NavLink>
+            <NavLink to="/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Package size={20} />
+              <span>Servicios</span>
+            </NavLink>
+            <NavLink to="/promos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Tag size={20} />
+              <span>Promos</span>
+            </NavLink>
+            <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <Bot size={20} />
+              <span>Admin Bot</span>
+            </NavLink>
+          </>
+        )}
       </nav>
 
     </aside>

@@ -17,9 +17,7 @@ export default function AdminServicios() {
   const [precio, setPrecio] = useState('');
   const [disponible, setDisponible] = useState(true);
   const [imagenUrl, setImagenUrl] = useState('');
-  const [uploading, setUploading] = useState(false);
 
-  const fileInputRef = useRef(null);
   const location = useLocation();
 
   useEffect(() => {
@@ -50,38 +48,6 @@ export default function AdminServicios() {
     setLoading(false);
   };
 
-  const handleImageUpload = async (e) => {
-    try {
-      setUploading(true);
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('servicios_images')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data } = supabase.storage
-        .from('servicios_images')
-        .getPublicUrl(filePath);
-
-      if (data) {
-        setImagenUrl(data.publicUrl);
-      }
-    } catch (error) {
-      console.error('Error uploading image: ', error.message);
-      alert('Error al subir la imagen. Asegúrate de haber creado el bucket "servicios_images" en Supabase.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const resetForm = () => {
     setNombre('');
@@ -302,32 +268,22 @@ export default function AdminServicios() {
               </div>
 
               <div className="form-group">
-                <label>Imagen del Servicio</label>
+                <label>URL de la Imagen (Link externo, Opcional)</label>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px', alignItems: 'center' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '4px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '4px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}>
                     {imagenUrl ? (
-                      <img src={imagenUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={imagenUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} onLoad={(e) => { e.target.style.display = 'block'; }} />
                     ) : (
                       <ImageIcon size={24} className="text-muted" />
                     )}
                   </div>
-                  <div>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      ref={fileInputRef} 
-                      onChange={handleImageUpload}
-                      style={{ display: 'none' }}
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => fileInputRef.current.click()} 
-                      className="btn-secondary" 
-                      disabled={uploading}
-                    >
-                      {uploading ? 'Subiendo...' : 'Subir Imagen'}
-                    </button>
-                  </div>
+                  <input 
+                    type="url" 
+                    placeholder="https://ejemplo.com/imagen.jpg"
+                    value={imagenUrl}
+                    onChange={(e) => setImagenUrl(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}
+                  />
                 </div>
               </div>
 
@@ -344,7 +300,7 @@ export default function AdminServicios() {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-                <button type="submit" className="btn-primary" disabled={loading || uploading}>
+                <button type="submit" className="btn-primary" disabled={loading}>
                   {loading ? 'Guardando...' : 'Guardar Servicio'}
                 </button>
               </div>
