@@ -27,6 +27,19 @@ export class SupabaseQueryService {
 
     // 2. Si no hay respuesta rápida estática, intentar consultar las tablas de negocio dinámicas
     try {
+      if (intent === 'horario') {
+        const { data: horarios } = await supabase.from('horarios_atencion').select('*').order('orden', { ascending: true });
+        if (horarios && horarios.length > 0) {
+          const listado = horarios.map(h => {
+            if (h.cerrado) return `- ${h.dia_semana}: Cerrado`;
+            const apertura = h.hora_apertura ? h.hora_apertura.substring(0, 5) : '08:00';
+            const cierre = h.hora_cierre ? h.hora_cierre.substring(0, 5) : '19:00';
+            return `- ${h.dia_semana}: ${apertura} a ${cierre}`;
+          }).join('\n');
+          return `Nuestros horarios de atención son:\n${listado}`;
+        }
+      }
+
       if (intent === 'precios' || intent === 'servicios') {
         const { data: servicios } = await supabase.from('servicios').select('nombre, precio');
         if (servicios && servicios.length > 0) {

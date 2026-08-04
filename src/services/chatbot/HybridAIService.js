@@ -24,7 +24,7 @@ export class HybridAIService {
 
     try {
       onStatusUpdate("Analizando intención...");
-      const intent = IntentClassifier.classify(userMessage);
+      const intent = await IntentClassifier.classify(userMessage);
 
       onStatusUpdate("Consultando Base de Datos...");
       // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
