@@ -13,7 +13,12 @@ function MotoChat({ sessionId, onClose }) {
     const channel = supabase
       .channel(`chat_${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === payload.new.id || (m.tempId && m.contenido === payload.new.contenido))) {
+            return prev.map(m => (m.tempId && m.contenido === payload.new.contenido) ? payload.new : m);
+          }
+          return [...prev, payload.new];
+        });
       })
       .subscribe();
       
@@ -32,11 +37,23 @@ function MotoChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    await supabase.from('mensajes').insert([{
+    // Optimistic UI Update
+    const tempId = `temp_${Date.now()}`;
+    const optimisticMsg = { tempId, session_id: sessionId, contenido: msg, rol: 'bot', created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, optimisticMsg]);
+    
+    const { data, error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
       rol: 'bot' // Enviamos como bot para que le llegue al cliente
-    }]);
+    }]).select();
+
+    if (error) {
+      console.error("Error de Supabase al enviar chat:", error);
+      alert(`Error al enviar mensaje: ${error.message}`);
+      setMessages(prev => prev.filter(m => m.tempId !== tempId));
+      setInput(msg);
+    }
   };
 
   return (

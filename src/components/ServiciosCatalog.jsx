@@ -13,7 +13,13 @@ function ClientChat({ sessionId, onClose }) {
     const channel = supabase
       .channel(`chat_${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => {
+          // Evitar duplicados si el mensaje ya está (optimistic update o ya cargado)
+          if (prev.some(m => m.id === payload.new.id || (m.tempId && m.contenido === payload.new.contenido))) {
+            return prev.map(m => (m.tempId && m.contenido === payload.new.contenido) ? payload.new : m);
+          }
+          return [...prev, payload.new];
+        });
       })
       .subscribe();
       
@@ -32,11 +38,24 @@ function ClientChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    await supabase.from('mensajes').insert([{
+    // Optimistic UI Update: lo mostramos de inmediato en la UI
+    const tempId = `temp_${Date.now()}`;
+    const optimisticMsg = { tempId, session_id: sessionId, contenido: msg, rol: 'user', created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, optimisticMsg]);
+    
+    const { data, error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
-      rol: 'user' // 'user' para el cliente, 'bot' para el trabajador
-    }]);
+      rol: 'user'
+    }]).select();
+
+    if (error) {
+      console.error("Error de Supabase al enviar chat:", error);
+      alert(`Error al enviar mensaje: ${error.message}. Verifica que la tabla 'mensajes' exista y tenga permisos (RLS).`);
+      // Revertimos el optimistic update
+      setMessages(prev => prev.filter(m => m.tempId !== tempId));
+      setInput(msg); // Devolvemos el texto al input
+    }
   };
 
   return (

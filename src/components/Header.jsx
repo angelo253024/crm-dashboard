@@ -142,6 +142,14 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
     }
   };
 
+  const renderWorkerStatus = (disponibilidad) => {
+    const st = disponibilidad || 'inactivo';
+    if (st === 'disponible') return { label: 'Disponible', icon: '🟢', bg: 'rgba(16, 185, 129, 0.1)', color: '#10b981' };
+    if (st === 'en_proceso') return { label: 'En Proceso (Lavando)', icon: '🟡', bg: 'rgba(234, 179, 8, 0.1)', color: '#eab308' };
+    if (st === 'ocupado') return { label: 'Ocupado (En camino)', icon: '🟠', bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' };
+    return { label: 'Inactivo / Fuera', icon: '🔴', bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' };
+  };
+
   const handleNuevoServicioClick = () => {
     if (window.location.pathname === '/servicios') {
       window.dispatchEvent(new CustomEvent('openNewServiceModal'));
@@ -206,30 +214,36 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                     No hay personal activo
                   </div>
                 ) : (
-                  trabajadores.filter(t => t.estado && t.estado !== 'Inactivo').map(t => (
-                    <div key={t.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {t.foto_url ? (
-                          <img src={t.foto_url} alt={t.nombre} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
-                        ) : (
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent-cyan)', color: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>
-                            {getInitial(t.nombre)}
-                          </div>
-                        )}
-                        <span style={{ fontSize: '13px', fontWeight: '500' }}>{t.nombre}</span>
+                  trabajadores.filter(t => t.estado && t.estado !== 'Inactivo').map(t => {
+                    const statusUi = renderWorkerStatus(t.estado_disponibilidad);
+                    return (
+                      <div key={t.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {t.foto_url ? (
+                            <img src={t.foto_url} alt={t.nombre} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent-cyan)', color: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px' }}>
+                              {getInitial(t.nombre)}
+                            </div>
+                          )}
+                          <span style={{ fontSize: '13px', fontWeight: '500' }}>{t.nombre}</span>
+                        </div>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          fontWeight: '600',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          backgroundColor: statusUi.bg,
+                          color: statusUi.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}>
+                          {statusUi.icon} {statusUi.label}
+                        </span>
                       </div>
-                      <span style={{ 
-                        fontSize: '11px', 
-                        fontWeight: '600',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                        backgroundColor: t.estado === 'Ocupado' ? 'rgba(239, 68, 68, 0.1)' : t.estado === 'Inactivo' ? 'rgba(156, 163, 175, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                        color: t.estado === 'Ocupado' ? '#ef4444' : t.estado === 'Inactivo' ? '#9ca3af' : '#10b981'
-                      }}>
-                        {t.estado === 'Ocupado' ? 'Ocupado' : t.estado === 'Inactivo' ? 'Inactivo' : (t.estado || 'Inactivo')}
-                      </span>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
