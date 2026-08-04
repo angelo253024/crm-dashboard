@@ -50,6 +50,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
+    // Buscar un trabajador disponible
+    const { data: trabajadores } = await supabase
+      .from('trabajadores')
+      .select('id')
+      .eq('estado_disponibilidad', 'disponible')
+      .eq('rol', 'Trabajador')
+      .limit(1);
+
+    const trabajadorId = trabajadores && trabajadores.length > 0 ? trabajadores[0].id : null;
+    const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
+
     const { error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: clienteNombre,
@@ -58,7 +69,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         hora_reserva: formattedHora,
         servicio_id: selectedService.id,
         precio_total: selectedService.precio,
-        estado: 'Reservado'
+        estado: 'Reservado',
+        trabajador_id: trabajadorId,
+        estado_reserva: estadoReserva
       }
     ]);
 
