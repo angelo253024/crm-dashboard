@@ -35,6 +35,8 @@ function App() {
     } else {
       localStorage.removeItem('crm_user');
     }
+  };
+
   const handleLogout = async () => {
     if (user && user.id !== 'local-demo') {
       try {
