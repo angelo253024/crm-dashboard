@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -39,6 +39,18 @@ export default function Dashboard() {
     const { data, error } = await supabase.from('servicios').select('*');
     if (!error && data) {
       setServicios(data);
+    }
+  };
+
+  const deleteReserva = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este servicio? Esto reducirá el monto de ingresos y borrará el historial de esta prueba.")) return;
+    
+    const { error } = await supabase.from('reservas').delete().eq('id', id);
+    if (error) {
+      alert("Error al eliminar el servicio: " + error.message);
+      console.error(error);
+    } else {
+      setReservas(prev => prev.filter(r => r.id !== id));
     }
   };
 
@@ -232,6 +244,7 @@ export default function Dashboard() {
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Servicio Realizado</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', width: '40px' }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -247,6 +260,15 @@ export default function Dashboard() {
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>Efectivo/QR</td>
                           <td style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', textAlign: 'right', color: 'var(--accent-green)' }}>
                             Bs {s.precio_total || s.precio}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <button 
+                              onClick={() => deleteReserva(s.id)} 
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
+                              title="Eliminar registro"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </td>
                         </tr>
                       ))}
