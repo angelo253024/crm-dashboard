@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function Citas() {
@@ -17,16 +17,27 @@ export default function Citas() {
 
   const fetchReservas = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('reservas')
-      .select('*, servicios(nombre)')
-      .order('fecha_reserva', { ascending: true })
-      .order('hora_reserva', { ascending: true });
+    const [resReservas, resTrabajadores] = await Promise.all([
+      supabase.from('reservas').select('*, servicios(nombre)').order('fecha_reserva', { ascending: true }).order('hora_reserva', { ascending: true }),
+      supabase.from('trabajadores').select('id, nombre')
+    ]);
       
-    if (error) {
-      console.error('Error fetching reservas:', error);
+    if (resReservas.error) {
+      console.error('Error fetching reservas:', resReservas.error);
     } else {
-      const formattedEvents = data.map(res => {
+      const trabajadoresList = resTrabajadores.data || [];
+      const formattedEvents = resReservas.data.map(res => {
+        let workerName = 'Sin asignar';
+        if (res.trabajador && typeof res.trabajador === 'string') {
+           workerName = res.trabajador;
+        } else if (res.trabajador_id || res.empleado_id) {
+           const wId = res.trabajador_id || res.empleado_id;
+           const worker = trabajadoresList.find(t => t.id === wId);
+           if (worker) workerName = worker.nombre;
+        } else if (res.trabajadores && res.trabajadores.nombre) {
+           workerName = res.trabajadores.nombre;
+        }
+
         return {
           id: res.id,
           dateStr: res.fecha_reserva,
@@ -35,7 +46,8 @@ export default function Citas() {
           customer: res.cliente_nombre,
           status: res.estado,
           price: res.precio_total,
-          car: res.vehiculo
+          car: res.vehiculo,
+          worker: workerName
         };
       });
       setEvents(formattedEvents);
@@ -274,7 +286,11 @@ export default function Citas() {
                         <Car size={16} color="var(--text-muted)" />
                         <span className="text-body">{ev.car}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <UserCheck size={16} color="var(--text-muted)" />
+                        <span className="text-body">{ev.worker}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
                         <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs.{ev.price}</span>
                       </div>
                     </div>
