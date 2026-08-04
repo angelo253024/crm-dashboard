@@ -1,7 +1,82 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare } from 'lucide-react';
 import { supabase } from '../supabase';
+
+// --- Inline Chat Component for Client ---
+function ClientChat({ sessionId, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+
+  useEffect(() => {
+    fetchMessages();
+    const channel = supabase
+      .channel(`chat_${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
+        setMessages(prev => [...prev, payload.new]);
+      })
+      .subscribe();
+      
+    return () => supabase.removeChannel(channel);
+  }, [sessionId]);
+
+  const fetchMessages = async () => {
+    const { data } = await supabase.from('mensajes').select('*').eq('session_id', sessionId).order('created_at', { ascending: true });
+    if (data) setMessages(data);
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    
+    const msg = input.trim();
+    setInput('');
+    
+    await supabase.from('mensajes').insert([{
+      session_id: sessionId,
+      contenido: msg,
+      rol: 'user' // 'user' para el cliente, 'bot' para el trabajador
+    }]);
+  };
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '350px', backgroundColor: 'var(--card-bg)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 9999, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '400px' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0' }}>
+        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}><X size={18} /></button>
+      </div>
+      
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.rol === 'bot' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'bot' ? 'var(--bg-color)' : 'rgba(30, 76, 154, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'bot' ? '1px solid var(--border-color)' : 'none' }}>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'bot' ? 'var(--text-muted)' : '#1E4C9A', display: 'block', marginBottom: '2px' }}>
+              {m.rol === 'bot' ? 'Trabajador' : 'Tú'}
+            </span>
+            {m.contenido}
+          </div>
+        ))}
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', marginTop: '20px' }}>
+            Escribe un mensaje. El trabajador te responderá pronto.
+          </div>
+        )}
+      </div>
+      
+      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
+        <input 
+          type="text" 
+          value={input} 
+          onChange={e => setInput(e.target.value)} 
+          placeholder="Escribe un mensaje..." 
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
+        />
+        <button type="submit" style={{ backgroundColor: '#1E4C9A', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <Send size={16} />
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [servicios, setServicios] = useState([]);
@@ -17,10 +92,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [clienteNombre, setClienteNombre] = useState('');
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [vehiculo, setVehiculo] = useState('');
+  const [ubicacion, setUbicacion] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [confirmedReserva, setConfirmedReserva] = useState(null);
+  const [showClientChat, setShowClientChat] = useState(false);
 
   useEffect(() => {
     fetchServicios();
@@ -62,10 +140,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const trabajadorId = trabajadores && trabajadores.length > 0 ? trabajadores[0].id : null;
     const estadoReserva = trabajadorId ? 'asignado' : null;
 
-    const { error } = await supabase.from('reservas').insert([
+    const { data: insertData, error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
         vehiculo: vehiculo,
+        ubicacion_gps: ubicacion,
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: selectedService.id,
@@ -74,12 +153,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva
       }
-    ]);
+    ]).select();
 
     if (error) {
       console.error('Error guardando reserva:', error);
       alert('Hubo un error al procesar tu reserva: ' + (error.message || JSON.stringify(error)));
     } else {
+      if (insertData && insertData.length > 0) {
+        setConfirmedReserva(insertData[0]);
+      }
       setSuccess(true);
       
       // Dispatch notification
@@ -91,6 +173,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       setClienteNombre('');
       setClienteTelefono('');
       setVehiculo('');
+      setUbicacion('');
       setFechaReserva('');
       setHoraReserva('');
     }
@@ -100,6 +183,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const closeModal = () => {
     setShowModal(false);
     setSelectedService(null);
+    setConfirmedReserva(null);
+    setShowClientChat(false);
   };
 
   const filteredServicios = categoriaActiva === 'Todos' 
@@ -263,6 +348,16 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 <CheckCircle size={64} color="var(--accent-green)" style={{ margin: '0 auto 16px auto' }} />
                 <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px' }}>¡Reserva Confirmada!</h3>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.</p>
+                
+                {confirmedReserva && (
+                  <button 
+                    onClick={() => setShowClientChat(true)} 
+                    style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MessageSquare size={18} /> Abrir Chat con Trabajador
+                  </button>
+                )}
+                
                 <button onClick={closeModal} style={{ backgroundColor: 'var(--accent-green)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
                   Volver al Catálogo
                 </button>
@@ -293,6 +388,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   <input type="text" value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} required placeholder="Ej. Toyota Corolla" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Dirección / Ubicación GPS</label>
+                  <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer, 4to anillo" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                </div>
+
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fecha</label>
@@ -312,6 +412,14 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
           </div>
         </div>
+      )}
+
+      {/* Floating Chat For Client */}
+      {showClientChat && confirmedReserva && (
+        <ClientChat 
+          sessionId={confirmedReserva.chat_session_id || `fallback_${confirmedReserva.id}`} 
+          onClose={() => setShowClientChat(false)} 
+        />
       )}
 
     </div>

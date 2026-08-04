@@ -77,6 +77,7 @@ export default function MotoDashboard({ user }) {
   const [estado, setEstado] = useState('inactivo');
   const [reservas, setReservas] = useState([]);
   const [todasReservas, setTodasReservas] = useState([]);
+  const [pendientes, setPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
 
@@ -156,6 +157,19 @@ export default function MotoDashboard({ user }) {
       setTodasReservas(data);
       setReservas(data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino' || r.estado_reserva === 'en_proceso'));
     }
+    
+    // Fetch pending services available to claim
+    const { data: pendingData } = await supabase
+      .from('reservas')
+      .select('*')
+      .eq('estado_reserva', 'pendiente')
+      .is('trabajador_id', null)
+      .order('created_at', { ascending: false });
+      
+    if (pendingData) {
+      setPendientes(pendingData);
+    }
+    
     setLoading(false);
   };
 
@@ -230,6 +244,14 @@ export default function MotoDashboard({ user }) {
     } catch(err) {
       console.error(err);
     }
+    fetchReservasAsignadas();
+  };
+
+  const reclamarReserva = async (id) => {
+    await supabase.from('reservas').update({ 
+      trabajador_id: user.id, 
+      estado_reserva: 'asignado' 
+    }).eq('id', id);
     fetchReservasAsignadas();
   };
 
@@ -379,6 +401,31 @@ export default function MotoDashboard({ user }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {pendientes.length > 0 && (
+        <div style={{ marginTop: '32px' }}>
+          <h2 className="text-h2" style={{ marginBottom: '16px', color: '#f59e0b' }}>Servicios Pendientes por Asignar ({pendientes.length})</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {pendientes.map(res => (
+              <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-soft)', border: '1px dashed #f59e0b' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre || 'No especificado'}</p>
+                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Hora:</strong> {res.hora_reserva || res.hora}</p>
+                  </div>
+                  <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                    PENDIENTE
+                  </div>
+                </div>
+                
+                <button onClick={() => reclamarReserva(res.id)} style={{ width: '100%', padding: '12px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <Check size={18} /> Tomar Servicio
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       
