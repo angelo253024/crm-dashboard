@@ -13,10 +13,12 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [promos, setPromos] = useState([]);
   const [reservas, setReservas] = useState([]);
+  const [servicios, setServicios] = useState([]);
   
   useEffect(() => {
     fetchPromos();
     fetchReservas();
+    fetchServicios();
   }, []);
 
   const fetchPromos = async () => {
@@ -30,6 +32,13 @@ export default function Dashboard() {
     const { data, error } = await supabase.from('reservas').select('*');
     if (!error && data) {
       setReservas(data);
+    }
+  };
+
+  const fetchServicios = async () => {
+    const { data, error } = await supabase.from('servicios').select('*');
+    if (!error && data) {
+      setServicios(data);
     }
   };
 
@@ -228,16 +237,16 @@ export default function Dashboard() {
                     <tbody>
                       {finanzasDetalladas.servicios.map((s, i) => (
                         <tr key={s.id} style={{ borderBottom: i === finanzasDetalladas.servicios.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora_reserva?.substring(0, 5) || s.hora}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente_nombre || s.cliente}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px' }}>
                             <span style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
-                              {s.servicio}
+                              {servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '-'}
                             </span>
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>Efectivo/QR</td>
                           <td style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', textAlign: 'right', color: 'var(--accent-green)' }}>
-                            Bs {s.precio}
+                            Bs {s.precio_total || s.precio}
                           </td>
                         </tr>
                       ))}

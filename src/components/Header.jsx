@@ -201,12 +201,12 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                 <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Estado del Personal</h3>
               </div>
               <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
-                {trabajadores.length === 0 ? (
+                {trabajadores.filter(t => t.estado && t.estado !== 'Inactivo').length === 0 ? (
                   <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                    No hay trabajadores
+                    No hay personal activo
                   </div>
                 ) : (
-                  trabajadores.map(t => (
+                  trabajadores.filter(t => t.estado && t.estado !== 'Inactivo').map(t => (
                     <div key={t.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {t.foto_url ? (
