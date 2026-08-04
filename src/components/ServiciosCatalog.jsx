@@ -96,6 +96,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [success, setSuccess] = useState(false);
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
@@ -185,6 +186,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setSelectedService(null);
     setConfirmedReserva(null);
     setShowClientChat(false);
+  };
+
+  const getGPSLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUbicacion(`${latitude}, ${longitude}`);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error("Error obteniendo ubicación:", error);
+        alert("No se pudo obtener tu ubicación. Por favor, asegúrate de dar permisos de ubicación al navegador o escríbela manualmente.");
+        setIsGettingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const filteredServicios = categoriaActiva === 'Todos' 
@@ -389,8 +412,18 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Dirección / Ubicación GPS</label>
-                  <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer, 4to anillo" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Dirección / Ubicación GPS</label>
+                    <button 
+                      type="button" 
+                      onClick={getGPSLocation}
+                      disabled={isGettingLocation}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent-green)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {isGettingLocation ? 'Obteniendo...' : '📍 Usar mi ubicación actual'}
+                    </button>
+                  </div>
+                  <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer o presiona el botón" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
                 <div style={{ display: 'flex', gap: '16px' }}>

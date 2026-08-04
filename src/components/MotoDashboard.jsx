@@ -340,26 +340,40 @@ export default function MotoDashboard({ user }) {
               </div>
               
               {res.ubicacion_gps && (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '20px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '6px' }}>
-                  <MapPin size={18} color="#ef4444" />
-                  <span style={{ fontSize: '14px', fontFamily: 'monospace' }}>Ubicación: {res.ubicacion_gps}</span>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '11px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold' }}
-                    >
-                      Google Maps
-                    </a>
-                    <a 
-                      href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps)}&navigate=yes`} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(16, 185, 129, 0.1)', fontSize: '11px', color: '#10b981', textDecoration: 'none', fontWeight: 'bold' }}
-                    >
-                      Waze
-                    </a>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <MapPin size={18} color="#ef4444" />
+                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Ubicación</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{res.ubicacion_gps}</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Map size={14} /> Maps
+                      </a>
+                      <a 
+                        href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps)}&navigate=yes`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.1)', fontSize: '12px', color: '#10b981', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        Waze
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div style={{ width: '100%', height: '150px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                    <iframe 
+                      width="100%" 
+                      height="100%" 
+                      frameBorder="0" 
+                      style={{ border: 0 }}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps)}&hl=es&z=15&output=embed`}
+                      allowFullScreen>
+                    </iframe>
                   </div>
                 </div>
               )}
@@ -419,6 +433,35 @@ export default function MotoDashboard({ user }) {
                     PENDIENTE
                   </div>
                 </div>
+
+                {res.ubicacion_gps && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <MapPin size={18} color="#ef4444" />
+                      <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Ubicación</span>
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Map size={14} /> Maps
+                        </a>
+                      </div>
+                    </div>
+                    <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                      <iframe 
+                        width="100%" 
+                        height="100%" 
+                        frameBorder="0" 
+                        style={{ border: 0 }}
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps)}&hl=es&z=15&output=embed`}
+                        allowFullScreen>
+                      </iframe>
+                    </div>
+                  </div>
+                )}
                 
                 <button onClick={() => reclamarReserva(res.id)} style={{ width: '100%', padding: '12px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <Check size={18} /> Tomar Servicio
