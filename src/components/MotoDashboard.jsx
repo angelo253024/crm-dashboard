@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map } from 'lucide-react';
 import KpiCards from './KpiCards';
 
 // --- Inline Chat Component for Worker ---
