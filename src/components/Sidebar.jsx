@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot } from 'lucide-react';
 
-export default function Sidebar({ user }) {
+export default function Sidebar({ user, onLogout }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const isTrabajador = user?.rol === 'Trabajador';
 
@@ -89,7 +89,7 @@ export default function Sidebar({ user }) {
               </button>
             </div>
             <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-              <button className="dropdown-item text-red" onClick={() => window.location.reload()}>
+              <button className="dropdown-item text-red" onClick={() => onLogout()}>
                 <LogOut size={14} /> Cerrar Sesión
               </button>
             </div>

@@ -102,6 +102,14 @@ export default function Login({ onLogin }) {
     if (fetchError || !data) {
       setError('Usuario o contraseña incorrectos');
     } else {
+      if (data.id !== 'local-demo') {
+        try {
+          await supabase.from('trabajadores').update({ estado: 'Activo' }).eq('id', data.id);
+          data.estado = 'Activo';
+        } catch (err) {
+          console.error("Error setting user to Activo:", err);
+        }
+      }
       // Logueado exitosamente, pasamos el objeto del usuario a onLogin
       onLogin(data);
     }

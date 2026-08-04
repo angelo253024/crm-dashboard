@@ -35,7 +35,18 @@ function App() {
     } else {
       localStorage.removeItem('crm_user');
     }
+  const handleLogout = async () => {
+    if (user && user.id !== 'local-demo') {
+      try {
+        const { supabase } = await import('./supabase');
+        await supabase.from('trabajadores').update({ estado: 'Inactivo' }).eq('id', user.id);
+      } catch (err) {
+        console.error("Error setting user to Inactivo:", err);
+      }
+    }
+    setUser(null);
   };
+
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check local storage first
     const saved = localStorage.getItem('theme');
@@ -61,7 +72,7 @@ function App() {
       return <Navigate to="/login" replace />;
     }
     return (
-      <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser}>
+      <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser} onLogout={handleLogout}>
         {children}
       </Layout>
     );

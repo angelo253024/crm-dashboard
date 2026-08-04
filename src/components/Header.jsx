@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check, Users } from 'lucide-react';
 import { supabase } from '../supabase';
 
-export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
+export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogout }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
@@ -223,10 +223,10 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
                         fontWeight: '600',
                         padding: '2px 8px',
                         borderRadius: '10px',
-                        backgroundColor: t.estado === 'Ocupado' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                        color: t.estado === 'Ocupado' ? '#ef4444' : '#10b981'
+                        backgroundColor: t.estado === 'Ocupado' ? 'rgba(239, 68, 68, 0.1)' : t.estado === 'Inactivo' ? 'rgba(156, 163, 175, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                        color: t.estado === 'Ocupado' ? '#ef4444' : t.estado === 'Inactivo' ? '#9ca3af' : '#10b981'
                       }}>
-                        {t.estado === 'Ocupado' ? 'Ocupado' : (t.estado || 'Disponible')}
+                        {t.estado === 'Ocupado' ? 'Ocupado' : t.estado === 'Inactivo' ? 'Inactivo' : (t.estado || 'Inactivo')}
                       </span>
                     </div>
                   ))
@@ -363,7 +363,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser }) {
                 </button>
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <button className="dropdown-item text-red" onClick={() => setUser(null)}>
+                <button className="dropdown-item text-red" onClick={() => onLogout()}>
                   <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>
