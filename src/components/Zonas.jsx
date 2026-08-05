@@ -167,6 +167,14 @@ export default function Zonas() {
       coords = getFallbackLocation(trab.id + "base");
     }
 
+    const st = trab.estado_disponibilidad || 'inactivo';
+    let estadoLabel = 'Inactivo / Fuera';
+    let estadoColor = '#ef4444';
+    
+    if (st === 'disponible') { estadoLabel = 'Disponible en Base'; estadoColor = '#10b981'; }
+    else if (st === 'en_proceso') { estadoLabel = 'En Proceso (Lavando)'; estadoColor = '#eab308'; }
+    else if (st === 'ocupado') { estadoLabel = 'Ocupado (En camino)'; estadoColor = '#f59e0b'; }
+
     markers.push({
       id: `trab_${trab.id}`,
       lat: coords.lat,
@@ -174,7 +182,7 @@ export default function Zonas() {
       isExact: coords.isExact,
       icon: ICONS.trabajador,
       type: 'trabajador',
-      data: { ...trab, estadoActual: reservaActiva ? 'En un Servicio' : 'Disponible en Base' }
+      data: { ...trab, estadoActual: estadoLabel, colorStatus: estadoColor }
     });
   });
 
@@ -271,8 +279,8 @@ export default function Zonas() {
                       </div>
                       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0f172a' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: marker.data.estadoActual.includes('Disponible') ? '#10b981' : '#f59e0b' }}></div>
-                          <span style={{ color: '#e2e8f0' }}>Estado: <strong>{marker.data.estadoActual}</strong></span>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: marker.data.colorStatus }}></div>
+                          <span style={{ color: '#e2e8f0' }}>Estado: <strong style={{ color: marker.data.colorStatus }}>{marker.data.estadoActual}</strong></span>
                         </div>
                       </div>
                     </div>
