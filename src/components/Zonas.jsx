@@ -142,7 +142,7 @@ export default function Zonas() {
     const trabAsignado = trabajadores.find(t => t.id === res.trabajador_id);
     
     markers.push({
-      id: \`res_\${res.id}\`,
+      id: `res_${res.id}`,
       lat: coords.lat,
       lng: coords.lng,
       isExact: coords.isExact,
@@ -168,7 +168,7 @@ export default function Zonas() {
     }
 
     markers.push({
-      id: \`trab_\${trab.id}\`,
+      id: `trab_${trab.id}`,
       lat: coords.lat,
       lng: coords.lng,
       isExact: coords.isExact,
