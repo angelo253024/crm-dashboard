@@ -116,7 +116,7 @@ export default function AdminServicios() {
 
     if (error) {
       console.error('Error saving:', error);
-      alert(`Error al guardar: ${error.message || JSON.stringify(error)}\n\nDetalles técnicos: Verifica los permisos RLS o la estructura de la tabla.`);
+      alert('Error al guardar. Verifica la consola o tu configuración de base de datos.');
     } else {
       setShowModal(false);
       resetForm();
