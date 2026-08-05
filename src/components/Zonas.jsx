@@ -72,17 +72,7 @@ const parseCoords = (ubicacionGps) => {
   return null;
 };
 
-// Generar una ubicación aleatoria cerca del centro para aquellos sin GPS exacto
-const getFallbackLocation = (id_string) => {
-  const centerLat = -17.7833;
-  const centerLng = -63.1821;
-  // Usamos el ID para que la posición se mantenga constante por reserva
-  let hash = 0;
-  for (let i = 0; i < id_string.length; i++) hash = hash + id_string.charCodeAt(i);
-  const latOffset = ((hash % 100) - 50) * 0.001; 
-  const lngOffset = (((hash * 13) % 100) - 50) * 0.001;
-  return { lat: centerLat + latOffset, lng: centerLng + lngOffset, isExact: false };
-};
+// Eliminado getFallbackLocation para NO inventar ubicaciones nunca.
 
 export default function Zonas() {
   const [reservas, setReservas] = useState([]);
@@ -135,7 +125,11 @@ export default function Zonas() {
 
   // A) Marcadores de Reservas (Trabajos)
   reservas.forEach(res => {
-    const coords = parseCoords(res.ubicacion_gps) || getFallbackLocation(res.id);
+    const coords = parseCoords(res.ubicacion_gps);
+    
+    // Si la reserva NO tiene coordenadas GPS parseables, no la dibujamos (No inventar)
+    if (!coords) return; 
+
     const icon = res.estado_reserva === 'pendiente' ? ICONS.pendiente : ICONS.en_proceso;
     
     // Buscar al trabajador asignado a esta reserva
@@ -154,32 +148,24 @@ export default function Zonas() {
 
   // B) Marcadores de Trabajadores
   trabajadores.forEach(trab => {
-    // Para saber dónde está el trabajador, buscamos si tiene una reserva activa en curso
-    const reservaActiva = reservas.find(r => r.trabajador_id === trab.id && ['en_camino', 'en_proceso'].includes(r.estado_reserva));
+    // Si el trabajador NO transmite GPS (o si le quitaste las coordenadas), no lo mostramos en el mapa
+    if (trab.latitud == null || trab.longitud == null) return;
     
-    let coords;
-    if (reservaActiva) {
-      // Si está ocupado, su posición es la del trabajo (con un micro-offset visual para que no tape 100% al otro icono)
-      const baseCoords = parseCoords(reservaActiva.ubicacion_gps) || getFallbackLocation(reservaActiva.id);
-      coords = { lat: baseCoords.lat + 0.0001, lng: baseCoords.lng + 0.0001, isExact: baseCoords.isExact };
-    } else {
-      // Si está disponible, lo ubicamos simuladamente cerca del centro (base)
-      coords = getFallbackLocation(trab.id + "base");
-    }
-
     const st = trab.estado_disponibilidad || 'inactivo';
+    
     let estadoLabel = 'Inactivo / Fuera';
     let estadoColor = '#ef4444';
     
-    if (st === 'disponible') { estadoLabel = 'Disponible en Base'; estadoColor = '#10b981'; }
+    if (st === 'disponible') { estadoLabel = 'Disponible'; estadoColor = '#10b981'; }
     else if (st === 'en_proceso') { estadoLabel = 'En Proceso (Lavando)'; estadoColor = '#eab308'; }
     else if (st === 'ocupado') { estadoLabel = 'Ocupado (En camino)'; estadoColor = '#f59e0b'; }
 
     markers.push({
       id: `trab_${trab.id}`,
-      lat: coords.lat,
-      lng: coords.lng,
-      isExact: coords.isExact,
+      lat: trab.latitud,
+      lng: trab.longitud,
+      isExact: true, // El GPS del móvil siempre es exacto
+
       icon: ICONS.trabajador,
       type: 'trabajador',
       data: { ...trab, estadoActual: estadoLabel, colorStatus: estadoColor }
