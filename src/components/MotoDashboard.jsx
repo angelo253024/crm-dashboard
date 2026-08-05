@@ -55,7 +55,7 @@ function MotoChat({ sessionId, onClose }) {
       setInput(msg);
     }
   };
-
+  return (
     // Usamos un div que actúa como overlay fullscreen en móviles, o widget flotante en escritorio
     <div className="moto-chat-container" style={{ 
       position: 'fixed', 
