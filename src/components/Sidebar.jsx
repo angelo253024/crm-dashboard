@@ -81,10 +81,7 @@ export default function Sidebar({ user, onLogout }) {
               <button className="dropdown-item" onClick={() => alert('Configuración próximamente')}>
                 <Settings size={14} /> Configuración de Cuenta
               </button>
-              <button className="dropdown-item" onClick={() => alert('Facturación próximamente')}>
-                <CreditCard size={14} /> Facturación y Planes
-              </button>
-              <button className="dropdown-item" onClick={() => alert('Soporte próximamente')}>
+              <button className="dropdown-item" onClick={() => window.open('https://wa.me/59168754870', '_blank')}>
                 <LifeBuoy size={14} /> Centro de Ayuda
               </button>
             </div>
