@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation, Clock, User, Phone, Car, RefreshCw, Briefcase, Activity } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -73,6 +73,23 @@ const parseCoords = (ubicacionGps) => {
 };
 
 // Eliminado getFallbackLocation para NO inventar ubicaciones nunca.
+
+function MapController({ markers }) {
+  const map = useMap();
+  useEffect(() => {
+    if (markers && markers.length > 0) {
+      try {
+        const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+      } catch (e) {
+        console.error("Error al centrar el mapa:", e);
+      }
+    }
+  }, [markers, map]);
+  return null;
+}
 
 export default function Zonas() {
   const [reservas, setReservas] = useState([]);
@@ -185,6 +202,25 @@ export default function Zonas() {
     });
   });
 
+  // C) Generar Rutas entre trabajador y reserva
+  const routes = [];
+  reservas.forEach(res => {
+    const resCoords = parseCoords(res.ubicacion_gps);
+    if (!resCoords) return;
+    const trab = trabajadores.find(t => t.id === res.trabajador_id);
+    if (trab && trab.latitud != null && trab.longitud != null) {
+      routes.push({
+        id: `route_${res.id}_${trab.id}`,
+        positions: [
+          [trab.latitud, trab.longitud],
+          [resCoords.lat, resCoords.lng]
+        ]
+      });
+    }
+  });
+
+  const reservasSinUbicacion = reservas.filter(res => !parseCoords(res.ubicacion_gps));
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="card" style={{ padding: '32px' }}>
@@ -204,6 +240,12 @@ export default function Zonas() {
           </div>
         </div>
         
+        {reservasSinUbicacion.length > 0 && (
+          <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', color: '#f59e0b', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+            ⚠️ Hay {reservasSinUbicacion.length} reserva(s) que no tienen una ubicación válida y no se mostrarán en el mapa.
+          </div>
+        )}
+
         {/* Leyenda Visual */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
@@ -224,11 +266,22 @@ export default function Zonas() {
             zoom={13} 
             style={{ height: '100%', width: '100%', background: '#0f172a' }} // Dark mode base para mapa (tileset oscuro seria ideal, usamos claro base con filtro opcional por CSS, pero aqui lo dejamos estandar)
           >
+            <MapController markers={markers} />
             {/* TileLayer minimalista (CartoDB Positron) para un estilo más CRM */}
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
+            {routes.map(route => (
+              <Polyline 
+                key={route.id}
+                positions={route.positions} 
+                color="#0ea5e9" 
+                weight={3} 
+                dashArray="5, 10" 
+                opacity={0.8}
+              />
+            ))}
             
             {markers.map(marker => (
               <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={marker.icon}>
