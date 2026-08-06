@@ -83,10 +83,10 @@ export default function Zonas() {
   const fetchData = async () => {
     setLoading(true);
     
-    // 1. Obtener Reservas Activas
+    // 1. Obtener Reservas Activas sin join para evitar errores de Foreign Key
     const { data: resData } = await supabase
       .from('reservas')
-      .select('*, servicios(nombre)')
+      .select('*')
       .in('estado_reserva', ['pendiente', 'asignado', 'en_camino', 'en_proceso']);
 
     // 2. Obtener Trabajadores
@@ -95,7 +95,20 @@ export default function Zonas() {
       .select('*')
       .eq('rol', 'Trabajador');
 
-    setReservas(resData || []);
+    // 3. Obtener Servicios (para asociar nombres localmente)
+    const { data: servData } = await supabase
+      .from('servicios')
+      .select('id, nombre');
+
+    const reservasMapeadas = (resData || []).map(res => {
+      const servicioAsociado = (servData || []).find(s => s.id === res.servicio_id);
+      return {
+        ...res,
+        servicios: servicioAsociado ? { nombre: servicioAsociado.nombre } : { nombre: 'Servicio Personalizado' }
+      };
+    });
+
+    setReservas(reservasMapeadas);
     setTrabajadores(trabData || []);
     setLoading(false);
   };

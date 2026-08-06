@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
+
+// Layout y Componentes Globales Críticos (no diferidos)
 import Layout from './components/Layout'
-import Dashboard from './components/Dashboard'
-import Login from './components/Login'
-import Citas from './components/Citas'
-import Zonas from './components/Zonas'
-import Trabajadores from './components/Trabajadores'
-import Clientes from './components/Clientes'
-import AdminServicios from './components/AdminServicios'
-import AdminPromos from './components/AdminPromos'
-import AdminMetodosPago from './components/AdminMetodosPago'
-import AdminBot from './components/AdminBot'
-import ServiciosCatalog from './components/ServiciosCatalog'
-import LandingPage from './components/LandingPage'
-import ChatBotWidget from './components/ChatBotWidget'
-import MotoDashboard from './components/MotoDashboard'
 import BackgroundEffects from './components/BackgroundEffects'
+import ChatBotWidget from './components/ChatBotWidget'
+
+// Lazy Loading para Vistas (Code Splitting)
+const LandingPage = lazy(() => import('./components/LandingPage'))
+const ServiciosCatalog = lazy(() => import('./components/ServiciosCatalog'))
+const Login = lazy(() => import('./components/Login'))
+const Dashboard = lazy(() => import('./components/Dashboard'))
+const MotoDashboard = lazy(() => import('./components/MotoDashboard'))
+const Citas = lazy(() => import('./components/Citas'))
+const Zonas = lazy(() => import('./components/Zonas'))
+const Trabajadores = lazy(() => import('./components/Trabajadores'))
+const Clientes = lazy(() => import('./components/Clientes'))
+const AdminServicios = lazy(() => import('./components/AdminServicios'))
+const AdminPromos = lazy(() => import('./components/AdminPromos'))
+const AdminMetodosPago = lazy(() => import('./components/AdminMetodosPago'))
+const AdminBot = lazy(() => import('./components/AdminBot'))
 
 function App() {
   const [user, setUserState] = useState(() => {
@@ -82,32 +87,42 @@ function App() {
     );
   };
 
+  // Fallback UI para la carga de componentes
+  const SuspenseFallback = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '16px', color: 'var(--text-muted)' }}>
+      <Loader2 size={40} className="spin" style={{ animation: 'spin 1s linear infinite' }} />
+      <p>Cargando aplicación...</p>
+    </div>
+  );
+
   return (
     <>
       <BackgroundEffects />
-      <Routes>
-        {/* Rutas Públicas */}
-        <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
-        <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
-        <Route 
-          path="/login" 
-          element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
-        />
+      <Suspense fallback={<SuspenseFallback />}>
+        <Routes>
+          {/* Rutas Públicas */}
+          <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+          <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
+          <Route 
+            path="/login" 
+            element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
+          />
 
-        {/* Rutas Protegidas (CRM Interno) */}
-        <Route path="/dashboard" element={<ProtectedRoute>{user?.rol === 'Trabajador' ? <MotoDashboard user={user} /> : <Dashboard />}</ProtectedRoute>} />
-        <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
-        <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
-        <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
-        <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
-        <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
-        <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
-        <Route path="/metodos-pago" element={<ProtectedRoute><AdminMetodosPago /></ProtectedRoute>} />
-        <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
-        
-        {/* Cualquier ruta que no exista redirige a la Landing */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Rutas Protegidas (CRM Interno) */}
+          <Route path="/dashboard" element={<ProtectedRoute>{user?.rol === 'Trabajador' ? <MotoDashboard user={user} /> : <Dashboard />}</ProtectedRoute>} />
+          <Route path="/citas" element={<ProtectedRoute><Citas /></ProtectedRoute>} />
+          <Route path="/zonas" element={<ProtectedRoute><Zonas /></ProtectedRoute>} />
+          <Route path="/trabajadores" element={<ProtectedRoute><Trabajadores /></ProtectedRoute>} />
+          <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+          <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
+          <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
+          <Route path="/metodos-pago" element={<ProtectedRoute><AdminMetodosPago /></ProtectedRoute>} />
+          <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
+          
+          {/* Cualquier ruta que no exista redirige a la Landing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
       <ChatBotWidget />
     </>
   )

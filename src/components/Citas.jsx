@@ -17,15 +17,18 @@ export default function Citas() {
 
   const fetchReservas = async () => {
     setLoading(true);
-    const [resReservas, resTrabajadores] = await Promise.all([
-      supabase.from('reservas').select('*, servicios(nombre)').order('fecha_reserva', { ascending: true }).order('hora_reserva', { ascending: true }),
-      supabase.from('trabajadores').select('id, nombre')
+    const [resReservas, resTrabajadores, resServicios] = await Promise.all([
+      supabase.from('reservas').select('*').order('fecha_reserva', { ascending: true }),
+      supabase.from('trabajadores').select('id, nombre'),
+      supabase.from('servicios').select('id, nombre')
     ]);
       
     if (resReservas.error) {
       console.error('Error fetching reservas:', resReservas.error);
     } else {
       const trabajadoresList = resTrabajadores.data || [];
+      const serviciosList = resServicios.data || [];
+      
       const formattedEvents = resReservas.data.map(res => {
         let workerName = 'Sin asignar';
         if (res.trabajador && typeof res.trabajador === 'string') {
@@ -38,11 +41,19 @@ export default function Citas() {
            workerName = res.trabajadores.nombre;
         }
 
+        let serviceName = 'Servicio Personalizado';
+        if (res.servicios && res.servicios.nombre) {
+          serviceName = res.servicios.nombre;
+        } else if (res.servicio_id) {
+          const s = serviciosList.find(s => s.id === res.servicio_id);
+          if (s) serviceName = s.nombre;
+        }
+
         return {
           id: res.id,
           dateStr: res.fecha_reserva,
-          time: res.hora_reserva.substring(0, 5),
-          title: res.servicios ? res.servicios.nombre : 'Servicio Personalizado',
+          time: res.hora_reserva ? res.hora_reserva.substring(0, 5) : '00:00',
+          title: serviceName,
           customer: res.cliente_nombre,
           status: res.estado,
           price: res.precio_total,
