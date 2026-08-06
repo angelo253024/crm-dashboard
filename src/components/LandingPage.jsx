@@ -4,7 +4,13 @@ import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun, MessageSquare } from
 
 export default function LandingPage({ isDarkMode, toggleTheme }) {
   return (
-    <div className="landing-page">
+    <div className="landing-page" style={{ 
+      backgroundImage: 'url(/premium_background.png)', 
+      backgroundSize: 'cover', 
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      backgroundRepeat: 'no-repeat'
+    }}>
       {/* Navigation */}
       <nav className="landing-nav">
         <img 

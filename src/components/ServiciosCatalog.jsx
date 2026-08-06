@@ -286,7 +286,18 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     : servicios.filter(s => s.categoria === categoriaActiva);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      backgroundColor: 'var(--bg-color)', 
+      color: 'var(--text-main)', 
+      padding: '24px', 
+      fontFamily: 'Inter, sans-serif',
+      backgroundImage: 'url(/premium_background.png)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      backgroundRepeat: 'no-repeat'
+    }}>
       {/* Navbar Simple */}
       <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '64px' }}>
         <Link to="/" style={{ color: '#aaa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#aaa'}>
