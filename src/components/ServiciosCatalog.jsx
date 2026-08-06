@@ -172,8 +172,14 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     if (error) {
       console.error('Error fetching servicios:', error);
     } else {
-      setServicios(data || []);
-      const cats = ['Todos', ...new Set((data || []).map(s => s.categoria).filter(Boolean))];
+      let sortedData = data || [];
+      sortedData.sort((a, b) => {
+        if (a.imagen_url && !b.imagen_url) return -1;
+        if (!a.imagen_url && b.imagen_url) return 1;
+        return 0;
+      });
+      setServicios(sortedData);
+      const cats = ['Todos', ...new Set(sortedData.map(s => s.categoria).filter(Boolean))];
       setCategorias(cats);
     }
     setLoading(false);

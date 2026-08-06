@@ -43,7 +43,13 @@ export default function AdminServicios() {
     if (error) {
       console.error('Error fetching servicios:', error);
     } else {
-      setServicios(data || []);
+      let sortedData = data || [];
+      sortedData.sort((a, b) => {
+        if (a.imagen_url && !b.imagen_url) return -1;
+        if (!a.imagen_url && b.imagen_url) return 1;
+        return 0;
+      });
+      setServicios(sortedData);
     }
     setLoading(false);
   };
