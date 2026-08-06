@@ -9,6 +9,7 @@ import Trabajadores from './components/Trabajadores'
 import Clientes from './components/Clientes'
 import AdminServicios from './components/AdminServicios'
 import AdminPromos from './components/AdminPromos'
+import AdminMetodosPago from './components/AdminMetodosPago'
 import AdminBot from './components/AdminBot'
 import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
@@ -99,6 +100,7 @@ function App() {
         <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
         <Route path="/servicios" element={<ProtectedRoute><AdminServicios /></ProtectedRoute>} />
         <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
+        <Route path="/metodos-pago" element={<ProtectedRoute><AdminMetodosPago /></ProtectedRoute>} />
         <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
         
         {/* Cualquier ruta que no exista redirige a la Landing */}

@@ -126,6 +126,10 @@ export default function Sidebar({ user, onLogout }) {
               <Tag size={20} />
               <span>Promos</span>
             </NavLink>
+            <NavLink to="/metodos-pago" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+              <CreditCard size={20} />
+              <span>Métodos de Pago</span>
+            </NavLink>
             <NavLink to="/admin-bot" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
               <Bot size={20} />
               <span>Admin Bot</span>

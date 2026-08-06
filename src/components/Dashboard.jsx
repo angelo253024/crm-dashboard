@@ -273,7 +273,15 @@ export default function Dashboard() {
                               {servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '-'}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>Efectivo/QR</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>
+                            {s.payment_status === 'PAGADO' ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: '600' }}>
+                                ✅ {s.payment_method === 'QR' ? 'QR' : 'Efectivo'}
+                              </span>
+                            ) : (
+                              'Sin pago'
+                            )}
+                          </td>
                           <td style={{ padding: '12px 16px', fontSize: '15px', fontWeight: '700', textAlign: 'right', color: 'var(--accent-green)' }}>
                             Bs {s.precio_total || s.precio}
                           </td>

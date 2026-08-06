@@ -101,6 +101,13 @@ export default function MotoDashboard({ user }) {
   const [extraServicioDesc, setExtraServicioDesc] = useState('');
   const [extraServicioMonto, setExtraServicioMonto] = useState('');
 
+  // Payment Modal State
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedReservaForPayment, setSelectedReservaForPayment] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(''); // 'QR' or 'EFECTIVO'
+  const [montoRecibido, setMontoRecibido] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
+
   const getTelefono = (nombreStr) => {
     if (!nombreStr) return '';
     const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
@@ -234,10 +241,52 @@ export default function MotoDashboard({ user }) {
     fetchReservasAsignadas();
   };
 
-  const completarReserva = async (id) => {
-    await supabase.from('reservas').update({ estado_reserva: 'completado' }).eq('id', id);
+  const handleOpenPayment = async (res) => {
+    setSelectedReservaForPayment(res);
+    setPaymentModalOpen(true);
+    setPaymentMethod('');
+    setMontoRecibido('');
+    
+    // Fetch QR
+    const { data } = await supabase.from('configuraciones_pago').select('qr_image_url').limit(1).single();
+    if (data) setQrUrl(data.qr_image_url);
+  };
+
+  const confirmarPago = async () => {
+    if (!paymentMethod) {
+      alert("Debes seleccionar un método de pago.");
+      return;
+    }
+
+    const total = selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0;
+
+    if (paymentMethod === 'EFECTIVO') {
+      if (!montoRecibido || Number(montoRecibido) < total) {
+        alert("El monto recibido debe ser mayor o igual al total del servicio.");
+        return;
+      }
+    }
+
+    const updates = {
+      estado_reserva: 'completado',
+      payment_method: paymentMethod,
+      payment_status: 'PAGADO',
+      payment_date: new Date().toISOString(),
+      payment_by: user.id
+    };
+
+    if (paymentMethod === 'EFECTIVO') {
+      updates.monto_recibido = Number(montoRecibido);
+      updates.cambio_devuelto = Number(montoRecibido) - total;
+    }
+
+    await supabase.from('reservas').update(updates).eq('id', selectedReservaForPayment.id);
+    
     setEstado('disponible');
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'disponible' }).eq('id', user.id);
+    
+    setPaymentModalOpen(false);
+    setSelectedReservaForPayment(null);
     fetchReservasAsignadas();
   };
 
@@ -433,7 +482,7 @@ export default function MotoDashboard({ user }) {
                     <MapPin size={18} /> Llegué al Lugar
                   </button>
                 ) : (
-                  <button onClick={() => completarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <button onClick={() => handleOpenPayment(res)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                     <Check size={18} /> Marcar Lavado Terminado
                   </button>
                 )}
@@ -551,6 +600,101 @@ export default function MotoDashboard({ user }) {
       
       {activeChatSession && (
         <MotoChat sessionId={activeChatSession} onClose={() => setActiveChatSession(null)} />
+      )}
+
+      {/* Payment Modal */}
+      {paymentModalOpen && selectedReservaForPayment && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '400px', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-color)' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Banknote size={20} color="#10b981" /> Método de Pago
+              </h3>
+            </div>
+            
+            <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>
+                Selecciona cómo pagó el cliente el servicio de <strong>Bs {selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0}</strong>.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+                <button 
+                  onClick={() => setPaymentMethod('QR')}
+                  style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'QR' ? '2px solid #3b82f6' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'QR' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'QR' ? '#3b82f6' : 'var(--text-main)', transition: 'all 0.2s' }}
+                >
+                  <MapPin size={24} /> {/* Usando MapPin como placeholder de QR si no hay icono QrCode importado */}
+                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Pago por QR</span>
+                </button>
+                <button 
+                  onClick={() => setPaymentMethod('EFECTIVO')}
+                  style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'EFECTIVO' ? '2px solid #10b981' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'EFECTIVO' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'EFECTIVO' ? '#10b981' : 'var(--text-main)', transition: 'all 0.2s' }}
+                >
+                  <Banknote size={24} />
+                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Efectivo</span>
+                </button>
+              </div>
+
+              {paymentMethod === 'QR' && (
+                <div style={{ textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
+                  <p style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '12px' }}>Escanea este código</p>
+                  <div style={{ width: '200px', height: '200px', margin: '0 auto', backgroundColor: '#fff', padding: '8px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                    {qrUrl ? (
+                      <img src={qrUrl} alt="QR de Pago" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Cargando QR...</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {paymentMethod === 'EFECTIVO' && (
+                <div style={{ animation: 'fadeIn 0.3s ease-out', backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Total del servicio:</span>
+                    <span style={{ fontWeight: 'bold' }}>Bs {selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0}</span>
+                  </div>
+                  
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px', color: 'var(--text-main)' }}>Monto recibido:</label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
+                      <input 
+                        type="number" 
+                        value={montoRecibido}
+                        onChange={(e) => setMontoRecibido(e.target.value)}
+                        placeholder="Ej. 50"
+                        style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+
+                  {montoRecibido && Number(montoRecibido) >= (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px dashed #10b981' }}>
+                      <span style={{ fontWeight: 'bold', color: '#10b981' }}>Cambio a devolver:</span>
+                      <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '16px' }}>Bs {Number(montoRecibido) - (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', backgroundColor: 'var(--bg-color)' }}>
+              <button 
+                onClick={() => setPaymentModalOpen(false)}
+                style={{ flex: 1, padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', color: 'var(--text-main)', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarPago}
+                disabled={!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))}
+                style={{ flex: 2, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: 'bold', cursor: (!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))) ? 'not-allowed' : 'pointer', opacity: (!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))) ? 0.5 : 1 }}
+              >
+                {paymentMethod === 'QR' ? 'Confirmar Pago QR' : 'Confirmar Pago'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

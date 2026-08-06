@@ -47,7 +47,9 @@ export default function Citas() {
           status: res.estado,
           price: res.precio_total,
           car: res.vehiculo,
-          worker: workerName
+          worker: workerName,
+          paymentMethod: res.payment_method,
+          paymentStatus: res.payment_status
         };
       });
       setEvents(formattedEvents);
@@ -268,8 +270,15 @@ export default function Citas() {
                         <Clock size={18} color="var(--accent-green)" />
                         <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{ev.time}</span>
                       </div>
-                      <div style={{ color: getStatusColor(ev.status), fontWeight: '600', backgroundColor: 'var(--card-bg)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px' }}>
-                        {ev.status}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {ev.paymentStatus === 'PAGADO' && (
+                          <div style={{ color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            ✅ Pagado {ev.paymentMethod === 'QR' ? 'QR' : 'Efectivo'}
+                          </div>
+                        )}
+                        <div style={{ color: getStatusColor(ev.status), fontWeight: '600', backgroundColor: 'var(--card-bg)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', display: 'flex', alignItems: 'center' }}>
+                          {ev.status}
+                        </div>
                       </div>
                     </div>
                     
