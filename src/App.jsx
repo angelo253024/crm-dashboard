@@ -15,6 +15,7 @@ import ServiciosCatalog from './components/ServiciosCatalog'
 import LandingPage from './components/LandingPage'
 import ChatBotWidget from './components/ChatBotWidget'
 import MotoDashboard from './components/MotoDashboard'
+import BackgroundEffects from './components/BackgroundEffects'
 
 function App() {
   const [user, setUserState] = useState(() => {
@@ -83,6 +84,7 @@ function App() {
 
   return (
     <>
+      <BackgroundEffects />
       <Routes>
         {/* Rutas Públicas */}
         <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
