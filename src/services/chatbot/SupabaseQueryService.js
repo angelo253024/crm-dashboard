@@ -43,22 +43,55 @@ export class SupabaseQueryService {
       if (intent === 'precios' || intent === 'servicios') {
         const { data: servicios } = await supabase.from('servicios').select('nombre, precio');
         if (servicios && servicios.length > 0) {
-          const listado = servicios.map(s => `- ${s.nombre}: Bs ${s.precio}`).join('\n');
-          return `Nuestros servicios y precios son:\n${listado}`;
+          const listado = servicios.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n\n');
+          return `🚗 **Nuestros servicios**\n\n${listado}`;
         }
+      }
+
+      if (intent === 'reservar') {
+        return "Con gusto te ayudaremos a reservar tu servicio. **[RESERVAR_CITA]**";
+      }
+
+      if (intent === 'ubicacion') {
+        return "📍 **Ubicación**\n\nActualmente operamos como servicio a domicilio en **Santa Cruz de la Sierra**. \n\nNo necesitas venir a nosotros, ¡nosotros vamos a ti con todo nuestro equipo móvil!";
+      }
+
+      if (intent === 'cobertura') {
+        return "🚙 **Zonas de Cobertura**\n\nCubrimos **toda la zona urbana de Santa Cruz de la Sierra** (hasta el 8vo anillo).\n\nSi te encuentras fuera de esta zona, consúltanos para verificar la disponibilidad.";
+      }
+
+      if (intent === 'contacto') {
+        return "📞 **Contacto**\n\nPuedes comunicarte con nosotros por los siguientes medios:\n\n• **WhatsApp**: +591 70000000\n• **Llamadas**: +591 70000000\n• **Correo**: contacto@lavamovil.com";
+      }
+
+      if (intent === 'metodos_pago') {
+        const { data: config } = await supabase.from('configuraciones_pago').select('*').limit(1).single();
+        let metodos = "• Efectivo\n";
+        if (config && config.qr_image_url) {
+          metodos += "• Transferencia QR\n";
+        }
+        return `💳 **Métodos de pago aceptados**\n\nActualmente aceptamos:\n\n${metodos}`;
       }
 
       if (intent === 'promociones') {
         const { data: promociones } = await supabase.from('promociones').select('*').eq('activa', true);
         if (promociones && promociones.length > 0) {
           const listado = promociones.map(p => {
-            if (p.tipo === 'descuento') return `- ${p.titulo}: ${p.descuento_porcentaje}% de descuento.`;
-            return `- ${p.titulo}: Combo a Bs ${p.precio_combo}.`;
-          }).join('\n');
-          return `Actualmente tenemos estas promociones activas:\n${listado}`;
+            if (p.tipo === 'descuento') return `• **${p.titulo}**: ${p.descuento_porcentaje}% de descuento.`;
+            return `• **${p.titulo}**: Combo a Bs ${p.precio_combo}.`;
+          }).join('\n\n');
+          return `⭐ **Promociones Activas**\n\n${listado}`;
         } else {
-          return 'En este momento no tenemos promociones activas, pero mantente atento a nuestras redes.';
+          return 'No tenemos promociones activas en este momento. ¡Mantente atento a nuestras redes sociales!';
         }
+      }
+
+      if (intent === 'faq_demora') {
+        return "⏱️ **¿Cuánto demora el servicio?**\n\nEl tiempo aproximado varía según el tamaño del vehículo y el tipo de lavado, pero por lo general un lavado estándar toma **entre 45 minutos y 1 hora**.";
+      }
+
+      if (intent === 'faq_empresas') {
+        return "🏢 **¿Trabajan con empresas?**\n\n¡Sí! Ofrecemos planes corporativos para flotas de vehículos con tarifas preferenciales. Selecciona la opción de **Contacto** para comunicarte con un asesor de ventas.";
       }
 
       // TODO: Implementar otras tablas dinámicas (inventario, estado_vehiculo) según necesidad.

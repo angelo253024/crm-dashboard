@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot } from 'lucide-react';
 import { HybridAIService } from '../services/chatbot/HybridAIService';
 
@@ -10,9 +11,100 @@ export default function ChatBotWidget() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const navigate = useNavigate();
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const quickReplies = [
+    { label: '💲 Ver precios', intent: 'precios' },
+    { label: '🚗 Ver servicios', intent: 'servicios' },
+    { label: '📅 Reservar cita', intent: 'reservar' },
+    { label: '📍 Ubicación', intent: 'ubicacion' },
+    { label: '🕒 Horarios', intent: 'horario' },
+    { label: '📞 Contacto', intent: 'contacto' },
+    { label: '🚙 Cobertura', intent: 'cobertura' },
+    { label: '💳 Métodos de pago', intent: 'metodos_pago' },
+    { label: '⭐ Promociones', intent: 'promociones' },
+    { label: '❓ Preguntas frecuentes', intent: 'cuanto demora' }
+  ];
+
+  const handleQuickReply = async (reply) => {
+    setIsTyping(true);
+    try {
+      const response = await HybridAIService.processMessage(
+        reply.intent, 
+        'web-session-123',
+        (status) => setStatusMessage(status)
+      );
+
+      let responseText = response.text;
+      
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: responseText, 
+        sender: 'bot',
+        source: response.source
+      }]);
+    } catch (error) {
+      console.error(error);
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: "Hubo un error de conexión, intenta de nuevo.", 
+        sender: 'bot',
+        source: 'error'
+      }]);
+    } finally {
+      setIsTyping(false);
+      setStatusMessage('');
+    }
+  };
+
+  // Función para renderizar el texto del bot (negritas y botón de reservar)
+  const renderMessageText = (text) => {
+    if (!text) return null;
+    
+    // Si contiene el tag de reservar, mostramos el botón y navegamos
+    const hasReserva = text.includes('**[RESERVAR_CITA]**');
+    const cleanText = text.replace('**[RESERVAR_CITA]**', '').trim();
+    
+    // Simple markdown for bold (**)
+    const parts = cleanText.split(/(\*\*.*?\*\*)/g);
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <span style={{ whiteSpace: 'pre-wrap' }}>
+          {parts.map((part, i) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={i}>{part.slice(2, -2)}</strong>;
+            }
+            return part;
+          })}
+        </span>
+        {hasReserva && (
+          <button 
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/'); // Asumiendo que la reserva está en la página principal o modal
+            }}
+            style={{
+              backgroundColor: 'var(--accent-green)',
+              color: '#fff',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginTop: '8px',
+              alignSelf: 'flex-start'
+            }}
+          >
+            Ir a Reservar
+          </button>
+        )}
+      </div>
+    );
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -196,7 +288,7 @@ export default function ChatBotWidget() {
                 fontSize: '14px',
                 lineHeight: '1.5'
               }}>
-                {msg.text}
+                {msg.sender === 'bot' ? renderMessageText(msg.text) : msg.text}
               </div>
               
               {/* Indicador de Origen (IA vs BDD) */}
@@ -229,10 +321,53 @@ export default function ChatBotWidget() {
           <div ref={messagesEndRef} style={{ height: '20px' }} />
         </div>
 
+        {/* Contenedor de Consultas Rápidas */}
+        <div style={{
+          padding: '12px 16px 8px 16px',
+          backgroundColor: 'var(--card-bg)',
+          borderTop: '1px solid var(--border-color)',
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none', // Firefox
+          msOverflowStyle: 'none' // IE/Edge
+        }}>
+          <style>{`
+            .quick-replies::-webkit-scrollbar { display: none; }
+          `}</style>
+          <div className="quick-replies" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+            {quickReplies.map((reply, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleQuickReply(reply)}
+                disabled={isTyping}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: isTyping ? 'not-allowed' : 'pointer',
+                  flexShrink: 0,
+                  transition: 'background-color 0.2s',
+                  opacity: isTyping ? 0.6 : 1
+                }}
+                onMouseEnter={e => !isTyping && (e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.1)')}
+                onMouseLeave={e => !isTyping && (e.currentTarget.style.backgroundColor = 'var(--bg-color)')}
+              >
+                {reply.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Input */}
         <div style={{ 
-          padding: '16px', 
-          borderTop: '1px solid var(--border-color)',
+          padding: '8px 16px 16px 16px', 
           backgroundColor: 'var(--card-bg)'
         }}>
           <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px' }}>
