@@ -57,49 +57,6 @@ export default function BackgroundEffects() {
         </g>
       </svg>
 
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes floatOrb1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(5%, 5%) scale(1.1); }
-        }
-        @keyframes floatOrb2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-5%, -5%) scale(1.1); }
-        }
-        .glow-orb { transform-origin: center; }
-        .orb-1 { animation: floatOrb1 20s ease-in-out infinite; }
-        .orb-2 { animation: floatOrb2 25s ease-in-out infinite reverse; }
-
-        @keyframes flowLine {
-          0% { stroke-dashoffset: 3000; }
-          100% { stroke-dashoffset: 0; }
-        }
-        .flow-line {
-          stroke-dasharray: 3000;
-          animation: flowLine 40s linear infinite;
-        }
-        .line-1 { animation-duration: 50s; }
-        .line-2 { animation-duration: 45s; animation-direction: reverse; }
-        .line-3 { animation-duration: 55s; }
-        .line-4 { animation-duration: 60s; animation-direction: reverse; }
-
-        @keyframes floatParticle {
-          0% { transform: translateY(0) scale(1); opacity: 0; }
-          10% { opacity: 0.1; }
-          90% { opacity: 0.1; }
-          100% { transform: translateY(-120px) scale(0.5); opacity: 0; }
-        }
-        .particle {
-          animation: floatParticle 10s linear infinite;
-        }
-        .p-1 { animation-duration: 12s; animation-delay: 0s; }
-        .p-2 { animation-duration: 15s; animation-delay: 3s; }
-        .p-3 { animation-duration: 10s; animation-delay: 5s; }
-        .p-4 { animation-duration: 18s; animation-delay: 1s; }
-        .p-5 { animation-duration: 14s; animation-delay: 4s; }
-        .p-6 { animation-duration: 20s; animation-delay: 7s; }
-        .p-7 { animation-duration: 16s; animation-delay: 2s; }
-      `}} />
     </div>
   );
 }
