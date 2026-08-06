@@ -12,6 +12,7 @@ export default function ChatBotWidget() {
   const [statusMessage, setStatusMessage] = useState('');
   
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -24,6 +25,13 @@ export default function ChatBotWidget() {
     window.addEventListener('openChatBot', handleOpen);
     return () => window.removeEventListener('openChatBot', handleOpen);
   }, []);
+
+  // Auto-focus input when chat opens
+  useEffect(() => {
+    if (isOpen && inputRef.current && window.innerWidth > 768) {
+      setTimeout(() => inputRef.current.focus(), 300);
+    }
+  }, [isOpen]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -108,9 +116,12 @@ export default function ChatBotWidget() {
       <div style={{
         position: 'fixed',
         top: 0,
-        right: isOpen ? 0 : '-400px',
-        width: '400px',
-        height: '100vh',
+        bottom: 0,
+        right: isOpen ? 0 : '-100%',
+        width: '100%',
+        maxWidth: '400px',
+        height: '100dvh',
+        maxHeight: '-webkit-fill-available',
         backgroundColor: 'var(--bg-color)',
         boxShadow: '-5px 0 25px rgba(0,0,0,0.5)',
         transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -118,7 +129,6 @@ export default function ChatBotWidget() {
         display: 'flex',
         flexDirection: 'column',
         borderLeft: '1px solid var(--border-color)',
-        maxWidth: '100vw'
       }}>
         {/* Header */}
         <div style={{ 
@@ -164,7 +174,9 @@ export default function ChatBotWidget() {
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          backgroundColor: 'var(--bg-color)'
+          backgroundColor: 'var(--bg-color)',
+          minHeight: 0, // Fix for Safari flexbox overflow
+          WebkitOverflowScrolling: 'touch'
         }}>
           {messages.map((msg) => (
             <div key={msg.id} style={{ 
@@ -225,6 +237,7 @@ export default function ChatBotWidget() {
         }}>
           <form onSubmit={handleSend} style={{ display: 'flex', gap: '8px' }}>
             <input 
+              ref={inputRef}
               type="text" 
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
