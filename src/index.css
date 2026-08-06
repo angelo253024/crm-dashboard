@@ -59,6 +59,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#root {
+  isolation: isolate;
+}
+
 /* Typography Utilities */
 .text-h1 { font-size: 24px; font-weight: 600; }
 .text-h2 { font-size: 18px; font-weight: 600; }
@@ -577,7 +581,7 @@ body {
 
 /* === LANDING PAGE STYLES === */
 .landing-page {
-  background-color: #0b1121; /* Dark blueish background */
+  background-color: transparent; /* Let global BackgroundEffects show through */
   min-height: 100vh;
   color: #ffffff;
   font-family: 'Nunito', sans-serif;
@@ -585,32 +589,6 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
-}
-
-/* Water drop background effects */
-.landing-page::before {
-  content: '';
-  position: absolute;
-  top: -20%;
-  left: -10%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(28, 169, 201, 0.15) 0%, rgba(28, 169, 201, 0) 70%);
-  border-radius: 50%;
-  z-index: 0;
-  animation: floatBubble 8s ease-in-out infinite alternate;
-}
-.landing-page::after {
-  content: '';
-  position: absolute;
-  bottom: -20%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(30, 76, 154, 0.15) 0%, rgba(30, 76, 154, 0) 70%);
-  border-radius: 50%;
-  z-index: 0;
-  animation: floatBubble 10s ease-in-out infinite alternate-reverse;
 }
 
 .landing-nav {
@@ -694,8 +672,8 @@ body {
 
 /* Light mode specific landing page styles */
 body:not(.dark) .landing-page {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: transparent;
+  color: #1e293b;
 }
 body:not(.dark) .theme-toggle-btn {
   border-color: rgba(0, 0, 0, 0.2);

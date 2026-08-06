@@ -15,8 +15,8 @@ export default function BackgroundEffects() {
       <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
         <defs>
           <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="var(--accent-blue)" stopOpacity="0.04" />
-            <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0.04" />
+            <stop offset="0%" stopColor="var(--accent-dark)" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="var(--accent-green)" stopOpacity="0.08" />
           </linearGradient>
 
           <pattern id="hexPattern" width="60" height="103.923" patternUnits="userSpaceOnUse">
@@ -38,7 +38,7 @@ export default function BackgroundEffects() {
         <rect width="100%" height="100%" fill="url(#hexPattern)" />
 
         {/* Líneas Aerodinámicas (Flujo de agua / Aerodinámica) */}
-        <g stroke="var(--accent-cyan)" strokeWidth="1" strokeOpacity="0.04" fill="none">
+        <g stroke="var(--accent-green)" strokeWidth="1" strokeOpacity="0.06" fill="none">
           <path className="flow-line line-1" d="M -100,200 C 300,400 600,0 1000,500 S 1600,300 2000,600" />
           <path className="flow-line line-2" d="M -100,500 C 400,200 800,800 1200,400 S 1800,600 2000,200" />
           <path className="flow-line line-3" d="M -100,800 C 200,500 500,900 900,300 S 1500,200 2000,800" />
@@ -46,7 +46,7 @@ export default function BackgroundEffects() {
         </g>
 
         {/* Partículas luminosas (Coating reflections) */}
-        <g fill="var(--accent-blue)" fillOpacity="0.1">
+        <g fill="var(--accent-dark)" fillOpacity="0.15">
           <circle className="particle p-1" cx="15%" cy="80%" r="3" />
           <circle className="particle p-2" cx="45%" cy="90%" r="2" />
           <circle className="particle p-3" cx="75%" cy="85%" r="4" />
