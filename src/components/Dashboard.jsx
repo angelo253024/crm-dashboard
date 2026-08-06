@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2 } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -106,6 +106,15 @@ export default function Dashboard() {
   }, [selectedDate, reservas]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
+  const [filtroTexto, setFiltroTexto] = useState('');
+
+  const serviciosFiltrados = finanzasDetalladas.servicios.filter(s => {
+    if (!filtroTexto) return true;
+    const text = filtroTexto.toLowerCase();
+    const cliente = (s.cliente_nombre || s.cliente || '').toLowerCase();
+    const servicioName = (servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '').toLowerCase();
+    return cliente.includes(text) || servicioName.includes(text);
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -230,9 +239,16 @@ export default function Dashboard() {
                   <h3 style={{ fontSize: '18px', fontWeight: '600' }}>
                     Servicios Completados {filtroActivo === 'dia' ? 'este Día' : filtroActivo === 'semana' ? 'esta Semana' : 'este Mes'}
                   </h3>
-                  <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '13px' }}>
-                    <Filter size={14} /> Filtrar
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px' }}>
+                    <Search size={14} className="text-muted" />
+                    <input 
+                      type="text" 
+                      placeholder="Buscar cliente o servicio..." 
+                      value={filtroTexto}
+                      onChange={(e) => setFiltroTexto(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-main)', width: '180px' }}
+                    />
+                  </div>
                 </div>
                 
                 <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
@@ -248,8 +264,8 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {finanzasDetalladas.servicios.map((s, i) => (
-                        <tr key={s.id} style={{ borderBottom: i === finanzasDetalladas.servicios.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
+                      {serviciosFiltrados.map((s, i) => (
+                        <tr key={s.id} style={{ borderBottom: i === serviciosFiltrados.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
                           <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora_reserva?.substring(0, 5) || s.hora}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente_nombre || s.cliente}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px' }}>

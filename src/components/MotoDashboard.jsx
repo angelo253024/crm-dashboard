@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle } from 'lucide-react';
 import KpiCards from './KpiCards';
 
 // --- Inline Chat Component for Worker ---
@@ -55,40 +55,18 @@ function MotoChat({ sessionId, onClose }) {
       setInput(msg);
     }
   };
+
   return (
-    // Usamos un div que actúa como overlay fullscreen en móviles, o widget flotante en escritorio
-    <div className="moto-chat-container" style={{ 
-      position: 'fixed', 
-      bottom: window.innerWidth <= 768 ? '0' : '20px', 
-      right: window.innerWidth <= 768 ? '0' : '20px', 
-      width: window.innerWidth <= 768 ? '100%' : '350px', 
-      height: window.innerWidth <= 768 ? '100%' : '500px',
-      backgroundColor: 'var(--card-bg)', 
-      borderRadius: window.innerWidth <= 768 ? '0' : '12px', 
-      boxShadow: '0 10px 25px rgba(0,0,0,0.5)', 
-      zIndex: 99999, 
-      border: window.innerWidth <= 768 ? 'none' : '1px solid var(--border-color)', 
-      display: 'flex', 
-      flexDirection: 'column'
-    }}>
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: window.innerWidth <= 768 ? '0' : '12px 12px 0 0' }}>
-        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageSquare size={18}/> Chat con Cliente</h4>
-        <button onClick={onClose} style={{ background: 'rgba(0,0,0,0.1)', border: 'none', cursor: 'pointer', color: '#000', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
+    <div className="moto-chat-widget">
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: '12px 12px 0 0' }}>
+        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con Cliente</h4>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#000' }}><X size={18} /></button>
       </div>
       
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: '#0f172a' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {messages.map((m, i) => (
-          <div key={i} style={{ 
-            alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', 
-            backgroundColor: m.rol === 'user' ? '#334155' : '#0ea5e9', 
-            color: '#fff',
-            padding: '10px 14px', 
-            borderRadius: m.rol === 'user' ? '16px 16px 16px 4px' : '16px 16px 4px 16px', 
-            maxWidth: '85%', 
-            fontSize: '15px', 
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)' 
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? '#94a3b8' : '#e0f2fe', display: 'block', marginBottom: '4px' }}>
+          <div key={i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'rgba(28, 169, 201, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : 'none' }}>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? 'var(--text-muted)' : 'var(--accent-cyan)', display: 'block', marginBottom: '2px' }}>
               {m.rol === 'user' ? 'Cliente' : 'Tú'}
             </span>
             {m.contenido}
@@ -96,16 +74,16 @@ function MotoChat({ sessionId, onClose }) {
         ))}
       </div>
       
-      <form onSubmit={sendMessage} style={{ padding: '12px 16px', backgroundColor: 'var(--card-bg)', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', paddingBottom: window.innerWidth <= 768 ? '24px' : '12px' }}>
+      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
         <input 
           type="text" 
           value={input} 
           onChange={e => setInput(e.target.value)} 
-          placeholder="Escribe un mensaje..." 
-          style={{ flex: 1, padding: '12px 16px', fontSize: '15px', borderRadius: '24px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
+          placeholder="Escribe al cliente..." 
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
         />
-        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: '0 4px 10px rgba(28, 169, 201, 0.4)' }}>
-          <Send size={20} style={{ marginLeft: '2px' }} />
+        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <Send size={16} />
         </button>
       </form>
     </div>
@@ -119,6 +97,9 @@ export default function MotoDashboard({ user }) {
   const [pendientes, setPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
+  const [showExtraService, setShowExtraService] = useState(null);
+  const [extraServicioDesc, setExtraServicioDesc] = useState('');
+  const [extraServicioMonto, setExtraServicioMonto] = useState('');
 
   const getTelefono = (nombreStr) => {
     if (!nombreStr) return '';
@@ -294,6 +275,26 @@ export default function MotoDashboard({ user }) {
     fetchReservasAsignadas();
   };
 
+  const handleAddExtra = async (e, resId) => {
+    e.preventDefault();
+    if(!extraServicioDesc || !extraServicioMonto) return;
+    const reserva = reservas.find(r => r.id === resId);
+    if(!reserva) return;
+    
+    const nuevoServicioStr = `${reserva.servicio || ''} + ${extraServicioDesc}`;
+    const nuevoPrecio = (reserva.precio_total || reserva.precio || 0) + Number(extraServicioMonto);
+    
+    await supabase.from('reservas').update({
+      servicio: nuevoServicioStr,
+      precio_total: nuevoPrecio
+    }).eq('id', resId);
+    
+    setShowExtraService(null);
+    setExtraServicioDesc('');
+    setExtraServicioMonto('');
+    fetchReservasAsignadas();
+  };
+
   // Pedir permiso para notificaciones
   const requestNotifPermission = () => {
     if (window.Notification && Notification.permission !== "granted") {
@@ -437,10 +438,15 @@ export default function MotoDashboard({ user }) {
                   </button>
                 )}
                 
+                
                 <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <MessageSquare size={18} /> Chat (Web)
                 </button>
                 
+                <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <PlusCircle size={18} /> Agregar Extra
+                </button>
+
                 {getTelefono(res.cliente_nombre) && (
                   <a 
                     href={`https://wa.me/${getTelefono(res.cliente_nombre).replace(/\s+/g, '')}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
@@ -452,6 +458,38 @@ export default function MotoDashboard({ user }) {
                   </a>
                 )}
               </div>
+
+              {showExtraService === res.id && (
+                <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px dashed #8b5cf6' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <PlusCircle size={16} /> Agregar Servicio o Cobro Extra
+                  </h4>
+                  <form onSubmit={(e) => handleAddExtra(e, res.id)} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <input
+                      type="text"
+                      placeholder="Descripción (ej. Encerado extra)"
+                      value={extraServicioDesc}
+                      onChange={e => setExtraServicioDesc(e.target.value)}
+                      required
+                      style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '14px' }}
+                    />
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                      <input
+                        type="number"
+                        placeholder="Monto (Bs)"
+                        value={extraServicioMonto}
+                        onChange={e => setExtraServicioMonto(e.target.value)}
+                        required
+                        min="1"
+                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '14px' }}
+                      />
+                      <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+                        Guardar
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           ))}
         </div>
