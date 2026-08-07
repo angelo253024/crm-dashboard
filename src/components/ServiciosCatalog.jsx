@@ -426,8 +426,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               style={{
                 opacity: servicio.disponible !== false ? 1 : 0.6,
                 cursor: servicio.disponible !== false ? 'pointer' : 'default',
-                animation: 'fadeUp 0.8s ease-out 0.6s forwards',
-                opacity: 0,
+                animation: 'fadeUp 0.8s ease-out 0.6s forwards'
               }}
               onMouseOver={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(-5px)' }}
               onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
