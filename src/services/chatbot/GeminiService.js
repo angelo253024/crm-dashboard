@@ -34,15 +34,20 @@ async function detectBestModel(apiKey) {
 
     console.log('📋 Modelos disponibles:', generative);
 
-    // Orden de preferencia: flash más reciente primero, luego pro, luego legacy
+    // Orden de preferencia: modelos 3.x actuales primero
     const PRIORITY = [
-      'gemini-2.5-flash',
+      'gemini-3.5-flash-lite',    // Rápido — ideal para chatbot
+      'gemini-3.5-flash',
+      'gemini-3.1-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-3.6-flash',
+      'gemini-3.5-pro',
+      'gemini-3.1-pro',
+      'gemini-2.5-flash',         // Legacy (retiro oct 2026)
+      'gemini-2.5-flash-lite',
       'gemini-2.5-pro',
       'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
-      'gemini-2.0-pro',
       'gemini-1.5-flash',
-      'gemini-1.5-pro',
       'gemini-pro',
     ];
 

@@ -295,7 +295,7 @@ export default function ChatBotWidget() {
               {msg.sender === 'bot' && msg.source && (
                 <div style={{ position: 'absolute', bottom: '-18px', left: '4px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {getSourceIcon(msg.source)}
-                  <span style={{ textTransform: 'capitalize' }}>{msg.source === 'gemini' ? 'Gemini IA' : msg.source === 'openai' ? 'OpenAI' : msg.source === 'cache' ? 'Caché IA' : 'Regla Local'}</span>
+                  <span style={{ textTransform: 'capitalize' }}>{msg.source === 'gemini' ? 'Gemini IA' : msg.source === 'openai' ? 'OpenAI' : msg.source === 'cache' ? 'Caché IA' : msg.source === 'error-gemini' ? '⚠️ Gemini no disponible' : msg.source === 'supabase' ? 'Base de Datos' : 'Regla Local'}</span>
                 </div>
               )}
             </div>
