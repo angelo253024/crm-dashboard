@@ -25,9 +25,9 @@ Tus respuestas deben ser concisas y en español. Estás diseñado para ayudar en
 Nunca inventes precios o servicios si no estás seguro.`;
 
     try {
-      // 3. Petición a la API REST de Gemini 1.5 Flash
+      // 3. Petición a la API REST de Gemini
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -47,8 +47,7 @@ Nunca inventes precios o servicios si no estás seguro.`;
         const errorMsg = errorBody?.error?.message || 'Error desconocido';
         const errorCode = errorBody?.error?.status || response.status;
         console.error(`❌ Gemini API HTTP ${response.status}:`, JSON.stringify(errorBody));
-        // MODO DEBUG TEMPORAL: mostramos el error real en el chat
-        return `[DEBUG Gemini] HTTP ${response.status} | Clave: ${apiKey.substring(0,10)}... | Error: ${errorCode} - ${errorMsg}`;
+        return GEMINI_ERROR_MARKER;
       }
 
       const data = await response.json();
