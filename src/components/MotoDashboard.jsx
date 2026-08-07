@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle } from 'lucide-react';
 import KpiCards from './KpiCards';
@@ -7,6 +7,15 @@ import KpiCards from './KpiCards';
 function MotoChat({ sessionId, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     fetchMessages();
@@ -14,9 +23,8 @@ function MotoChat({ sessionId, onClose }) {
       .channel(`chat_${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
         setMessages(prev => {
-          if (prev.some(m => m.id === payload.new.id || (m.tempId && m.contenido === payload.new.contenido))) {
-            return prev.map(m => (m.tempId && m.contenido === payload.new.contenido) ? payload.new : m);
-          }
+          // Single source of truth: evitar duplicados por ID real de base de datos
+          if (prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
       })
@@ -37,52 +45,47 @@ function MotoChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    // Optimistic UI Update
-    const tempId = `temp_${Date.now()}`;
-    const optimisticMsg = { tempId, session_id: sessionId, contenido: msg, rol: 'bot', created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, optimisticMsg]);
-    
-    const { data, error } = await supabase.from('mensajes').insert([{
+    const { error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
       rol: 'bot' // Enviamos como bot para que le llegue al cliente
-    }]).select();
+    }]);
 
     if (error) {
       console.error("Error de Supabase al enviar chat:", error);
       alert(`Error al enviar mensaje: ${error.message}`);
-      setMessages(prev => prev.filter(m => m.tempId !== tempId));
       setInput(msg);
     }
   };
 
   return (
     <div className="moto-chat-widget">
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: '12px 12px 0 0' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
         <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con Cliente</h4>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#000' }}><X size={18} /></button>
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {messages.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'rgba(28, 169, 201, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : 'none' }}>
+          <div key={m.id || i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'rgba(28, 169, 201, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : 'none' }}>
             <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? 'var(--text-muted)' : 'var(--accent-cyan)', display: 'block', marginBottom: '2px' }}>
               {m.rol === 'user' ? 'Cliente' : 'Tú'}
             </span>
             {m.contenido}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
+      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', flexShrink: 0 }}>
         <input 
           type="text" 
           value={input} 
           onChange={e => setInput(e.target.value)} 
           placeholder="Escribe al cliente..." 
-          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '16px' }} 
         />
-        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <Send size={16} />
         </button>
       </form>

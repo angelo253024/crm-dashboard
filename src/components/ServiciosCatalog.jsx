@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare } from 'lucide-react';
 import { supabase } from '../supabase';
@@ -7,6 +7,15 @@ import { supabase } from '../supabase';
 function ClientChat({ sessionId, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     fetchMessages();
@@ -14,10 +23,8 @@ function ClientChat({ sessionId, onClose }) {
       .channel(`chat_${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
         setMessages(prev => {
-          // Evitar duplicados si el mensaje ya está (optimistic update o ya cargado)
-          if (prev.some(m => m.id === payload.new.id || (m.tempId && m.contenido === payload.new.contenido))) {
-            return prev.map(m => (m.tempId && m.contenido === payload.new.contenido) ? payload.new : m);
-          }
+          // Single source of truth: evitar duplicados por ID real de base de datos
+          if (prev.some(m => m.id === payload.new.id)) return prev;
           return [...prev, payload.new];
         });
       })
@@ -38,36 +45,29 @@ function ClientChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    // Optimistic UI Update: lo mostramos de inmediato en la UI
-    const tempId = `temp_${Date.now()}`;
-    const optimisticMsg = { tempId, session_id: sessionId, contenido: msg, rol: 'user', created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, optimisticMsg]);
-    
-    const { data, error } = await supabase.from('mensajes').insert([{
+    const { error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
       rol: 'user'
-    }]).select();
+    }]);
 
     if (error) {
       console.error("Error de Supabase al enviar chat:", error);
       alert(`Error al enviar mensaje: ${error.message}. Verifica que la tabla 'mensajes' exista y tenga permisos (RLS).`);
-      // Revertimos el optimistic update
-      setMessages(prev => prev.filter(m => m.tempId !== tempId));
-      setInput(msg); // Devolvemos el texto al input
+      setInput(msg); // Devolvemos el texto al input en caso de error
     }
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', width: '350px', backgroundColor: 'var(--card-bg)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 9999, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '400px' }}>
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0' }}>
+    <div style={{ position: 'fixed', bottom: '10px', right: '10px', width: '95%', maxWidth: '350px', backgroundColor: 'var(--card-bg)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 9999, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '60vh', maxHeight: '450px' }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
         <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}><X size={18} /></button>
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {messages.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.rol === 'bot' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'bot' ? 'var(--bg-color)' : 'rgba(30, 76, 154, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'bot' ? '1px solid var(--border-color)' : 'none' }}>
+          <div key={m.id || i} style={{ alignSelf: m.rol === 'bot' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'bot' ? 'var(--bg-color)' : 'rgba(30, 76, 154, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'bot' ? '1px solid var(--border-color)' : 'none' }}>
             <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'bot' ? 'var(--text-muted)' : '#1E4C9A', display: 'block', marginBottom: '2px' }}>
               {m.rol === 'bot' ? 'Trabajador' : 'Tú'}
             </span>
@@ -79,17 +79,18 @@ function ClientChat({ sessionId, onClose }) {
             Escribe un mensaje. El trabajador te responderá pronto.
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}>
+      <form onSubmit={sendMessage} style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px', flexShrink: 0 }}>
         <input 
           type="text" 
           value={input} 
           onChange={e => setInput(e.target.value)} 
           placeholder="Escribe un mensaje..." 
-          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none' }} 
+          style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '16px' }} 
         />
-        <button type="submit" style={{ backgroundColor: '#1E4C9A', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <button type="submit" style={{ backgroundColor: '#1E4C9A', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <Send size={16} />
         </button>
       </form>
