@@ -1,9 +1,9 @@
 import { IntentClassifier } from './IntentClassifier';
 import { SupabaseQueryService } from './SupabaseQueryService';
 import { CacheService } from './CacheService';
-import { GeminiService } from './GeminiService';
+import { GeminiService, GEMINI_ERROR_MARKER } from './GeminiService';
 import { supabase } from '../../supabase';
-import { v4 as uuidv4 } from 'uuid'; // Fallback if no uuid, but we can just use standard JS random or session string
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Servicio Orquestador del Bot.
@@ -46,11 +46,16 @@ export class HybridAIService {
           onStatusUpdate("Pensando (IA)...");
           const aiResponse = await GeminiService.getCompletion(userMessage);
           
-          finalResponse = aiResponse;
-          source = 'gemini';
-
-          // Guardar en caché para futuras consultas asíncronamente
-          CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+          // Si Gemini devuelve el marcador de error, NO cacheamos y mostramos mensaje amigable
+          if (aiResponse === GEMINI_ERROR_MARKER) {
+            finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
+            source = 'error-gemini';
+          } else {
+            finalResponse = aiResponse;
+            source = 'gemini';
+            // Solo cacheamos respuestas exitosas
+            CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+          }
         }
       }
 
