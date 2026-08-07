@@ -29,22 +29,34 @@ export default function ChatBotWidget() {
     { label: '❓ Preguntas frecuentes', intent: 'cuanto demora' }
   ];
 
-  const handleQuickReply = async (reply) => {
+  const sendMessageToService = async (textToSend) => {
     setIsTyping(true);
     try {
       const response = await HybridAIService.processMessage(
-        reply.intent, 
+        textToSend, 
         'web-session-123',
         (status) => setStatusMessage(status)
       );
 
-      let responseText = response.text;
-      
+      if (response.reservaExtra) {
+        // Guardar la reserva activa en localStorage para que ServiciosCatalog y el cliente la reconozcan
+        const savedData = {
+          id: response.reservaExtra.reservaId,
+          chat_session_id: response.reservaExtra.chatSessionId,
+          estado_reserva: 'asignado',
+          estado: 'Reservado'
+        };
+        localStorage.setItem('active_reserva_lavamovil', JSON.stringify(savedData));
+      }
+
       setMessages(prev => [...prev, { 
         id: Date.now(), 
-        text: responseText, 
+        text: response.text, 
         sender: 'bot',
-        source: response.source
+        source: response.source,
+        buttons: response.buttons || null,
+        requestGPS: response.requestGPS || false,
+        reservaExtra: response.reservaExtra || null
       }]);
     } catch (error) {
       console.error(error);
@@ -60,15 +72,46 @@ export default function ChatBotWidget() {
     }
   };
 
+  const handleQuickReply = async (reply) => {
+    setMessages(prev => [...prev, { id: Date.now(), text: reply.label, sender: 'user', source: null }]);
+    await sendMessageToService(reply.intent);
+  };
+
+  const handleButtonClick = async (btn) => {
+    setMessages(prev => [...prev, { id: Date.now(), text: btn.label, sender: 'user', source: null }]);
+    await sendMessageToService(btn.value || btn.label);
+  };
+
+  const handleGetGPS = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta geolocalización.");
+      return;
+    }
+    
+    setStatusMessage("Obteniendo ubicación GPS...");
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const gpsStr = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        setMessages(prev => [...prev, { id: Date.now(), text: `📍 Mi ubicación: ${gpsStr}`, sender: 'user', source: null }]);
+        await sendMessageToService(gpsStr);
+      },
+      (error) => {
+        console.error("Error obteniendo GPS:", error);
+        alert("No se pudo obtener la ubicación GPS automáticamente. Por favor escribe tu dirección.");
+        setStatusMessage("");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Función para renderizar el texto del bot (negritas y botón de reservar)
-  const renderMessageText = (text) => {
+  const renderMessageText = (msg) => {
+    const text = msg.text;
     if (!text) return null;
     
-    // Si contiene el tag de reservar, mostramos el botón y navegamos
     const hasReserva = text.includes('**[RESERVAR_CITA]**');
     const cleanText = text.replace('**[RESERVAR_CITA]**', '').trim();
-    
-    // Simple markdown for bold (**)
     const parts = cleanText.split(/(\*\*.*?\*\*)/g);
     
     return (
@@ -81,12 +124,10 @@ export default function ChatBotWidget() {
             return part;
           })}
         </span>
+        
         {hasReserva && (
           <button 
-            onClick={() => {
-              setIsOpen(false);
-              navigate('/'); // Asumiendo que la reserva está en la página principal o modal
-            }}
+            onClick={() => handleQuickReply({ label: '📅 Reservar cita', intent: 'reservar' })}
             style={{
               backgroundColor: 'var(--accent-green)',
               color: '#fff',
@@ -99,7 +140,84 @@ export default function ChatBotWidget() {
               alignSelf: 'flex-start'
             }}
           >
-            Ir a Reservar
+            📅 Reservar Cita Ahora
+          </button>
+        )}
+
+        {/* Botón de GPS si la respuesta lo solicita */}
+        {msg.requestGPS && (
+          <button
+            onClick={handleGetGPS}
+            disabled={isTyping}
+            style={{
+              backgroundColor: '#10b981',
+              color: '#fff',
+              border: 'none',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginTop: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              alignSelf: 'flex-start',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            }}
+          >
+            📍 Usar mi ubicación GPS actual
+          </button>
+        )}
+
+        {/* Botones Interactivos (Servicios, Fechas, Confirmación) */}
+        {msg.buttons && msg.buttons.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+            {msg.buttons.map((btn, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleButtonClick(btn)}
+                disabled={isTyping}
+                style={{
+                  backgroundColor: 'var(--bg-color)',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--border-color)',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  textAlign: 'left',
+                  cursor: isTyping ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--accent-blue)')}
+                onMouseLeave={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--border-color)')}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Ir al catálogo o Ver Citas si finalizó */}
+        {msg.reservaExtra && (
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/servicios');
+            }}
+            style={{
+              backgroundColor: 'var(--accent-blue)',
+              color: '#fff',
+              border: 'none',
+              padding: '10px 16px',
+              borderRadius: '10px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              marginTop: '8px',
+              alignSelf: 'flex-start'
+            }}
+          >
+            💬 Abrir Chat con Trabajador
           </button>
         )}
       </div>
@@ -132,33 +250,7 @@ export default function ChatBotWidget() {
     const userMsg = inputText.trim();
     setInputText('');
     setMessages(prev => [...prev, { id: Date.now(), text: userMsg, sender: 'user', source: null }]);
-    setIsTyping(true);
-
-    try {
-      const response = await HybridAIService.processMessage(
-        userMsg, 
-        'web-session-123', // Hardcoded session for web demo
-        (status) => setStatusMessage(status)
-      );
-
-      setMessages(prev => [...prev, { 
-        id: Date.now(), 
-        text: response.text, 
-        sender: 'bot',
-        source: response.source // 'openai', 'supabase', 'cache'
-      }]);
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { 
-        id: Date.now(), 
-        text: "Hubo un error de conexión, intenta de nuevo.", 
-        sender: 'bot',
-        source: 'error'
-      }]);
-    } finally {
-      setIsTyping(false);
-      setStatusMessage('');
-    }
+    await sendMessageToService(userMsg);
   };
 
   const handleClear = () => {
@@ -288,14 +380,21 @@ export default function ChatBotWidget() {
                 fontSize: '14px',
                 lineHeight: '1.5'
               }}>
-                {msg.sender === 'bot' ? renderMessageText(msg.text) : msg.text}
+                {msg.sender === 'bot' ? renderMessageText(msg) : msg.text}
               </div>
               
               {/* Indicador de Origen (IA vs BDD) */}
               {msg.sender === 'bot' && msg.source && (
                 <div style={{ position: 'absolute', bottom: '-18px', left: '4px', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {getSourceIcon(msg.source)}
-                  <span style={{ textTransform: 'capitalize' }}>{msg.source === 'gemini' ? 'Gemini IA' : msg.source === 'openai' ? 'OpenAI' : msg.source === 'cache' ? 'Caché IA' : msg.source === 'error-gemini' ? '⚠️ Gemini no disponible' : msg.source === 'supabase' ? 'Base de Datos' : 'Regla Local'}</span>
+                  <span style={{ textTransform: 'capitalize' }}>
+                    {msg.source === 'gemini' ? 'Gemini IA' : 
+                     msg.source === 'openai' ? 'OpenAI' : 
+                     msg.source === 'cache' ? 'Caché IA' : 
+                     msg.source === 'reservation' || msg.source === 'reservation-done' ? '📅 Cita Guiada' :
+                     msg.source === 'error-gemini' ? '⚠️ Gemini no disponible' : 
+                     msg.source === 'supabase' ? 'Base de Datos' : 'Regla Local'}
+                  </span>
                 </div>
               )}
             </div>

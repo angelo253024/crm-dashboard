@@ -2,6 +2,7 @@ import { IntentClassifier } from './IntentClassifier';
 import { SupabaseQueryService } from './SupabaseQueryService';
 import { CacheService } from './CacheService';
 import { GeminiService, GEMINI_ERROR_MARKER } from './GeminiService';
+import { ChatBotReservationService } from './ChatBotReservationService';
 import { supabase } from '../../supabase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -12,49 +13,79 @@ import { v4 as uuidv4 } from 'uuid';
 export class HybridAIService {
   
   /**
-   * Genera una respuesta inteligente combinando Bases de Datos, Caché y OpenAI.
+   * Genera una respuesta inteligente combinando Reservas, BDD, Caché y Gemini.
    * @param {string} userMessage - Mensaje del usuario
    * @param {string} sessionId - ID de la sesión actual
-   * @param {function} onStatusUpdate - Callback para actualizar UI ('pensando', 'consultando', etc)
+   * @param {function} onStatusUpdate - Callback para actualizar UI
    */
   static async processMessage(userMessage, sessionId = 'web-session', onStatusUpdate = () => {}) {
     const startTime = Date.now();
     let finalResponse = "";
     let source = "";
+    let buttons = null;
+    let requestGPS = false;
+    let reservaExtra = null;
 
     try {
-      onStatusUpdate("Analizando intención...");
-      const intent = await IntentClassifier.classify(userMessage);
-
-      onStatusUpdate("Consultando Base de Datos...");
-      // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
-      const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
-      
-      if (localResponse) {
-        finalResponse = localResponse;
-        source = 'supabase';
-      } else {
-        // 2. Si no hay respuesta local, intentar en Caché de IA
-        onStatusUpdate("Revisando memoria caché...");
-        const cachedResponse = await CacheService.getCachedResponse(userMessage);
-
-        if (cachedResponse) {
-          finalResponse = cachedResponse;
-          source = 'cache';
+      // ========== PRIORIDAD 0: ¿Hay una reserva en curso? ==========
+      if (ChatBotReservationService.isActive()) {
+        onStatusUpdate("Procesando reserva...");
+        const result = await ChatBotReservationService.processStep(userMessage);
+        if (result) {
+          finalResponse = result.text;
+          source = result.source;
+          buttons = result.buttons || null;
+          requestGPS = result.requestGPS || false;
+          if (result.chatSessionId) {
+            reservaExtra = { chatSessionId: result.chatSessionId, reservaId: result.reservaId };
+          }
         } else {
-          // 3. Si no hay caché, usar Gemini
-          onStatusUpdate("Pensando (IA)...");
-          const aiResponse = await GeminiService.getCompletion(userMessage);
+          finalResponse = "Algo salió mal con la reserva. Intenta de nuevo.";
+          source = 'error';
+        }
+      } else {
+        // ========== FLUJO NORMAL ==========
+        onStatusUpdate("Analizando intención...");
+        const intent = await IntentClassifier.classify(userMessage);
+
+        // ¿El usuario quiere reservar?
+        if (intent === 'reservar') {
+          onStatusUpdate("Iniciando reserva...");
+          const result = ChatBotReservationService.start();
+          finalResponse = result.text;
+          source = result.source;
+          buttons = result.buttons || null;
+          requestGPS = result.requestGPS || false;
+        } else {
+          onStatusUpdate("Consultando Base de Datos...");
+          // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
+          const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
           
-          // Si Gemini devuelve el marcador de error, NO cacheamos y mostramos mensaje amigable
-          if (aiResponse === GEMINI_ERROR_MARKER) {
-            finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
-            source = 'error-gemini';
+          if (localResponse) {
+            finalResponse = localResponse;
+            source = 'supabase';
           } else {
-            finalResponse = aiResponse;
-            source = 'gemini';
-            // Solo cacheamos respuestas exitosas
-            CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+            // 2. Si no hay respuesta local, intentar en Caché de IA
+            onStatusUpdate("Revisando memoria caché...");
+            const cachedResponse = await CacheService.getCachedResponse(userMessage);
+
+            if (cachedResponse) {
+              finalResponse = cachedResponse;
+              source = 'cache';
+            } else {
+              // 3. Si no hay caché, usar Gemini
+              onStatusUpdate("Pensando (IA)...");
+              const aiResponse = await GeminiService.getCompletion(userMessage);
+              
+              if (aiResponse === GEMINI_ERROR_MARKER) {
+                finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
+                source = 'error-gemini';
+              } else {
+                finalResponse = aiResponse;
+                source = 'gemini';
+                CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+              }
+            }
           }
         }
       }
@@ -66,14 +97,15 @@ export class HybridAIService {
     }
 
     const durationMs = Date.now() - startTime;
-
-    // Guardar en el historial de forma asíncrona (No bloquea la UI)
     this.saveToHistory(sessionId, userMessage, finalResponse, source, durationMs).catch(e => console.error("History save error", e));
+    onStatusUpdate("");
 
-    onStatusUpdate(""); // Limpiar estado
     return {
       text: finalResponse,
-      source: source
+      source: source,
+      buttons: buttons,
+      requestGPS: requestGPS,
+      reservaExtra: reservaExtra,
     };
   }
 
