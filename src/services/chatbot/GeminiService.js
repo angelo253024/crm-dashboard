@@ -44,8 +44,11 @@ Nunca inventes precios o servicios si no estás seguro.`;
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
+        const errorMsg = errorBody?.error?.message || 'Error desconocido';
+        const errorCode = errorBody?.error?.status || response.status;
         console.error(`❌ Gemini API HTTP ${response.status}:`, JSON.stringify(errorBody));
-        return GEMINI_ERROR_MARKER;
+        // MODO DEBUG TEMPORAL: mostramos el error real en el chat
+        return `[DEBUG Gemini] HTTP ${response.status} | Clave: ${apiKey.substring(0,10)}... | Error: ${errorCode} - ${errorMsg}`;
       }
 
       const data = await response.json();
