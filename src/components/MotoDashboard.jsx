@@ -205,7 +205,7 @@ export default function MotoDashboard({ user }) {
 
   const kpis = React.useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const todayReservas = todasReservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
+    const todayReservas = todasReservas.filter(r => String(r.fecha_reserva || r.created_at || '').split('T')[0] === today);
     const thisMonth = new Date().toISOString().substring(0, 7);
     const monthReservas = todasReservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
     const now = new Date();

@@ -59,7 +59,7 @@ export default function Dashboard() {
     const today = new Date().toISOString().split('T')[0];
     
     // Filtros de fecha básicos
-    const todayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === today);
+    const todayReservas = reservas.filter(r => String(r.fecha_reserva || r.created_at || '').split('T')[0] === today);
     const thisMonth = new Date().toISOString().substring(0, 7);
     const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(thisMonth));
     
@@ -85,35 +85,40 @@ export default function Dashboard() {
   const finanzasDetalladas = useMemo(() => {
     const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || 0), 0);
     
-    const dayReservas = reservas.filter(r => (r.fecha_reserva || r.created_at?.split('T')[0]) === selectedDate);
+    const dayReservas = reservas.filter(r => String(r.fecha_reserva || r.created_at || '').split('T')[0] === selectedDate);
     
     const dDate = new Date(selectedDate);
     const oneWeekAgo = new Date(dDate.getTime() - 7 * 24 * 60 * 60 * 1000);
     const weekReservas = reservas.filter(r => {
-      const d = new Date(r.fecha_reserva || r.created_at);
+      const d = new Date(r.fecha_reserva || r.created_at || new Date());
       return d >= oneWeekAgo && d <= dDate;
     });
 
     const monthStr = selectedDate.substring(0, 7);
-    const monthReservas = reservas.filter(r => (r.fecha_reserva || r.created_at)?.startsWith(monthStr));
+    const monthReservas = reservas.filter(r => String(r.fecha_reserva || r.created_at || '').startsWith(monthStr));
 
     return {
       dia: sumIngresos(dayReservas),
       semana: sumIngresos(weekReservas),
       mes: sumIngresos(monthReservas),
-      servicios: dayReservas
+      diaServicios: dayReservas,
+      semanaServicios: weekReservas,
+      mesServicios: monthReservas
     };
   }, [selectedDate, reservas]);
 
   const [filtroActivo, setFiltroActivo] = useState('dia');
   const [filtroTexto, setFiltroTexto] = useState('');
 
-  const serviciosFiltrados = finanzasDetalladas.servicios.filter(s => {
+  const serviciosFiltrados = (filtroActivo === 'dia' ? finanzasDetalladas.diaServicios :
+                              filtroActivo === 'semana' ? finanzasDetalladas.semanaServicios :
+                              finanzasDetalladas.mesServicios).filter(s => {
     if (!filtroTexto) return true;
     const text = filtroTexto.toLowerCase();
     const cliente = (s.cliente_nombre || s.cliente || '').toLowerCase();
     const servicioName = (servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '').toLowerCase();
-    return cliente.includes(text) || servicioName.includes(text);
+    const trabajador = (trabajadores.find(t => t.id === s.trabajador_id)?.nombre || s.trabajador_nombre || '').toLowerCase();
+    return cliente.includes(text) || servicioName.includes(text) || trabajador.includes(text);
   });
 
   return (
@@ -257,6 +262,7 @@ export default function Dashboard() {
                       <tr>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Trabajador</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Servicio Realizado</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto</th>
@@ -266,8 +272,9 @@ export default function Dashboard() {
                     <tbody>
                       {serviciosFiltrados.map((s, i) => (
                         <tr key={s.id} style={{ borderBottom: i === serviciosFiltrados.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.hora_reserva?.substring(0, 5) || s.hora}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{String(s.hora_reserva || s.hora || '').substring(0, 5)}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{s.cliente_nombre || s.cliente}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{trabajadores.find(t => t.id === s.trabajador_id)?.nombre || s.trabajador_nombre || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '14px' }}>
                             <span style={{ display: 'inline-block', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>
                               {servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '-'}
