@@ -571,6 +571,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         </div>
       )}
 
+      </main>
+
       {/* Floating Chat For Client */}
       {showClientChat && (confirmedReserva || activeReservaLocal) && (
         <ClientChat 
