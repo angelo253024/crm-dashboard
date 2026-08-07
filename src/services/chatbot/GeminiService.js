@@ -26,9 +26,14 @@ Nunca inventes precios o servicios si no estás seguro.`;
 
     // Lista de modelos a intentar en orden (el primero disponible gana)
     const MODELS_TO_TRY = [
-      'gemini-1.5-flash-latest',
+      'gemini-2.0-flash',           // Modelos nuevos (2.x)
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash-exp',
+      'gemini-1.5-flash-latest',    // Modelos 1.5
       'gemini-1.5-flash',
-      'gemini-pro',
+      'gemini-pro',                 // Modelos legacy
       'gemini-1.0-pro',
     ];
 
