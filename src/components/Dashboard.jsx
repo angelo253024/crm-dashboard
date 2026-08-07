@@ -14,11 +14,13 @@ export default function Dashboard() {
   const [promos, setPromos] = useState([]);
   const [reservas, setReservas] = useState([]);
   const [servicios, setServicios] = useState([]);
+  const [trabajadores, setTrabajadores] = useState([]);
   
   useEffect(() => {
     fetchPromos();
     fetchReservas();
     fetchServicios();
+    fetchTrabajadores();
   }, []);
 
   const fetchPromos = async () => {
@@ -37,9 +39,12 @@ export default function Dashboard() {
 
   const fetchServicios = async () => {
     const { data, error } = await supabase.from('servicios').select('*');
-    if (!error && data) {
-      setServicios(data);
-    }
+    if (!error && data) setServicios(data);
+  };
+
+  const fetchTrabajadores = async () => {
+    const { data, error } = await supabase.from('trabajadores').select('*');
+    if (!error && data) setTrabajadores(data);
   };
 
   const deleteReserva = async (id) => {
