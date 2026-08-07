@@ -424,7 +424,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       ) : filteredServicios.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No hay servicios disponibles en esta categoría.</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="services-grid">
           {filteredServicios.map(servicio => (
             <div 
               key={servicio.id} 
@@ -443,7 +443,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
             >
               {/* Imagen del Servicio */}
-              <div style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+              <div className="service-img-wrap" style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                 {servicio.imagen_url ? (
                   <img src={servicio.imagen_url} alt={servicio.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -459,19 +459,20 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </div>
 
               {/* Info del Servicio */}
-              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
+              <div className="service-info-wrap" style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <h3 className="service-title" style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-main)' }}>
                   {servicio.nombre}
                 </h3>
                 
-                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
-                  <div style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
+                <div className="service-price-wrap" style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px' }}>
+                  <div className="service-price" style={{ color: 'var(--accent-green)', fontSize: '24px', fontWeight: '800' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500', marginRight: '4px' }}>Bs.</span>
                     {servicio.precio}
                   </div>
                   
                   {servicio.disponible !== false ? (
                     <button 
+                      className="service-btn"
                       onClick={() => handleBook(servicio)}
                       style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} 
                       onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} 
