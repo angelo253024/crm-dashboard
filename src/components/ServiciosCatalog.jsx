@@ -59,7 +59,7 @@ function ClientChat({ sessionId, onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '10px', right: '10px', width: '95%', maxWidth: '350px', backgroundColor: 'var(--card-bg)', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 9999, border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', height: '60vh', maxHeight: '450px' }}>
+    <div className="client-chat-widget">
       <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
         <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}><X size={18} /></button>
