@@ -287,10 +287,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     : servicios.filter(s => s.categoria === categoriaActiva);
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+    <div className="landing-page" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
       {/* Navbar Simple */}
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '64px' }}>
-        <Link to="/" style={{ color: '#aaa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#aaa'}>
+      <nav className="landing-nav">
+        <Link to="/" style={{ color: '#b0c4de', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#fff'} onMouseOut={(e) => e.target.style.color = '#b0c4de'}>
           <ArrowLeft size={16} /> Volver
         </Link>
         
@@ -298,7 +298,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           <img 
             src="/logo.png" 
             alt="Lavamóvil Norte" 
-            style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
+            className="landing-logo-img"
             onError={(e) => {
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
@@ -306,9 +306,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           />
           {/* Logo Textual Fallback */}
           <div style={{ display: 'none', alignItems: 'center', fontWeight: 900, fontSize: '20px' }}>
-            <span style={{ color: 'var(--accent-dark)' }}>LAVA</span>
-            <span style={{ color: 'var(--accent-green)', margin: '0 2px' }}>M</span>
-            <span style={{ color: 'var(--accent-dark)' }}>ÓVIL</span>
+            <span style={{ color: '#1E4C9A' }}>LAVA</span>
+            <span style={{ color: '#1CA9C9', margin: '0 2px' }}>M</span>
+            <span style={{ color: '#1E4C9A' }}>ÓVIL</span>
           </div>
         </Link>
         
@@ -319,25 +319,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         </div>
       </nav>
 
+      <main className="landing-hero" style={{ maxWidth: '1200px', width: '100%', padding: '0 24px 64px 24px', flex: 'none', display: 'block' }}>
+
       {/* Header del Catálogo */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-          <Droplets size={32} color="var(--accent-green)" />
+        <div className="landing-subtitle">CATÁLOGO DE SERVICIOS</div>
+        <div className="landing-title" style={{ gap: '16px', marginBottom: '16px' }}>
+          <div className="landing-title-icon" style={{ width: '60px', height: '60px', borderRadius: '16px' }}>
+            <Droplets size={32} />
+          </div>
+          <span style={{ fontSize: '42px', color: '#1E4C9A' }}>Reserva tu <span style={{ color: '#1CA9C9' }}>Lavado</span></span>
         </div>
-        <h1 style={{ fontSize: '42px', fontWeight: 900, marginBottom: '16px', letterSpacing: '-1px' }}>
-          Catálogo de <span style={{ color: 'var(--accent-green)' }}>Servicios</span>
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>
+        <p className="landing-text" style={{ margin: '0 auto', fontSize: '16px', maxWidth: '500px' }}>
           Selecciona el paquete de lavado ideal para tu vehículo. Agendaremos tu servicio a domicilio.
         </p>
       </div>
 
       {/* Apartado Reserva Pendiente / Activa */}
       {activeReservaLocal && (
-        <div style={{ maxWidth: '800px', margin: '0 auto 48px auto', backgroundColor: 'var(--card-bg)', border: '2px solid var(--accent-green)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle size={24} color="var(--accent-green)" /> Mi Reserva Activa
+        <div className="service-glass-card" style={{ maxWidth: '800px', margin: '0 auto 48px auto', padding: '24px', animation: 'fadeUp 0.8s ease-out 0.2s forwards' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle size={24} color="#1CA9C9" /> Mi Reserva Activa
             </h2>
             <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
               backgroundColor: 
@@ -351,7 +354,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 activeReservaLocal.estado_reserva === 'asignado' ? '#3b82f6' :
                 activeReservaLocal.estado_reserva === 'en_camino' ? '#10b981' :
                 activeReservaLocal.estado_reserva === 'en_proceso' ? '#eab308' :
-                activeReservaLocal.estado_reserva === 'completado' ? '#10b981' : '#6b7280'
+                activeReservaLocal.estado_reserva === 'completado' ? '#10b981' : '#94a3b8'
             }}>
               {activeReservaLocal.estado_reserva ? activeReservaLocal.estado_reserva.replace('_', ' ').toUpperCase() : 'PENDIENTE'}
             </div>
@@ -359,26 +362,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
             <div>
-              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Vehículo</p>
               <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.vehiculo}</p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Fecha y Hora</p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Fecha y Hora</p>
               <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.fecha_reserva} a las {activeReservaLocal.hora_reserva}</p>
             </div>
             <div>
-              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Precio</p>
-              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs. {activeReservaLocal.precio_total}</p>
+              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio</p>
+              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {activeReservaLocal.precio_total}</p>
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
             <button 
               onClick={() => {
                 setConfirmedReserva(activeReservaLocal);
                 setShowClientChat(true);
               }} 
-              style={{ flex: 1, backgroundColor: '#1E4C9A', color: '#fff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+              className="btn-glass-primary"
+              style={{ flex: 1 }}
             >
               <MessageSquare size={18} /> Chat con Trabajador
             </button>
@@ -387,7 +391,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 localStorage.removeItem('active_reserva_lavamovil');
                 setActiveReservaLocal(null);
               }}
-              style={{ padding: '12px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+              className="glass-pill"
             >
               Cerrar
             </button>
@@ -396,22 +400,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       )}
 
       {/* Filtro de Categorías */}
-      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '48px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '48px', animation: 'fadeUp 0.8s ease-out 0.4s forwards', opacity: 0 }}>
         {categorias.map(cat => (
           <button 
             key={cat}
             onClick={() => setCategoriaActiva(cat)}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '30px',
-              border: categoriaActiva === cat ? 'none' : '1px solid var(--border-color)',
-              backgroundColor: categoriaActiva === cat ? 'var(--accent-green)' : 'transparent',
-              color: categoriaActiva === cat ? '#fff' : 'var(--text-muted)',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
+            className={`glass-pill ${categoriaActiva === cat ? 'active' : ''}`}
           >
             {cat}
           </button>
@@ -428,18 +422,14 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           {filteredServicios.map(servicio => (
             <div 
               key={servicio.id} 
+              className="service-glass-card"
               style={{
-                backgroundColor: 'var(--card-bg)',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                cursor: 'pointer',
                 opacity: servicio.disponible !== false ? 1 : 0.6,
-                boxShadow: 'var(--shadow-card)',
-                display: 'flex',
-                flexDirection: 'column'
+                cursor: servicio.disponible !== false ? 'pointer' : 'default',
+                animation: 'fadeUp 0.8s ease-out 0.6s forwards',
+                opacity: 0,
               }}
-              onMouseOver={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(-4px)' }}
+              onMouseOver={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(-5px)' }}
               onMouseOut={(e) => { if(servicio.disponible !== false) e.currentTarget.style.transform = 'translateY(0)' }}
             >
               {/* Imagen del Servicio */}
@@ -473,9 +463,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   {servicio.disponible !== false ? (
                     <button 
                       onClick={() => handleBook(servicio)}
-                      style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }} 
-                      onMouseOver={(e) => e.target.style.backgroundColor = '#153A7A'} 
-                      onMouseOut={(e) => e.target.style.backgroundColor = '#1E4C9A'}
+                      className="btn-glass-primary"
                     >
                       Agregar
                     </button>
@@ -494,7 +482,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       {/* Modal de Reserva */}
       {showModal && selectedService && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '450px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-card)' }}>
+          <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '450px' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Agendar Servicio</h2>
@@ -510,13 +498,14 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 {confirmedReserva && (
                   <button 
                     onClick={() => setShowClientChat(true)} 
-                    style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                    className="btn-glass-primary"
+                    style={{ width: '100%', marginBottom: '12px' }}
                   >
                     <MessageSquare size={18} /> Abrir Chat con Trabajador
                   </button>
                 )}
                 
-                <button onClick={closeModal} style={{ backgroundColor: 'var(--accent-green)', color: 'white', border: 'none', padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', width: '100%' }}>
+                <button onClick={closeModal} className="glass-pill" style={{ width: '100%' }}>
                   Volver al Catálogo
                 </button>
               </div>
@@ -572,7 +561,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 </div>
 
-                <button type="submit" disabled={isSubmitting} style={{ backgroundColor: '#1E4C9A', color: 'white', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '16px', opacity: isSubmitting ? 0.7 : 1 }}>
+                <button type="submit" disabled={isSubmitting} className="btn-glass-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '16px', width: '100%', justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1 }}>
                   {isSubmitting ? 'Procesando...' : 'Confirmar Reserva'}
                 </button>
               </form>

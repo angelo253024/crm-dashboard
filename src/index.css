@@ -1064,3 +1064,99 @@ body:not(.dark) .btn-landing-large:hover {
   display: flex;
   flex-direction: column;
 }
+
+/* === SHARED RESERVAS & HOME STYLES === */
+.service-glass-card {
+  background-color: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+body:not(.dark) .service-glass-card {
+  background-color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+.service-glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+body:not(.dark) .service-glass-card:hover {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.service-glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #1CA9C9, transparent);
+  opacity: 0.8;
+  z-index: 10;
+}
+
+body:not(.dark) .service-glass-card::before {
+  background: linear-gradient(90deg, transparent, #1E4C9A, transparent);
+}
+
+.btn-glass-primary {
+  background: linear-gradient(135deg, #1E4C9A 0%, #1CA9C9 100%);
+  color: #fff !important;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(28, 169, 201, 0.2);
+}
+
+.btn-glass-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(28, 169, 201, 0.4);
+}
+
+.btn-glass-primary:active {
+  transform: translateY(0);
+}
+
+.glass-pill {
+  padding: 8px 20px;
+  border-radius: 30px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.glass-pill.active {
+  background: linear-gradient(135deg, #1E4C9A 0%, #1CA9C9 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 15px rgba(28, 169, 201, 0.3);
+}
+
+.glass-pill:hover:not(.active) {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
