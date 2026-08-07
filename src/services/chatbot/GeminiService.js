@@ -1,7 +1,4 @@
-/**
- * Servicio exclusivo para conectarse a Google Gemini usando la API REST (fetch).
- * Motor principal de IA del CRM Lavamóvil Norte.
- */
+// GeminiService v3 — Auto-fallback entre modelos Gemini 2.x/1.5/pro
 
 // Flag interno: si Gemini falla, marcamos para NO cachear esa respuesta
 export const GEMINI_ERROR_MARKER = '__GEMINI_ERROR__';
