@@ -16,11 +16,7 @@ export class GeminiService {
       return GEMINI_ERROR_MARKER;
     }
 
-    // Validación básica: las claves de Gemini/Google AI Studio empiezan con "AIza"
-    if (!apiKey.startsWith('AIza')) {
-      console.error(`❌ La clave de Gemini tiene formato inválido. Debe empezar con "AIza". Valor actual: ${apiKey.substring(0, 6)}...`);
-      return GEMINI_ERROR_MARKER;
-    }
+    console.log(`🔑 Usando clave Gemini: ${apiKey.substring(0, 8)}...`);
 
     // 2. Instrucciones base (System Prompt)
     const systemMessage = `Eres el asistente virtual experto del CRM "Lavamóvil Norte".
