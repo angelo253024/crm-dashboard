@@ -60,7 +60,7 @@ const popupStyle = `
 
 // Helper: Parsear coordenadas de la base de datos (Ej: "-17.78, -63.18")
 const parseCoords = (ubicacionGps) => {
-  if (!ubicacionGps) return null;
+  if (!ubicacionGps || typeof ubicacionGps !== 'string') return null;
   const parts = ubicacionGps.split(',');
   if (parts.length >= 2) {
     const lat = parseFloat(parts[0].trim());
@@ -79,9 +79,12 @@ function MapController({ markers }) {
   useEffect(() => {
     if (markers && markers.length > 0) {
       try {
-        const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
-        if (bounds.isValid()) {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        const validMarkers = markers.filter(m => m.lat != null && m.lng != null && !isNaN(m.lat) && !isNaN(m.lng));
+        if (validMarkers.length > 0) {
+          const bounds = L.latLngBounds(validMarkers.map(m => [m.lat, m.lng]));
+          if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+          }
         }
       } catch (e) {
         console.error("Error al centrar el mapa:", e);
@@ -181,6 +184,11 @@ export default function Zonas() {
     // Si el trabajador NO transmite GPS (o si le quitaste las coordenadas), no lo mostramos en el mapa
     if (trab.latitud == null || trab.longitud == null) return;
     
+    const tLat = parseFloat(trab.latitud);
+    const tLng = parseFloat(trab.longitud);
+    
+    if (isNaN(tLat) || isNaN(tLng)) return;
+    
     const st = trab.estado_disponibilidad || 'inactivo';
     
     let estadoLabel = 'Inactivo / Fuera';
@@ -192,8 +200,8 @@ export default function Zonas() {
 
     markers.push({
       id: `trab_${trab.id}`,
-      lat: trab.latitud,
-      lng: trab.longitud,
+      lat: tLat,
+      lng: tLng,
       isExact: true, // El GPS del móvil siempre es exacto
 
       icon: ICONS.trabajador,
@@ -209,13 +217,18 @@ export default function Zonas() {
     if (!resCoords) return;
     const trab = trabajadores.find(t => t.id === res.trabajador_id);
     if (trab && trab.latitud != null && trab.longitud != null) {
-      routes.push({
-        id: `route_${res.id}_${trab.id}`,
-        positions: [
-          [trab.latitud, trab.longitud],
-          [resCoords.lat, resCoords.lng]
-        ]
-      });
+      const tLat = parseFloat(trab.latitud);
+      const tLng = parseFloat(trab.longitud);
+      
+      if (!isNaN(tLat) && !isNaN(tLng)) {
+        routes.push({
+          id: `route_${res.id}_${trab.id}`,
+          positions: [
+            [tLat, tLng],
+            [resCoords.lat, resCoords.lng]
+          ]
+        });
+      }
     }
   });
 
