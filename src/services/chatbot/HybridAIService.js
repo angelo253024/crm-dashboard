@@ -1,7 +1,7 @@
 import { IntentClassifier } from './IntentClassifier';
 import { SupabaseQueryService } from './SupabaseQueryService';
 import { CacheService } from './CacheService';
-import { OpenAIService } from './OpenAIService';
+import { GeminiService } from './GeminiService';
 import { supabase } from '../../supabase';
 import { v4 as uuidv4 } from 'uuid'; // Fallback if no uuid, but we can just use standard JS random or session string
 
@@ -42,12 +42,12 @@ export class HybridAIService {
           finalResponse = cachedResponse;
           source = 'cache';
         } else {
-          // 3. Si no hay caché, usar OpenAI
+          // 3. Si no hay caché, usar Gemini
           onStatusUpdate("Pensando (IA)...");
-          const aiResponse = await OpenAIService.getCompletion(userMessage);
+          const aiResponse = await GeminiService.getCompletion(userMessage);
           
           finalResponse = aiResponse;
-          source = 'openai';
+          source = 'gemini';
 
           // Guardar en caché para futuras consultas asíncronamente
           CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
