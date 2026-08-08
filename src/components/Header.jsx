@@ -34,11 +34,41 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
   const navigate = useNavigate();
   const audioRef = React.useRef(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   useEffect(() => {
-    // Sonido corto por defecto
-    audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-    
+    if (!audioRef.current) {
+      audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+    }
+
+    const unlockAudio = () => {
+      if (audioRef.current && !audioUnlocked) {
+        audioRef.current.play().then(() => {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          setAudioUnlocked(true);
+        }).catch(err => console.log('Audio unlock fallback:', err));
+        
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+      }
+    };
+
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+
+    return () => {
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+    };
+  }, [audioUnlocked]);
+
+  useEffect(() => {
+    if (!user) return; // Esperar a que el usuario cargue
+
     fetchNotificaciones();
     fetchTrabajadores();
     
@@ -116,12 +146,69 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
       )
       .subscribe();
 
+    // Si es administrador, interceptar todas las reservas y eventos importantes
+    let channelAdmin = null;
+    if (user?.rol === 'Administrador') {
+      channelAdmin = supabase
+        .channel('admin-global-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'reservas' },
+          (payload) => {
+             let msj = '';
+             let tipo = 'info';
+             if (payload.eventType === 'INSERT') {
+               msj = `Nueva reserva creada: ${payload.new.cliente_nombre} - ${payload.new.servicio}`;
+             } else if (payload.eventType === 'UPDATE') {
+               if (payload.old.estado_reserva !== payload.new.estado_reserva) {
+                 msj = `Reserva de ${payload.new.cliente_nombre} cambió a: ${payload.new.estado_reserva?.replace('_', ' ')}`;
+                 if (payload.new.estado_reserva === 'completado') tipo = 'success';
+               } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
+                 msj = `Cancelación de reserva: ${payload.new.cliente_nombre}`;
+                 tipo = 'warning';
+               } else if (payload.old.servicio !== payload.new.servicio) {
+                 msj = `Extras o servicios modificados para: ${payload.new.cliente_nombre}`;
+               }
+             }
+             if (msj) {
+               const notif = {
+                 id: 'local_admin_' + Date.now() + Math.random(),
+                 mensaje: msj,
+                 fecha: new Date().toISOString(),
+                 tipo: tipo,
+                 leida: false
+               };
+               setNotificaciones(prev => [notif, ...prev]);
+               if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+             }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'productos' },
+          (payload) => {
+             const msj = payload.eventType === 'INSERT' ? `Nuevo producto creado` : payload.eventType === 'UPDATE' ? `Producto modificado` : `Producto eliminado`;
+             const notif = {
+               id: 'local_admin_prod_' + Date.now() + Math.random(),
+               mensaje: msj,
+               fecha: new Date().toISOString(),
+               tipo: 'info',
+               leida: false
+             };
+             setNotificaciones(prev => [notif, ...prev]);
+             if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
       supabase.removeChannel(channel);
       if (channelReservas) supabase.removeChannel(channelReservas);
+      if (channelAdmin) supabase.removeChannel(channelAdmin);
       supabase.removeChannel(channelTrabajadores);
     };
-  }, []);
+  }, [user]);
 
   const fetchTrabajadores = async () => {
     const { data } = await supabase
