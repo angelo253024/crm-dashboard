@@ -103,6 +103,10 @@ export default function MotoDashboard({ user }) {
   const [showExtraService, setShowExtraService] = useState(null);
   const [extraServicioDesc, setExtraServicioDesc] = useState('');
   const [extraServicioMonto, setExtraServicioMonto] = useState('');
+  
+  // Historial State
+  const [historialSearch, setHistorialSearch] = useState('');
+  const [historialStatus, setHistorialStatus] = useState('Todos');
 
   // Payment Modal State
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -216,12 +220,28 @@ export default function MotoDashboard({ user }) {
     });
 
     const sumIngresos = (arr) => arr.filter(r => r.estado !== 'Cancelado').reduce((sum, r) => sum + (r.precio_total || r.precio || 0), 0);
+    const completedReservas = todasReservas.filter(r => r.estado_reserva === 'completado');
+
+    const uniqueClients = new Set(completedReservas.map(r => r.cliente_nombre).filter(Boolean)).size;
+
+    const totalExtras = completedReservas.reduce((sum, r) => {
+      const parts = (r.servicio || '').split('+');
+      return sum + (parts.length > 1 ? parts.length - 1 : 0);
+    }, 0);
+    
+    const currentDayOfMonth = now.getDate();
+    const ingresosMesVal = sumIngresos(monthReservas);
+    const promedioDiario = currentDayOfMonth > 0 ? (ingresosMesVal / currentDayOfMonth).toFixed(2) : 0;
 
     return {
       ingresosDia: sumIngresos(todayReservas),
       ingresosSemana: sumIngresos(weekReservas),
-      ingresosMes: sumIngresos(monthReservas),
-      serviciosHoy: todayReservas.filter(r => r.estado_reserva === 'completado').length
+      ingresosMes: ingresosMesVal,
+      serviciosHoy: todayReservas.filter(r => r.estado_reserva === 'completado').length,
+      serviciosMes: monthReservas.filter(r => r.estado_reserva === 'completado').length,
+      promedioDiario: Number(promedioDiario),
+      clientesAtendidos: uniqueClients,
+      totalExtras: totalExtras
     };
   }, [todasReservas]);
 
@@ -367,8 +387,41 @@ export default function MotoDashboard({ user }) {
       </div>
 
       <div style={{ marginBottom: '32px' }}>
-        <h2 className="text-h2" style={{ marginBottom: '16px' }}>Tus Ingresos Generados</h2>
-        <KpiCards kpis={kpis} />
+        <h2 className="text-h2" style={{ marginBottom: '16px' }}>Tus Estadísticas Personales</h2>
+        <div className="kpi-container">
+          <div className="kpi-card">
+            <div className="kpi-label">Ingresos Hoy</div>
+            <div className="kpi-value">Bs {kpis.ingresosDia}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Ingresos Semana</div>
+            <div className="kpi-value">Bs {kpis.ingresosSemana}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Ingresos Mes</div>
+            <div className="kpi-value">Bs {kpis.ingresosMes}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Promedio Diario</div>
+            <div className="kpi-value">Bs {kpis.promedioDiario}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Servicios Hoy</div>
+            <div className="kpi-value">{kpis.serviciosHoy}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Servicios Mes</div>
+            <div className="kpi-value">{kpis.serviciosMes}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Clientes Atendidos</div>
+            <div className="kpi-value">{kpis.clientesAtendidos}</div>
+          </div>
+          <div className="kpi-card">
+            <div className="kpi-label">Extras Vendidos</div>
+            <div className="kpi-value">{kpis.totalExtras}</div>
+          </div>
+        </div>
       </div>
 
       <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-color)' }}>
@@ -625,7 +678,7 @@ export default function MotoDashboard({ user }) {
                   onClick={() => setPaymentMethod('QR')}
                   style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'QR' ? '2px solid #3b82f6' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'QR' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'QR' ? '#3b82f6' : 'var(--text-main)', transition: 'all 0.2s' }}
                 >
-                  <MapPin size={24} /> {/* Usando MapPin como placeholder de QR si no hay icono QrCode importado */}
+                  <MapPin size={24} /> 
                   <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Pago por QR</span>
                 </button>
                 <button 
@@ -699,6 +752,67 @@ export default function MotoDashboard({ user }) {
           </div>
         </div>
       )}
+      
+      <div style={{ marginTop: '48px' }}>
+        <h2 className="text-h2" style={{ marginBottom: '16px' }}>Mis Servicios Realizados (Historial)</h2>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <input 
+            type="text"
+            placeholder="Buscar por cliente, teléfono o placa..."
+            value={historialSearch}
+            onChange={(e) => setHistorialSearch(e.target.value)}
+            style={{ flex: 1, minWidth: '250px', padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }}
+          />
+          <select
+            value={historialStatus}
+            onChange={(e) => setHistorialStatus(e.target.value)}
+            style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', minWidth: '150px' }}
+          >
+            <option value="Todos">Todos los Estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En Proceso</option>
+            <option value="completado">Finalizado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {todasReservas
+            .filter(res => {
+              if (historialStatus !== 'Todos') {
+                const s = res.estado_reserva || res.estado;
+                if (historialStatus === 'Cancelado' && res.estado !== 'Cancelado') return false;
+                if (historialStatus !== 'Cancelado' && s !== historialStatus) return false;
+              }
+              if (historialSearch) {
+                const search = historialSearch.toLowerCase();
+                const cliente = (res.cliente_nombre || '').toLowerCase();
+                const vehiculo = (res.vehiculo || '').toLowerCase();
+                if (!cliente.includes(search) && !vehiculo.includes(search)) return false;
+              }
+              return true;
+            })
+            .map(res => (
+              <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{res.cliente_nombre}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Vehículo</strong><br/>{res.vehiculo}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Servicio</strong><br/>{res.servicio}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Generado</strong><br/>Bs {res.precio_total || res.precio || 0}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Fecha/Hora</strong><br/>{res.fecha_reserva} {res.hora_reserva}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Estado</strong><br/><span style={{ textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold' }}>{res.estado === 'Cancelado' ? 'CANCELADO' : res.estado_reserva?.replace('_', ' ')}</span></div>
+                  {res.payment_method && (
+                    <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Método de Pago</strong><br/>{res.payment_method}</div>
+                  )}
+                  {res.observaciones && (
+                    <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Observaciones</strong><br/>{res.observaciones}</div>
+                  )}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
     </div>
   );
 }

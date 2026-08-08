@@ -33,28 +33,77 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
   const userPhoto = user?.foto_url;
 
   const navigate = useNavigate();
+  const audioRef = React.useRef(null);
 
   useEffect(() => {
+    // Sonido corto por defecto
+    audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+    
     fetchNotificaciones();
     fetchTrabajadores();
     
-    // Suscribirse a cambios en tiempo real
+    // Suscribirse a cambios en tiempo real globales (Admin y general)
     const channel = supabase
       .channel('notificaciones-db-changes')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notificaciones' },
         (payload) => {
-          // Check if it's from today before adding
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           const notifDate = new Date(payload.new.fecha);
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
+            if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
           }
         }
       )
       .subscribe();
+
+    // Si es trabajador, interceptar sus reservas para notificaciones personalizadas
+    let channelReservas = null;
+    if (user?.rol === 'Trabajador') {
+      channelReservas = supabase
+        .channel('worker-reservas-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` },
+          (payload) => {
+             let msj = '';
+             let tipo = 'info';
+             if (payload.eventType === 'INSERT') {
+               msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
+             } else if (payload.eventType === 'UPDATE') {
+               if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'asignado') {
+                 msj = `Se te ha reasignado un servicio: ${payload.new.cliente_nombre}`;
+               } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
+                 msj = `El cliente canceló el servicio: ${payload.new.cliente_nombre}`;
+                 tipo = 'warning';
+               } else if (payload.old.servicio !== payload.new.servicio) {
+                 msj = `Se agregaron o modificaron extras del servicio: ${payload.new.servicio}`;
+               } else if (payload.old.fecha_reserva !== payload.new.fecha_reserva || payload.old.hora_reserva !== payload.new.hora_reserva) {
+                 msj = `El cliente modificó el horario o ubicación de su cita.`;
+                 tipo = 'warning';
+               } else if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'completado') {
+                 msj = `El servicio ha finalizado correctamente. ¡Gran trabajo!`;
+                 tipo = 'success';
+               }
+             }
+             if (msj) {
+               const notif = {
+                 id: 'local_' + Date.now(),
+                 mensaje: msj,
+                 fecha: new Date().toISOString(),
+                 tipo: tipo,
+                 leida: false
+               };
+               setNotificaciones(prev => [notif, ...prev]);
+               if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+             }
+          }
+        )
+        .subscribe();
+    }
 
     const channelTrabajadores = supabase
       .channel('trabajadores-db-changes')
@@ -69,6 +118,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
     return () => {
       supabase.removeChannel(channel);
+      if (channelReservas) supabase.removeChannel(channelReservas);
       supabase.removeChannel(channelTrabajadores);
     };
   }, []);
@@ -383,7 +433,12 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                 </button>
               </div>
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
-                <button className="dropdown-item text-red" onClick={() => onLogout()}>
+                <button className="dropdown-item text-red" onClick={() => {
+                  setNotificaciones([]);
+                  supabase.removeAllChannels();
+                  localStorage.removeItem('active_reserva_lavamovil');
+                  onLogout();
+                }}>
                   <LogOut size={14} /> Cerrar Sesión
                 </button>
               </div>
