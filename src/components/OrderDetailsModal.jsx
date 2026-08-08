@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, MapPin, Printer, Download, CheckCircle } from 'lucide-react';
+import { X, MapPin } from 'lucide-react';
+import OrderTimeline from './OrderTimeline';
 
 export default function OrderDetailsModal({ reserva, servicios, onClose }) {
   if (!reserva) return null;
@@ -112,40 +113,12 @@ export default function OrderDetailsModal({ reserva, servicios, onClose }) {
         </div>
 
         {/* Timeline */}
-        <div style={{ backgroundColor: 'var(--card-bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '16px' }}>Línea de Tiempo de la Orden</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
-            <div style={{ position: 'absolute', left: '11px', top: '10px', bottom: '10px', width: '2px', backgroundColor: 'var(--border-color)', zIndex: 0 }}></div>
-            {[
-              'Reserva creada',
-              'Trabajador asignado',
-              'En camino',
-              'Servicio iniciado',
-              'Servicio completado',
-              'Pago registrado'
-            ].map((step, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 0 10px rgba(16, 185, 129, 0.2)' }}>
-                  <CheckCircle size={14} />
-                </div>
-                <div style={{ fontWeight: '500', color: 'var(--text-main)', fontSize: '14px' }}>
-                  {step}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <OrderTimeline reserva={reserva} />
 
         {/* Buttons */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <button onClick={onClose} className="glass-pill" style={{ flex: 1, padding: '12px', justifyContent: 'center', minWidth: '100px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+          <button onClick={onClose} className="glass-pill" style={{ width: '100%', maxWidth: '300px', padding: '12px', justifyContent: 'center' }}>
             Cerrar
-          </button>
-          <button className="glass-pill" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flex: 1, minWidth: '140px' }}>
-            <Printer size={18} /> Imprimir
-          </button>
-          <button className="glass-pill" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#1CA9C9', borderColor: 'rgba(28, 169, 201, 0.3)', flex: 1, minWidth: '140px' }}>
-            <Download size={18} /> Descargar PDF
           </button>
         </div>
 
