@@ -106,7 +106,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   
   // Form State
   const [clienteNombre, setClienteNombre] = useState('');
@@ -187,15 +187,45 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   };
 
   const handleBook = (servicio) => {
-    setSelectedService(servicio);
+    setSelectedServices([servicio]);
     setSuccess(false);
     setShowModal(true);
+  };
+
+  const addServicePlaceholder = () => {
+    setSelectedServices([...selectedServices, { isPlaceholder: true, uniqueId: Date.now() }]);
+  };
+
+  const removeService = (index) => {
+    setSelectedServices(selectedServices.filter((_, i) => i !== index));
+  };
+
+  const handleSelectAdditionalService = (index, serviceId) => {
+    const service = servicios.find(s => s.id === serviceId);
+    if (!service) return;
+    
+    // Check duplicates
+    if (selectedServices.some(s => s.id === service.id)) {
+      alert("Ese servicio ya fue agregado.");
+      return;
+    }
+    
+    const newServices = [...selectedServices];
+    newServices[index] = { ...service, uniqueId: newServices[index].uniqueId || Date.now() };
+    setSelectedServices(newServices);
   };
 
   const submitReservation = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     
+    const validServices = selectedServices.filter(s => !s.isPlaceholder);
+    if (validServices.length === 0) {
+      alert("Debes seleccionar al menos un servicio.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
     // Buscar un trabajador disponible
@@ -210,15 +240,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
     const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random()*1000)}`;
 
+    const mainService = validServices[0];
+    const totalPrice = validServices.reduce((sum, s) => sum + Number(s.precio), 0);
+    const additionalNames = validServices.length > 1 ? ` (Adicionales: ${validServices.slice(1).map(s => s.nombre).join(', ')})` : '';
+
     const { data: insertData, error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
-        vehiculo: vehiculo,
+        vehiculo: `${vehiculo}${additionalNames}`,
         ubicacion_gps: ubicacion,
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
-        servicio_id: selectedService.id,
-        precio_total: selectedService.precio,
+        servicio_id: mainService.id,
+        precio_total: totalPrice,
         estado: 'Reservado',
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva,
@@ -239,7 +273,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       
       // Dispatch notification
       await supabase.from('notificaciones').insert([{
-        mensaje: `Nueva reserva: ${clienteNombre} - ${selectedService.nombre}`,
+        mensaje: `Nueva reserva: ${clienteNombre} - ${validServices.map(s => s.nombre).join(' + ')}`,
         tipo: 'info'
       }]);
 
@@ -255,7 +289,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   const closeModal = () => {
     setShowModal(false);
-    setSelectedService(null);
+    setSelectedServices([]);
     setConfirmedReserva(null);
     setShowClientChat(false);
   };
@@ -479,7 +513,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       )}
 
       {/* Modal de Reserva */}
-      {showModal && selectedService && (
+      {showModal && selectedServices.length > 0 && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '450px' }}>
             
@@ -511,13 +545,84 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             ) : (
               <form onSubmit={submitReservation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 
-                <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', marginBottom: '8px', border: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>Servicio Seleccionado</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{selectedService.nombre}</div>
-                    <div style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>Bs.{selectedService.precio}</div>
-                  </div>
+                {/* Lista de Servicios */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+                  {selectedServices.map((srv, index) => {
+                    const isMain = index === 0;
+                    return (
+                      <div key={srv.uniqueId || srv.id || index} className="service-glass-card" style={{ padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', position: 'relative', animation: 'fadeUp 0.4s ease-out forwards' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                          {isMain ? 'Servicio Principal' : `Servicio Adicional ${index}`}
+                        </div>
+                        
+                        {srv.isPlaceholder ? (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                            <select 
+                              value=""
+                              onChange={(e) => handleSelectAdditionalService(index, e.target.value)}
+                              style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+                            >
+                              <option value="" disabled>Seleccionar servicio...</option>
+                              {servicios.map(s => (
+                                <option key={s.id} value={s.id} disabled={selectedServices.some(sel => sel.id === s.id)}>{s.nombre} - Bs.{s.precio}</option>
+                              ))}
+                            </select>
+                            <div style={{ color: 'var(--text-muted)', fontWeight: 'bold', width: '50px', textAlign: 'right' }}>Bs.0</div>
+                            <button type="button" onClick={() => removeService(index)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px' }} title="Eliminar">
+                              🗑️
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontWeight: '600', color: 'var(--text-main)' }}>{srv.nombre}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>Bs.{srv.precio}</div>
+                              {!isMain && (
+                                <button type="button" onClick={() => removeService(index)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }} title="Eliminar">
+                                  🗑️ <span className="hide-mobile">Eliminar</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                  <button 
+                    type="button" 
+                    onClick={addServicePlaceholder}
+                    style={{ 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', 
+                      padding: '12px', borderRadius: '8px', border: '1px dashed var(--accent-green)', 
+                      backgroundColor: 'rgba(28, 169, 201, 0.05)', color: 'var(--accent-green)', 
+                      cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s',
+                      marginTop: '4px'
+                    }}
+                    onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.15)'; e.currentTarget.style.boxShadow = '0 0 10px rgba(28,169,201,0.2)'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.05)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <span style={{ fontSize: '18px' }}>+</span> Adicionar otro servicio
+                  </button>
                 </div>
+
+                {/* Total Resumen */}
+                {selectedServices.length > 1 && (
+                  <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-main)' }}>Resumen</div>
+                    {selectedServices.filter(s => !s.isPlaceholder).map((s, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                        <span>Servicio {i + 1}: {s.nombre}</span>
+                        <span style={{ fontWeight: '500' }}>Bs.{s.precio}</span>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: '1px dashed var(--border-color)', margin: '12px 0' }}></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: 'var(--accent-green)', fontSize: '18px' }}>
+                      <span>Total</span>
+                      <span>Bs.{selectedServices.reduce((sum, s) => sum + (s.isPlaceholder ? 0 : Number(s.precio)), 0)}</span>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
