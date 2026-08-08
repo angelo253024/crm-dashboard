@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase';
+import { GeminiService } from './GeminiService';
 
 /**
  * ChatBotReservationService — Máquina de estados para reservas guiadas desde el chatbot.
@@ -16,6 +17,8 @@ const STEPS = {
   ASKING_NAME: 'ASKING_NAME',
   ASKING_PHONE: 'ASKING_PHONE',
   ASKING_VEHICLE: 'ASKING_VEHICLE',
+  ASKING_VEHICLE_CATEGORY: 'ASKING_VEHICLE_CATEGORY',
+  ASKING_PACKAGE: 'ASKING_PACKAGE',
   ASKING_SERVICE: 'ASKING_SERVICE',
   ASKING_LOCATION: 'ASKING_LOCATION',
   ASKING_DATE: 'ASKING_DATE',
@@ -43,6 +46,7 @@ export class ChatBotReservationService {
         clienteNombre: '',
         clienteTelefono: '',
         vehiculo: '',
+        paqueteSeleccionado: '',
         servicioId: null,
         servicioNombre: '',
         servicioPrecio: 0,
@@ -119,10 +123,97 @@ export class ChatBotReservationService {
         if (input.length < 2) {
           return { text: 'Por favor, escribe la marca y modelo de tu vehículo.', source: 'reservation', buttons: null, requestGPS: false };
         }
-        _reservationState.data.vehiculo = input;
-        _reservationState.step = STEPS.ASKING_SERVICE;
         
-        // Obtener servicios disponibles de Supabase
+        // Llamada a Gemini
+        const prompt = `Analiza este mensaje de un cliente que indica su vehículo: "${input}". 
+Identifica la Marca, Modelo y Categoría del vehículo (ej. Pequeño, SUV, Camioneta, Van, Sedán Mediano, etc).
+La respuesta DEBE ser ÚNICAMENTE un objeto JSON válido, sin markdown, sin backticks y sin texto adicional.
+Ejemplo de salida correcta:
+{"marca": "Toyota", "modelo": "Corolla", "categoria": "Sedán Mediano"}
+Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde exactamente:
+{"error": true}`;
+
+        let aiResponse = "";
+        let parsed = null;
+        try {
+          aiResponse = await GeminiService.getCompletion(prompt);
+          aiResponse = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+          parsed = JSON.parse(aiResponse);
+        } catch(e) {
+          console.error("Error parsing Gemini vehicle response", e);
+        }
+
+        if (parsed && !parsed.error && parsed.marca && parsed.modelo) {
+          // Éxito con Gemini
+          const vehiculoIdentificado = `${parsed.marca} ${parsed.modelo} (${parsed.categoria || 'Vehículo'})`;
+          _reservationState.data.vehiculo = vehiculoIdentificado;
+          _reservationState.step = STEPS.ASKING_PACKAGE;
+          
+          return {
+            text: `Detecté que tu vehículo es un ${vehiculoIdentificado}.\n\nSelecciona el tipo de paquete que deseas:`,
+            source: 'reservation',
+            buttons: [
+              { label: '🟦 Lavado Clásico', value: 'CLASICO' },
+              { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' }
+            ],
+            requestGPS: false,
+          };
+        } else {
+          // Fallo de Gemini
+          _reservationState.data.vehiculo = input;
+          _reservationState.step = STEPS.ASKING_VEHICLE_CATEGORY;
+          
+          return {
+            text: 'No pude identificar el tipo de vehículo.\n\nSelecciona una categoría:',
+            source: 'reservation',
+            buttons: [
+              { label: '🚗 Pequeño', value: 'Pequeño' },
+              { label: '🚙 SUV', value: 'SUV' },
+              { label: '🛻 Camioneta', value: 'Camioneta' },
+              { label: '🚐 Van', value: 'Van' }
+            ],
+            requestGPS: false,
+          };
+        }
+
+      case STEPS.ASKING_VEHICLE_CATEGORY:
+        // El usuario seleccionó o escribió una categoría
+        const categoria = ['Pequeño', 'SUV', 'Camioneta', 'Van'].find(c => input.toLowerCase().includes(c.toLowerCase())) || input;
+        _reservationState.data.vehiculo = `${_reservationState.data.vehiculo} - ${categoria}`;
+        _reservationState.step = STEPS.ASKING_PACKAGE;
+        
+        return {
+          text: '¡Perfecto! Selecciona el tipo de paquete que deseas:',
+          source: 'reservation',
+          buttons: [
+            { label: '🟦 Lavado Clásico', value: 'CLASICO' },
+            { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' }
+          ],
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_PACKAGE:
+        let paquete = '';
+        if (input === 'CLASICO' || input.toLowerCase().includes('clásico') || input.toLowerCase().includes('clasico')) {
+          paquete = 'Clásico';
+        } else if (input === 'PREMIUM' || input.toLowerCase().includes('premium')) {
+          paquete = 'Premium';
+        } else {
+          return { 
+            text: 'Por favor, selecciona una opción válida.', 
+            source: 'reservation', 
+            buttons: [
+              { label: '🟦 Lavado Clásico', value: 'CLASICO' }, 
+              { label: '⭐ Lavado Premium', value: 'PREMIUM' }
+            ], 
+            requestGPS: false 
+          };
+        }
+
+        _reservationState.data.paqueteSeleccionado = paquete;
+        _reservationState.step = STEPS.ASKING_SERVICE;
+
+        // Obtener servicios y filtrar por el paquete
         const servicios = await this._getServicios();
         if (servicios.length === 0) {
           return {
@@ -133,7 +224,19 @@ export class ChatBotReservationService {
           };
         }
 
-        const serviceButtons = servicios.map(s => ({
+        const serviciosFiltrados = servicios.filter(s => {
+          const str = `${s.nombre} ${s.categoria || ''}`.toLowerCase();
+          if (paquete === 'Premium') {
+            return str.includes('premium');
+          } else {
+            return !str.includes('premium');
+          }
+        });
+
+        // Fallback: si el filtro es muy estricto y no deja nada, mostramos todo
+        const serviciosAMostrar = serviciosFiltrados.length > 0 ? serviciosFiltrados : servicios;
+
+        const serviceButtons = serviciosAMostrar.map(s => ({
           label: `${s.nombre} — Bs. ${s.precio}`,
           value: `SERVICE_${s.id}`,
           id: s.id,
@@ -142,7 +245,7 @@ export class ChatBotReservationService {
         }));
 
         return {
-          text: '🧼 Selecciona el **servicio** que deseas:',
+          text: `🧼 Aquí tienes las opciones para **Lavado ${paquete}**:\n\nSelecciona el servicio que deseas:`,
           source: 'reservation',
           buttons: serviceButtons,
           requestGPS: false,
@@ -158,9 +261,15 @@ export class ChatBotReservationService {
           servicioSeleccionado = data;
         } else {
           // Búsqueda por nombre
-          const { data: servicios2 } = await supabase.from('servicios').select('id, nombre, precio');
+          const { data: servicios2 } = await supabase.from('servicios').select('id, nombre, precio, categoria');
           if (servicios2) {
-            servicioSeleccionado = servicios2.find(s => 
+            const pq = _reservationState.data.paqueteSeleccionado;
+            const serviciosFiltrados2 = servicios2.filter(s => {
+              const str = `${s.nombre} ${s.categoria || ''}`.toLowerCase();
+              if (pq === 'Premium') return str.includes('premium');
+              return !str.includes('premium');
+            });
+            servicioSeleccionado = serviciosFiltrados2.find(s => 
               s.nombre.toLowerCase().includes(input.toLowerCase())
             );
           }
