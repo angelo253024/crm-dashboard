@@ -173,27 +173,44 @@ export default function ChatBotWidget() {
         {msg.buttons && msg.buttons.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
             {msg.buttons.map((btn, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleButtonClick(btn)}
-                disabled={isTyping}
-                style={{
-                  backgroundColor: 'var(--bg-color)',
-                  color: 'var(--text-main)',
-                  border: '1px solid var(--border-color)',
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  textAlign: 'left',
-                  cursor: isTyping ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--accent-blue)')}
-                onMouseLeave={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--border-color)')}
-              >
-                {btn.label}
-              </button>
+              btn.isSeparator ? (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    marginTop: '8px', 
+                    marginBottom: '2px', 
+                    fontSize: '12px', 
+                    fontWeight: 'bold', 
+                    color: 'var(--text-muted)', 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.5px' 
+                  }}
+                >
+                  {btn.label}
+                </div>
+              ) : (
+                <button
+                  key={idx}
+                  onClick={() => handleButtonClick(btn)}
+                  disabled={isTyping}
+                  style={{
+                    backgroundColor: 'var(--bg-color)',
+                    color: 'var(--text-main)',
+                    border: '1px solid var(--border-color)',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textAlign: 'left',
+                    cursor: isTyping ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--accent-blue)')}
+                  onMouseLeave={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--border-color)')}
+                >
+                  {btn.label}
+                </button>
+              )
             ))}
           </div>
         )}

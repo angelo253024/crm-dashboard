@@ -236,13 +236,50 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         // Fallback: si el filtro es muy estricto y no deja nada, mostramos todo
         const serviciosAMostrar = serviciosFiltrados.length > 0 ? serviciosFiltrados : servicios;
 
-        const serviceButtons = serviciosAMostrar.map(s => ({
-          label: `${s.nombre} — Bs. ${s.precio}`,
-          value: `SERVICE_${s.id}`,
-          id: s.id,
-          nombre: s.nombre,
-          precio: s.precio,
-        }));
+        const isPrincipal = (name) => {
+          const lower = name.toLowerCase();
+          if (lower.includes('lavado')) {
+             if (lower.includes('techo') || lower.includes('tapiz') || lower.includes('alfombra') || lower.includes('salón')) return false;
+             return true;
+          }
+          if (lower.includes('exterior') || lower.includes('completo') || lower === 'premium' || lower === 'clásico') return true;
+          return false;
+        };
+
+        const principales = serviciosAMostrar.filter(s => isPrincipal(s.nombre));
+        const adicionales = serviciosAMostrar.filter(s => !isPrincipal(s.nombre));
+
+        let serviceButtons = [];
+        
+        principales.forEach(s => {
+          serviceButtons.push({
+            label: `🚗 ${s.nombre} — Bs. ${s.precio}`,
+            value: `SERVICE_${s.id}`,
+            id: s.id,
+            nombre: s.nombre,
+            precio: s.precio,
+          });
+        });
+
+        if (adicionales.length > 0) {
+          // Si no hay principales (raro), no agregamos el separador de extras para que no se vea feo, o sí lo agregamos igual
+          if (principales.length > 0) {
+            serviceButtons.push({
+              isSeparator: true,
+              label: 'Complementa tu lavado con:'
+            });
+          }
+          
+          adicionales.forEach(s => {
+            serviceButtons.push({
+              label: `✨ ${s.nombre} — Bs. ${s.precio}`,
+              value: `SERVICE_${s.id}`,
+              id: s.id,
+              nombre: s.nombre,
+              precio: s.precio,
+            });
+          });
+        }
 
         return {
           text: `🧼 Aquí tienes las opciones para **Lavado ${paquete}**:\n\nSelecciona el servicio que deseas:`,
