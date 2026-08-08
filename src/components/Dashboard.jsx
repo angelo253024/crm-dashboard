@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
 import SalesTrendChart from './SalesTrendChart';
 import TopDeals from './TopDeals';
+import OrderDetailsModal from './OrderDetailsModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const [reservas, setReservas] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [trabajadores, setTrabajadores] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   
   useEffect(() => {
     fetchPromos();
@@ -298,13 +300,26 @@ export default function Dashboard() {
                             Bs {s.precio_total || s.precio}
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                            <button 
-                              onClick={() => deleteReserva(s.id)} 
-                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
-                              title="Eliminar registro"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              <button 
+                                onClick={() => setSelectedOrder(s)} 
+                                style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }} 
+                                title="Ver Detalles"
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.1)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                <Eye size={18} />
+                              </button>
+                              <button 
+                                onClick={() => deleteReserva(s.id)} 
+                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }} 
+                                title="Eliminar registro"
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -316,6 +331,15 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Detalles del Servicio */}
+      {selectedOrder && (
+        <OrderDetailsModal 
+          reserva={selectedOrder} 
+          servicios={servicios} 
+          onClose={() => setSelectedOrder(null)} 
+        />
       )}
 
     </div>
