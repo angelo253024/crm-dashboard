@@ -123,49 +123,60 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
   
-  // Active reservation loaded from local storage
-  const [activeReservaLocal, setActiveReservaLocal] = useState(null);
+  // Active reservations loaded from local storage
+  const [activeReservas, setActiveReservas] = useState([]);
+  const [selectedReservaId, setSelectedReservaId] = useState(null);
 
   useEffect(() => {
     fetchServicios();
     
-    // Check local storage for active reservation
-    const savedReserva = localStorage.getItem('active_reserva_lavamovil');
-    if (savedReserva) {
+    // Check local storage for active reservations
+    const savedReservas = localStorage.getItem('active_reservas_list_v2');
+    let initialReservas = [];
+    if (savedReservas) {
       try {
-        const parsed = JSON.parse(savedReserva);
-        setActiveReservaLocal(parsed);
-        checkReservaStatus(parsed.id);
+        initialReservas = JSON.parse(savedReservas);
       } catch (e) {
         console.error(e);
       }
+    } else {
+      // Migración de la versión anterior
+      const oldReserva = localStorage.getItem('active_reserva_lavamovil');
+      if (oldReserva) {
+        try {
+          initialReservas = [JSON.parse(oldReserva)];
+          localStorage.setItem('active_reservas_list_v2', JSON.stringify(initialReservas));
+        } catch (e) {}
+      }
+    }
+    
+    if (initialReservas.length > 0) {
+      setActiveReservas(initialReservas);
+      if (!selectedReservaId) setSelectedReservaId(initialReservas[0].id);
+      checkReservaStatus(initialReservas.map(r => r.id));
     }
   }, []);
 
-  // Poll for status changes every 15 seconds if there's an active reservation
+  // Poll for status changes every 15 seconds
   useEffect(() => {
     let interval;
-    if (activeReservaLocal) {
+    if (activeReservas.length > 0) {
       interval = setInterval(() => {
-        checkReservaStatus(activeReservaLocal.id);
+        checkReservaStatus(activeReservas.map(r => r.id));
       }, 15000);
     }
     return () => { if (interval) clearInterval(interval); };
-  }, [activeReservaLocal]);
+  }, [activeReservas]);
 
-  const checkReservaStatus = async (id) => {
-    const { data, error } = await supabase.from('reservas').select('*').eq('id', id).single();
+  const checkReservaStatus = async (ids) => {
+    if (!ids || ids.length === 0) return;
+    const { data, error } = await supabase.from('reservas').select('*').in('id', ids);
     if (!error && data) {
-      setActiveReservaLocal(data);
-      localStorage.setItem('active_reserva_lavamovil', JSON.stringify(data));
+      setActiveReservas(data);
+      localStorage.setItem('active_reservas_list_v2', JSON.stringify(data));
       
-      // If completed or cancelled, we might want to clear it after some time, but let's keep it simple
-      if (data.estado_reserva === 'completado' || data.estado === 'Cancelado') {
-        setTimeout(() => {
-          localStorage.removeItem('active_reserva_lavamovil');
-          setActiveReservaLocal(null);
-        }, 120000); // clear after 2 minutes
-      }
+      // Auto-limpieza: remover completadas/canceladas después de 2 horas (opcional)
+      // Por ahora las mantenemos visibles para que el cliente vea el historial de la sesión
     }
   };
 
@@ -195,22 +206,25 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   };
 
   const handleEditReserva = () => {
+    const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
+    if (!reservaToEdit) return;
+
     setIsEditing(true);
     setSuccess(false);
     
-    // Parse the data from activeReservaLocal
-    const nombreParts = activeReservaLocal.cliente_nombre.split(' - Tel: ');
+    // Parse the data from reservaToEdit
+    const nombreParts = reservaToEdit.cliente_nombre.split(' - Tel: ');
     setClienteNombre(nombreParts[0] || '');
     setClienteTelefono(nombreParts[1] || '');
     
-    const vehiculoMatch = activeReservaLocal.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/);
-    setVehiculo(vehiculoMatch ? vehiculoMatch[1] : activeReservaLocal.vehiculo);
+    const vehiculoMatch = reservaToEdit.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/);
+    setVehiculo(vehiculoMatch ? vehiculoMatch[1] : reservaToEdit.vehiculo);
     
-    setUbicacion(activeReservaLocal.ubicacion_gps || '');
-    setFechaReserva(activeReservaLocal.fecha_reserva || '');
-    setHoraReserva(activeReservaLocal.hora_reserva ? activeReservaLocal.hora_reserva.slice(0, 5) : '');
+    setUbicacion(reservaToEdit.ubicacion_gps || '');
+    setFechaReserva(reservaToEdit.fecha_reserva || '');
+    setHoraReserva(reservaToEdit.hora_reserva ? reservaToEdit.hora_reserva.slice(0, 5) : '');
     
-    const mainService = servicios.find(s => s.id === activeReservaLocal.servicio_id);
+    const mainService = servicios.find(s => s.id === reservaToEdit.servicio_id);
     let reconstructedServices = mainService ? [mainService] : [];
     
     if (vehiculoMatch && vehiculoMatch[2]) {
@@ -278,6 +292,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const additionalNames = validServices.length > 1 ? ` (Adicionales: ${validServices.slice(1).map(s => s.nombre).join(', ')})` : '';
 
     if (isEditing) {
+      const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
       const { data: updateData, error } = await supabase.from('reservas').update({
         cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
         vehiculo: `${vehiculo}${additionalNames}`,
@@ -286,15 +301,16 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         hora_reserva: formattedHora,
         servicio_id: mainService.id,
         precio_total: totalPrice,
-      }).eq('id', activeReservaLocal.id).select();
+      }).eq('id', reservaToEdit.id).select();
 
       if (error) {
         console.error('Error actualizando reserva:', error);
         alert('Hubo un error al actualizar tu reserva: ' + (error.message || JSON.stringify(error)));
       } else {
         if (updateData && updateData.length > 0) {
-          setActiveReservaLocal(updateData[0]);
-          localStorage.setItem('active_reserva_lavamovil', JSON.stringify(updateData[0]));
+          const updatedArr = activeReservas.map(r => r.id === updateData[0].id ? updateData[0] : r);
+          setActiveReservas(updatedArr);
+          localStorage.setItem('active_reservas_list_v2', JSON.stringify(updatedArr));
         }
         setSuccess(true);
         setTimeout(() => {
@@ -329,8 +345,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     } else {
       if (insertData && insertData.length > 0) {
         setConfirmedReserva(insertData[0]);
-        setActiveReservaLocal(insertData[0]);
-        localStorage.setItem('active_reserva_lavamovil', JSON.stringify(insertData[0]));
+        const updatedArr = [insertData[0], ...activeReservas];
+        setActiveReservas(updatedArr);
+        setSelectedReservaId(insertData[0].id);
+        localStorage.setItem('active_reservas_list_v2', JSON.stringify(updatedArr));
       }
       setSuccess(true);
       
@@ -434,84 +452,111 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       </div>
 
       {/* Apartado Reserva Pendiente / Activa */}
-      {activeReservaLocal && (
-        <div className="service-glass-card" style={{ maxWidth: '800px', margin: '0 auto 48px auto', padding: '24px', animation: 'fadeUp 0.8s ease-out 0.2s forwards' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle size={24} color="#1CA9C9" /> Mi Reserva Activa
-            </h2>
-            <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
-              backgroundColor: 
-                activeReservaLocal.estado_reserva === 'pendiente' ? 'rgba(245, 158, 11, 0.1)' : 
-                activeReservaLocal.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' :
-                activeReservaLocal.estado_reserva === 'en_camino' ? 'rgba(16, 185, 129, 0.1)' :
-                activeReservaLocal.estado_reserva === 'en_proceso' ? 'rgba(234, 179, 8, 0.1)' :
-                activeReservaLocal.estado_reserva === 'completado' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.1)',
-              color: 
-                activeReservaLocal.estado_reserva === 'pendiente' ? '#f59e0b' : 
-                activeReservaLocal.estado_reserva === 'asignado' ? '#3b82f6' :
-                activeReservaLocal.estado_reserva === 'en_camino' ? '#10b981' :
-                activeReservaLocal.estado_reserva === 'en_proceso' ? '#eab308' :
-                activeReservaLocal.estado_reserva === 'completado' ? '#10b981' : '#94a3b8'
-            }}>
-              {activeReservaLocal.estado_reserva ? activeReservaLocal.estado_reserva.replace('_', ' ').toUpperCase() : 'PENDIENTE'}
+      {activeReservas.length > 0 && (() => {
+        const reserva = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
+        if (!reserva) return null;
+
+        return (
+          <div className="service-glass-card" style={{ maxWidth: '800px', margin: '0 auto 48px auto', padding: '24px', animation: 'fadeUp 0.8s ease-out 0.2s forwards' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle size={24} color="#1CA9C9" /> {activeReservas.length === 1 ? 'Mi Reserva Activa' : 'Mis Reservas Activas'}
+                </h2>
+                
+                {activeReservas.length > 1 && (
+                  <select 
+                    value={selectedReservaId || ''} 
+                    onChange={(e) => setSelectedReservaId(e.target.value)}
+                    style={{
+                      padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(28, 169, 201, 0.3)',
+                      backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--text-main)', outline: 'none',
+                      fontWeight: 'bold', cursor: 'pointer'
+                    }}
+                  >
+                    {activeReservas.map((r, i) => (
+                      <option key={r.id} value={r.id} style={{ color: '#000' }}>
+                        Reserva {i + 1} - {r.vehiculo.split(' (')[0]}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
+                backgroundColor: 
+                  reserva.estado_reserva === 'pendiente' ? 'rgba(245, 158, 11, 0.1)' : 
+                  reserva.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' :
+                  reserva.estado_reserva === 'en_camino' ? 'rgba(16, 185, 129, 0.1)' :
+                  reserva.estado_reserva === 'en_proceso' ? 'rgba(234, 179, 8, 0.1)' :
+                  reserva.estado_reserva === 'completado' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.1)',
+                color: 
+                  reserva.estado_reserva === 'pendiente' ? '#f59e0b' : 
+                  reserva.estado_reserva === 'asignado' ? '#3b82f6' :
+                  reserva.estado_reserva === 'en_camino' ? '#10b981' :
+                  reserva.estado_reserva === 'en_proceso' ? '#eab308' :
+                  reserva.estado_reserva === 'completado' ? '#10b981' : '#94a3b8'
+              }}>
+                {reserva.estado_reserva ? reserva.estado_reserva.replace('_', ' ').toUpperCase() : 'PENDIENTE'}
+              </div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Vehículo</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.vehiculo}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Fecha y Hora</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.fecha_reserva} a las {reserva.hora_reserva}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {reserva.precio_total}</p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => {
+                  setConfirmedReserva(reserva);
+                  setShowClientChat(true);
+                }} 
+                className="btn-glass-primary"
+                style={{ flex: 1, minWidth: '180px', justifyContent: 'center' }}
+              >
+                <MessageSquare size={18} /> Chat con Trabajador
+              </button>
+              <button 
+                onClick={() => setShowDetailsModal(true)} 
+                className="glass-pill"
+                style={{ flex: 1, minWidth: '120px', justifyContent: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: '#1CA9C9', border: '1px solid rgba(28, 169, 201, 0.3)' }}
+              >
+                Ver Detalles
+              </button>
+              <button 
+                onClick={handleEditReserva} 
+                className="glass-pill"
+                style={{ flex: 1, minWidth: '120px', justifyContent: 'center' }}
+              >
+                Editar Reserva
+              </button>
+              <button 
+                onClick={() => {
+                  const updated = activeReservas.filter(r => r.id !== reserva.id);
+                  setActiveReservas(updated);
+                  localStorage.setItem('active_reservas_list_v2', JSON.stringify(updated));
+                  if (updated.length > 0) setSelectedReservaId(updated[0].id);
+                }}
+                className="glass-pill"
+                style={{ padding: '8px', minWidth: '40px', color: '#ef4444' }}
+                title="Ocultar esta reserva"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Vehículo</p>
-              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.vehiculo}</p>
-            </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Fecha y Hora</p>
-              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{activeReservaLocal.fecha_reserva} a las {activeReservaLocal.hora_reserva}</p>
-            </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio</p>
-              <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {activeReservaLocal.precio_total}</p>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => {
-                setConfirmedReserva(activeReservaLocal);
-                setShowClientChat(true);
-              }} 
-              className="btn-glass-primary"
-              style={{ flex: 1, minWidth: '180px', justifyContent: 'center' }}
-            >
-              <MessageSquare size={18} /> Chat con Trabajador
-            </button>
-            <button 
-              onClick={() => setShowDetailsModal(true)} 
-              className="glass-pill"
-              style={{ flex: 1, minWidth: '120px', justifyContent: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: '#1CA9C9', border: '1px solid rgba(28, 169, 201, 0.3)' }}
-            >
-              Ver Detalles
-            </button>
-            <button 
-              onClick={handleEditReserva} 
-              className="glass-pill"
-              style={{ flex: 1, minWidth: '120px', justifyContent: 'center' }}
-            >
-              Editar Reserva
-            </button>
-            <button 
-              onClick={() => {
-                localStorage.removeItem('active_reserva_lavamovil');
-                setActiveReservaLocal(null);
-              }}
-              className="glass-pill"
-              style={{ padding: '8px', minWidth: '40px' }}
-              title="Cerrar"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Filtro de Categorías */}
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '48px', animation: 'fadeUp 0.8s ease-out 0.4s forwards', opacity: 0 }}>
@@ -762,41 +807,44 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       </main>
 
       {/* Modal de Detalles de Reserva */}
-      {showDetailsModal && activeReservaLocal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', animation: 'fadeUp 0.3s ease-out forwards' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Detalle de la Reserva</h2>
-              <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
-            </div>
-            
-            {/* Client Info */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.cliente_nombre.split(' - Tel: ')[0]}</div>
+      {showDetailsModal && activeReservas.length > 0 && (() => {
+        const reserva = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
+        if (!reserva) return null;
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+            <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', animation: 'fadeUp 0.3s ease-out forwards' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Detalle de la Reserva</h2>
+                <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
               </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>WhatsApp</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.cliente_nombre.split(' - Tel: ')[1] || 'N/A'}</div>
+              
+              {/* Client Info */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre.split(' - Tel: ')[0]}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>WhatsApp</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre.split(' - Tel: ')[1] || 'N/A'}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.vehiculo.split(' (Adicionales:')[0]}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Estado</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--accent-green)', textTransform: 'uppercase' }}>{reserva.estado_reserva?.replace('_', ' ')}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.fecha_reserva}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Hora</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.hora_reserva?.slice(0,5)}</div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.vehiculo.split(' (Adicionales:')[0]}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Estado</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--accent-green)', textTransform: 'uppercase' }}>{activeReservaLocal.estado_reserva?.replace('_', ' ')}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.fecha_reserva}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Hora</div>
-                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.hora_reserva?.slice(0,5)}</div>
-              </div>
-            </div>
             
             {/* Services Breakdown */}
             <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
@@ -869,21 +917,54 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 })}
               </div>
             </div>
-            
-            <button onClick={() => setShowDetailsModal(false)} className="btn-glass-primary" style={{ width: '100%', marginTop: '24px', justifyContent: 'center' }}>
-              Cerrar Detalles
-            </button>
+              {/* Main Service Info */}
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '12px' }}>Resumen de Pago</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px dashed var(--border-color)' }}>
+                  <span style={{ color: 'var(--text-main)' }}>Lavado Base</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>Bs. {reserva.precio_total}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', marginTop: '8px' }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '18px', color: 'var(--text-main)' }}>Total Pagado</span>
+                  <span style={{ fontWeight: 'bold', fontSize: '20px', color: 'var(--accent-green)' }}>Bs. {reserva.precio_total}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button 
+                  onClick={() => {
+                    setConfirmedReserva(reserva);
+                    setShowDetailsModal(false);
+                    setShowClientChat(true);
+                  }} 
+                  className="btn-glass-primary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Abrir Chat
+                </button>
+                <button 
+                  onClick={() => setShowDetailsModal(false)} 
+                  className="glass-pill"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Floating Chat For Client */}
-      {showClientChat && (confirmedReserva || activeReservaLocal) && (
-        <ClientChat 
-          sessionId={(confirmedReserva || activeReservaLocal).chat_session_id || `fallback_${(confirmedReserva || activeReservaLocal).id}`} 
-          onClose={() => setShowClientChat(false)} 
-        />
-      )}
+      {showClientChat && (confirmedReserva || activeReservas.length > 0) && (() => {
+        const chatReserva = confirmedReserva || activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
+        return (
+          <ClientChat 
+            sessionId={chatReserva.chat_session_id || `fallback_${chatReserva.id}`} 
+            onClose={() => setShowClientChat(false)} 
+          />
+        );
+      })()}
 
     </div>
   );
