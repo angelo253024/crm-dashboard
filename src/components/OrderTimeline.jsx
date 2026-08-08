@@ -82,7 +82,7 @@ export default function OrderTimeline({ reserva }) {
       
       {/* Añadimos estilos de animación aquí para que sea autocontenido */}
       <style>
-        {\`
+        {`
           @keyframes pulse-ring {
             0% { transform: scale(0.8); opacity: 0.5; }
             100% { transform: scale(1.5); opacity: 0; }
@@ -99,7 +99,7 @@ export default function OrderTimeline({ reserva }) {
           .step-fade-in {
             animation: fadeIn 0.4s ease-out forwards;
           }
-        \`}
+        `}
       </style>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
@@ -112,7 +112,7 @@ export default function OrderTimeline({ reserva }) {
           
           return (
             <div key={idx} className="step-fade-in" style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1, opacity }}>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justify-content: 'center' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {step.active && !step.isError && <div className="timeline-active-ring"></div>}
                 
                 <div style={{ 
