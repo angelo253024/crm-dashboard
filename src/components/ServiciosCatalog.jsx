@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
 
 // --- Inline Chat Component for Client ---
@@ -107,6 +107,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   
   // Form State
   const [clienteNombre, setClienteNombre] = useState('');
@@ -192,6 +194,37 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setShowModal(true);
   };
 
+  const handleEditReserva = () => {
+    setIsEditing(true);
+    setSuccess(false);
+    
+    // Parse the data from activeReservaLocal
+    const nombreParts = activeReservaLocal.cliente_nombre.split(' - Tel: ');
+    setClienteNombre(nombreParts[0] || '');
+    setClienteTelefono(nombreParts[1] || '');
+    
+    const vehiculoMatch = activeReservaLocal.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/);
+    setVehiculo(vehiculoMatch ? vehiculoMatch[1] : activeReservaLocal.vehiculo);
+    
+    setUbicacion(activeReservaLocal.ubicacion_gps || '');
+    setFechaReserva(activeReservaLocal.fecha_reserva || '');
+    setHoraReserva(activeReservaLocal.hora_reserva ? activeReservaLocal.hora_reserva.slice(0, 5) : '');
+    
+    const mainService = servicios.find(s => s.id === activeReservaLocal.servicio_id);
+    let reconstructedServices = mainService ? [mainService] : [];
+    
+    if (vehiculoMatch && vehiculoMatch[2]) {
+      const extraNames = vehiculoMatch[2].split(', ');
+      extraNames.forEach(name => {
+        const found = servicios.find(s => s.nombre === name);
+        if (found) reconstructedServices.push(found);
+      });
+    }
+    
+    setSelectedServices(reconstructedServices);
+    setShowModal(true);
+  };
+
   const addServicePlaceholder = () => {
     setSelectedServices([...selectedServices, { isPlaceholder: true, uniqueId: Date.now() }]);
   };
@@ -244,6 +277,36 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const totalPrice = validServices.reduce((sum, s) => sum + Number(s.precio), 0);
     const additionalNames = validServices.length > 1 ? ` (Adicionales: ${validServices.slice(1).map(s => s.nombre).join(', ')})` : '';
 
+    if (isEditing) {
+      const { data: updateData, error } = await supabase.from('reservas').update({
+        cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
+        vehiculo: `${vehiculo}${additionalNames}`,
+        ubicacion_gps: ubicacion,
+        fecha_reserva: fechaReserva,
+        hora_reserva: formattedHora,
+        servicio_id: mainService.id,
+        precio_total: totalPrice,
+      }).eq('id', activeReservaLocal.id).select();
+
+      if (error) {
+        console.error('Error actualizando reserva:', error);
+        alert('Hubo un error al actualizar tu reserva: ' + (error.message || JSON.stringify(error)));
+      } else {
+        if (updateData && updateData.length > 0) {
+          setActiveReservaLocal(updateData[0]);
+          localStorage.setItem('active_reserva_lavamovil', JSON.stringify(updateData[0]));
+        }
+        setSuccess(true);
+        setTimeout(() => {
+          setShowModal(false);
+          setSelectedServices([]);
+          setIsEditing(false);
+        }, 2500);
+      }
+      setIsSubmitting(false);
+      return;
+    }
+
     const { data: insertData, error } = await supabase.from('reservas').insert([
       {
         cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
@@ -292,6 +355,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setSelectedServices([]);
     setConfirmedReserva(null);
     setShowClientChat(false);
+    setIsEditing(false);
   };
 
   const getGPSLocation = () => {
@@ -409,16 +473,30 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
             <button 
               onClick={() => {
                 setConfirmedReserva(activeReservaLocal);
                 setShowClientChat(true);
               }} 
               className="btn-glass-primary"
-              style={{ flex: 1 }}
+              style={{ flex: 1, minWidth: '180px', justifyContent: 'center' }}
             >
               <MessageSquare size={18} /> Chat con Trabajador
+            </button>
+            <button 
+              onClick={() => setShowDetailsModal(true)} 
+              className="glass-pill"
+              style={{ flex: 1, minWidth: '120px', justifyContent: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: '#1CA9C9', border: '1px solid rgba(28, 169, 201, 0.3)' }}
+            >
+              Ver Detalles
+            </button>
+            <button 
+              onClick={handleEditReserva} 
+              className="glass-pill"
+              style={{ flex: 1, minWidth: '120px', justifyContent: 'center' }}
+            >
+              Editar Reserva
             </button>
             <button 
               onClick={() => {
@@ -426,8 +504,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 setActiveReservaLocal(null);
               }}
               className="glass-pill"
+              style={{ padding: '8px', minWidth: '40px' }}
+              title="Cerrar"
             >
-              Cerrar
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -523,12 +603,16 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             </div>
 
             {success ? (
-              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+              <div style={{ textAlign: 'center', padding: '32px 0', animation: 'fadeUp 0.4s ease-out forwards' }}>
                 <CheckCircle size={64} color="var(--accent-green)" style={{ margin: '0 auto 16px auto' }} />
-                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px' }}>¡Reserva Confirmada!</h3>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.</p>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '8px' }}>
+                  {isEditing ? '¡Reserva actualizada correctamente!' : '¡Reserva Confirmada!'}
+                </h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+                  {isEditing ? 'Tus cambios han sido guardados y están sincronizados.' : 'Hemos agendado tu servicio exitosamente. Pronto nos contactaremos contigo.'}
+                </p>
                 
-                {confirmedReserva && (
+                {!isEditing && confirmedReserva && (
                   <button 
                     onClick={() => setShowClientChat(true)} 
                     className="btn-glass-primary"
@@ -539,7 +623,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 )}
                 
                 <button onClick={closeModal} className="glass-pill" style={{ width: '100%' }}>
-                  Volver al Catálogo
+                  {isEditing ? 'Cerrar' : 'Volver al Catálogo'}
                 </button>
               </div>
             ) : (
@@ -666,7 +750,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 </div>
 
                 <button type="submit" disabled={isSubmitting} className="btn-glass-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '16px', width: '100%', justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1 }}>
-                  {isSubmitting ? 'Procesando...' : 'Confirmar Reserva'}
+                  {isSubmitting ? 'Procesando...' : (isEditing ? 'Guardar Cambios' : 'Confirmar Reserva')}
                 </button>
               </form>
             )}
@@ -676,6 +760,122 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       )}
 
       </main>
+
+      {/* Modal de Detalles de Reserva */}
+      {showDetailsModal && activeReservaLocal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', animation: 'fadeUp 0.3s ease-out forwards' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Detalle de la Reserva</h2>
+              <button onClick={() => setShowDetailsModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={24} /></button>
+            </div>
+            
+            {/* Client Info */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.cliente_nombre.split(' - Tel: ')[0]}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>WhatsApp</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.cliente_nombre.split(' - Tel: ')[1] || 'N/A'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.vehiculo.split(' (Adicionales:')[0]}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Estado</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--accent-green)', textTransform: 'uppercase' }}>{activeReservaLocal.estado_reserva?.replace('_', ' ')}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.fecha_reserva}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Hora</div>
+                <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{activeReservaLocal.hora_reserva?.slice(0,5)}</div>
+              </div>
+            </div>
+            
+            {/* Services Breakdown */}
+            <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-main)' }}>Servicios</div>
+              
+              {/* Main Service */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted)' }}>
+                <span>✔ {servicios.find(s => s.id === activeReservaLocal.servicio_id)?.nombre || 'Servicio Principal'}</span>
+                <span style={{ fontWeight: '500' }}>Bs.{servicios.find(s => s.id === activeReservaLocal.servicio_id)?.precio || '...'}</span>
+              </div>
+              
+              {/* Additional Services */}
+              {activeReservaLocal.vehiculo.match(/\(Adicionales:\s*(.*)\)/) && activeReservaLocal.vehiculo.match(/\(Adicionales:\s*(.*)\)/)[1].split(', ').map((extra, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted)' }}>
+                  <span>✔ {extra}</span>
+                  <span style={{ fontWeight: '500' }}>Bs.{servicios.find(s => s.nombre === extra)?.precio || '...'}</span>
+                </div>
+              ))}
+              
+              <div style={{ borderTop: '1px dashed var(--border-color)', margin: '12px 0' }}></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: 'var(--accent-green)', fontSize: '18px' }}>
+                <span>TOTAL</span>
+                <span>Bs.{activeReservaLocal.precio_total}</span>
+              </div>
+            </div>
+            
+            {/* Location */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ubicación</div>
+              <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{activeReservaLocal.ubicacion_gps}</div>
+              {activeReservaLocal.ubicacion_gps && activeReservaLocal.ubicacion_gps.includes(',') ? (
+                <div style={{ marginTop: '8px', height: '120px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                  <MapPin size={24} style={{ marginRight: '8px' }} /> Mapa (Ubicación GPS)
+                </div>
+              ) : (
+                <div style={{ marginTop: '8px', padding: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', borderRadius: '8px', fontSize: '14px', textAlign: 'center' }}>
+                  Ubicación pendiente o ingresada manualmente
+                </div>
+              )}
+            </div>
+
+            {/* Timeline */}
+            <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-main)' }}>Progreso del Servicio</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: '11px', top: '10px', bottom: '10px', width: '2px', backgroundColor: 'var(--border-color)', zIndex: 0 }}></div>
+                
+                {[
+                  { key: 'pendiente', label: 'Reserva Creada' },
+                  { key: 'asignado', label: 'Trabajador Asignado' },
+                  { key: 'en_camino', label: 'En Camino' },
+                  { key: 'en_proceso', label: 'En Proceso' },
+                  { key: 'completado', label: 'Finalizado' }
+                ].map((status, index) => {
+                  const states = ['pendiente', 'asignado', 'en_camino', 'en_proceso', 'completado'];
+                  const currentIndex = states.indexOf(activeReservaLocal.estado_reserva);
+                  const isCompleted = index <= currentIndex;
+                  const isCurrent = index === currentIndex;
+                  
+                  return (
+                    <div key={status.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isCompleted ? 'var(--accent-green)' : 'var(--bg-color)', border: isCompleted ? 'none' : '2px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', transition: 'all 0.3s' }}>
+                        {isCompleted && <CheckCircle size={14} />}
+                      </div>
+                      <div style={{ fontWeight: isCurrent ? 'bold' : 'normal', color: isCompleted ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                        {status.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <button onClick={() => setShowDetailsModal(false)} className="btn-glass-primary" style={{ width: '100%', marginTop: '24px', justifyContent: 'center' }}>
+              Cerrar Detalles
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Floating Chat For Client */}
       {showClientChat && (confirmedReserva || activeReservaLocal) && (
