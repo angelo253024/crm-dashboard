@@ -208,17 +208,22 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const handleEditReserva = () => {
     const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
     if (!reservaToEdit) return;
+    
+    if (!reservaToEdit.cliente_nombre) {
+      alert("Por favor espera a que cargue la información de la reserva antes de editarla.");
+      return;
+    }
 
     setIsEditing(true);
     setSuccess(false);
     
     // Parse the data from reservaToEdit
-    const nombreParts = reservaToEdit.cliente_nombre.split(' - Tel: ');
+    const nombreParts = reservaToEdit.cliente_nombre ? reservaToEdit.cliente_nombre.split(' - Tel: ') : [];
     setClienteNombre(nombreParts[0] || '');
     setClienteTelefono(nombreParts[1] || '');
     
-    const vehiculoMatch = reservaToEdit.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/);
-    setVehiculo(vehiculoMatch ? vehiculoMatch[1] : reservaToEdit.vehiculo);
+    const vehiculoMatch = reservaToEdit.vehiculo ? reservaToEdit.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/) : null;
+    setVehiculo(vehiculoMatch ? vehiculoMatch[1] : (reservaToEdit.vehiculo || ''));
     
     setUbicacion(reservaToEdit.ubicacion_gps || '');
     setFechaReserva(reservaToEdit.fecha_reserva || '');
@@ -476,7 +481,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   >
                     {activeReservas.map((r, i) => (
                       <option key={r.id} value={r.id} style={{ color: '#000' }}>
-                        Reserva {i + 1} - {r.vehiculo.split(' (')[0]}
+                        Reserva {i + 1} - {r.vehiculo ? r.vehiculo.split(' (')[0] : 'Cargando...'}
                       </option>
                     ))}
                   </select>
@@ -503,15 +508,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Vehículo</p>
-                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.vehiculo}</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.vehiculo || 'Cargando información...'}</p>
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Fecha y Hora</p>
-                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.fecha_reserva} a las {reserva.hora_reserva}</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.fecha_reserva || '---'} a las {reserva.hora_reserva || '---'}</p>
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio</p>
-                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {reserva.precio_total}</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {reserva.precio_total || '0'}</p>
               </div>
             </div>
             
@@ -822,15 +827,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Cliente</div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre.split(' - Tel: ')[0]}</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre ? reserva.cliente_nombre.split(' - Tel: ')[0] : 'Cargando...'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>WhatsApp</div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre.split(' - Tel: ')[1] || 'N/A'}</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.cliente_nombre ? (reserva.cliente_nombre.split(' - Tel: ')[1] || 'N/A') : 'Cargando...'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Vehículo</div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.vehiculo.split(' (Adicionales:')[0]}</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.vehiculo ? reserva.vehiculo.split(' (Adicionales:')[0] : 'Cargando...'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Estado</div>
@@ -838,11 +843,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.fecha_reserva}</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.fecha_reserva || '---'}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Hora</div>
-                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.hora_reserva?.slice(0,5)}</div>
+                  <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.hora_reserva ? reserva.hora_reserva.slice(0,5) : '---'}</div>
                 </div>
               </div>
             
