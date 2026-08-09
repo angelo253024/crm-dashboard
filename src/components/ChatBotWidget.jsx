@@ -46,7 +46,16 @@ export default function ChatBotWidget() {
           estado_reserva: 'asignado',
           estado: 'Reservado'
         };
-        localStorage.setItem('active_reserva_lavamovil', JSON.stringify(savedData));
+        
+        // Compatible con la nueva lógica de múltiples reservas
+        try {
+          const existingStr = localStorage.getItem('active_reservas_list_v2');
+          let reservasArray = existingStr ? JSON.parse(existingStr) : [];
+          reservasArray = [savedData, ...reservasArray];
+          localStorage.setItem('active_reservas_list_v2', JSON.stringify(reservasArray));
+        } catch(e) {
+          localStorage.setItem('active_reservas_list_v2', JSON.stringify([savedData]));
+        }
       }
 
       setMessages(prev => [...prev, { 
@@ -220,7 +229,7 @@ export default function ChatBotWidget() {
           <button
             onClick={() => {
               setIsOpen(false);
-              navigate('/servicios');
+              navigate('/reservar');
             }}
             style={{
               backgroundColor: 'var(--accent-blue)',
