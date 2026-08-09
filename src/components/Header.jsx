@@ -41,11 +41,13 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
       audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
     }
 
+    let isUnlocked = false;
     const unlockAudio = () => {
-      if (audioRef.current && !audioUnlocked) {
+      if (audioRef.current && !isUnlocked) {
         audioRef.current.play().then(() => {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
+          isUnlocked = true;
           setAudioUnlocked(true);
         }).catch(err => console.log('Audio unlock fallback:', err));
         
@@ -64,7 +66,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
       document.removeEventListener('touchstart', unlockAudio);
       document.removeEventListener('keydown', unlockAudio);
     };
-  }, [audioUnlocked]);
+  }, []);
 
   useEffect(() => {
     if (!user) return; // Esperar a que el usuario cargue
@@ -522,7 +524,6 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               <div style={{ padding: '8px', borderTop: '1px solid var(--border-color)' }}>
                 <button className="dropdown-item text-red" onClick={() => {
                   setNotificaciones([]);
-                  supabase.removeAllChannels();
                   localStorage.removeItem('active_reserva_lavamovil');
                   onLogout();
                 }}>

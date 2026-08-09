@@ -157,16 +157,22 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     }
   }, []);
 
-  // Poll for status changes every 15 seconds
+  const activeReservasIdsRef = useRef([]);
+
   useEffect(() => {
-    let interval;
-    if (activeReservas.length > 0) {
-      interval = setInterval(() => {
-        checkReservaStatus(activeReservas.map(r => r.id));
-      }, 15000);
-    }
-    return () => { if (interval) clearInterval(interval); };
+    activeReservasIdsRef.current = activeReservas.map(r => r.id);
   }, [activeReservas]);
+
+  // Poll for status changes every 15 seconds safely
+  useEffect(() => {
+    let interval = setInterval(() => {
+      const ids = activeReservasIdsRef.current;
+      if (ids && ids.length > 0) {
+        checkReservaStatus(ids);
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const checkReservaStatus = async (ids) => {
     if (!ids || ids.length === 0) return;

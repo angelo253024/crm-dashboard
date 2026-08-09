@@ -149,9 +149,15 @@ export default function MotoDashboard({ user }) {
 
   useEffect(() => {
     let watchId;
+    let lastUpdate = 0; // Throttle timestamp para GPS
+
     if (user && estado !== 'inactivo' && navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(
         async (position) => {
+          const now = Date.now();
+          if (now - lastUpdate < 15000) return; // Limitar updates a 1 cada 15 seg
+          lastUpdate = now;
+
           const { latitude, longitude } = position.coords;
           try {
             await supabase.from('trabajadores').update({
