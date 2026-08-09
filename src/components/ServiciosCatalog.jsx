@@ -857,12 +857,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               
               {/* Main Service */}
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted)' }}>
-                <span>✔ {servicios.find(s => s.id === activeReservaLocal.servicio_id)?.nombre || 'Servicio Principal'}</span>
-                <span style={{ fontWeight: '500' }}>Bs.{servicios.find(s => s.id === activeReservaLocal.servicio_id)?.precio || '...'}</span>
+                <span>✔ {servicios.find(s => s.id === reserva.servicio_id)?.nombre || 'Servicio Principal'}</span>
+                <span style={{ fontWeight: '500' }}>Bs.{servicios.find(s => s.id === reserva.servicio_id)?.precio || '...'}</span>
               </div>
               
               {/* Additional Services */}
-              {activeReservaLocal.vehiculo.match(/\(Adicionales:\s*(.*)\)/) && activeReservaLocal.vehiculo.match(/\(Adicionales:\s*(.*)\)/)[1].split(', ').map((extra, i) => (
+              {reserva.vehiculo?.match(/\(Adicionales:\s*(.*)\)/) && reserva.vehiculo.match(/\(Adicionales:\s*(.*)\)/)[1].split(', ').map((extra, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: 'var(--text-muted)' }}>
                   <span>✔ {extra}</span>
                   <span style={{ fontWeight: '500' }}>Bs.{servicios.find(s => s.nombre === extra)?.precio || '...'}</span>
@@ -872,15 +872,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               <div style={{ borderTop: '1px dashed var(--border-color)', margin: '12px 0' }}></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: 'var(--accent-green)', fontSize: '18px' }}>
                 <span>TOTAL</span>
-                <span>Bs.{activeReservaLocal.precio_total}</span>
+                <span>Bs.{reserva.precio_total || '0'}</span>
               </div>
             </div>
             
             {/* Location */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ubicación</div>
-              <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{activeReservaLocal.ubicacion_gps}</div>
-              {activeReservaLocal.ubicacion_gps && activeReservaLocal.ubicacion_gps.includes(',') ? (
+              <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps || 'Cargando...'}</div>
+              {reserva.ubicacion_gps && reserva.ubicacion_gps.includes(',') ? (
                 <div style={{ marginTop: '8px', height: '120px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                   <MapPin size={24} style={{ marginRight: '8px' }} /> Mapa (Ubicación GPS)
                 </div>
@@ -905,7 +905,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   { key: 'completado', label: 'Finalizado' }
                 ].map((status, index) => {
                   const states = ['pendiente', 'asignado', 'en_camino', 'en_proceso', 'completado'];
-                  const currentIndex = states.indexOf(activeReservaLocal.estado_reserva);
+                  const currentIndex = states.indexOf(reserva.estado_reserva || 'pendiente');
                   const isCompleted = index <= currentIndex;
                   const isCurrent = index === currentIndex;
                   
