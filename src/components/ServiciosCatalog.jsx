@@ -669,7 +669,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       {/* Modal de Reserva */}
       {showModal && selectedServices.length > 0 && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '450px' }}>
+          <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '450px', maxHeight: '90vh', overflowY: 'auto' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>Agendar Servicio</h2>
