@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, UserPlus, X, Edit2 } from 'lucide-react';
+import { Users, Plus, UserPlus, X, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../supabase';
 
 export default function Trabajadores() {
@@ -110,6 +110,22 @@ export default function Trabajadores() {
     }
   };
 
+  const handleDelete = async (id, nombre) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar al usuario ${nombre}?`)) {
+      const { error } = await supabase
+        .from('trabajadores')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert('Hubo un error al eliminar el usuario.');
+        console.error(error);
+      } else {
+        setTrabajadores(trabajadores.filter(t => t.id !== id));
+      }
+    }
+  };
+
   const [activeTab, setActiveTab] = useState('directorio');
 
   const renderDirectorio = () => (
@@ -152,9 +168,14 @@ export default function Trabajadores() {
                   </span>
                 </td>
                 <td style={{ padding: '12px 16px' }}>
-                   <button onClick={() => handleOpenEdit(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
-                     <Edit2 size={16} />
-                   </button>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <button onClick={() => handleOpenEdit(t)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
+                      <Edit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(t.id, t.nombre)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-red, #ef4444)' }}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))
