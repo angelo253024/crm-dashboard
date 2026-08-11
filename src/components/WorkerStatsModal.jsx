@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Search, DollarSign, Wallet, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { X, Search, DollarSign, Wallet, FileText, CheckCircle, AlertTriangle, Settings } from 'lucide-react';
 import { supabase } from '../supabase';
+import EditPercentagesModal from './EditPercentagesModal';
 
 export default function WorkerStatsModal({ worker, currentUser, onClose }) {
   const [activeTab, setActiveTab] = useState('general');
@@ -20,6 +21,7 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
   // Modals
   const [showAnticipoModal, setShowAnticipoModal] = useState(false);
   const [showPagoModal, setShowPagoModal] = useState(false);
+  const [showEditPercentagesModal, setShowEditPercentagesModal] = useState(false);
   const [anticipoAmount, setAnticipoAmount] = useState('');
   const [anticipoObs, setAnticipoObs] = useState('');
 
@@ -412,6 +414,9 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                     <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>Cálculo Automático de Comisiones</h3>
                     {isAdmin && (
                       <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={() => setShowEditPercentagesModal(true)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--accent-cyan)', backgroundColor: 'transparent', color: 'var(--accent-cyan)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Settings size={16} /> Editar Porcentajes
+                        </button>
                         <button onClick={() => setShowAnticipoModal(true)} disabled={liquidacionStats.saldoAcumulado <= 0} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontWeight: 'bold', cursor: liquidacionStats.saldoAcumulado <= 0 ? 'not-allowed' : 'pointer', opacity: liquidacionStats.saldoAcumulado <= 0 ? 0.5 : 1 }}>
                           Registrar Anticipo
                         </button>
@@ -517,6 +522,14 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Percentages Modal */}
+      {showEditPercentagesModal && (
+        <EditPercentagesModal 
+          currentUser={currentUser} 
+          onClose={() => setShowEditPercentagesModal(false)} 
+        />
       )}
 
     </div>,
