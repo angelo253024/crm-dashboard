@@ -1257,3 +1257,47 @@ body:not(.dark) .service-glass-card::before {
   background-color: var(--bg-color);
   color: var(--text-main);
 }
+
+/* === SIDEBAR RESPONSIVE HEIGHT (ADAPT TO ZOOM) === */
+@media (max-height: 900px) {
+  .sidebar {
+    padding: 16px;
+  }
+  .sidebar-logo {
+    margin-bottom: 20px;
+    font-size: 20px;
+  }
+  .sidebar-workspace {
+    margin-bottom: 16px;
+    padding: 10px;
+  }
+  .nav-item {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .sidebar-nav {
+    gap: 6px;
+  }
+}
+
+@media (max-height: 750px) {
+  .sidebar {
+    padding: 12px;
+  }
+  .sidebar-logo {
+    margin-bottom: 12px;
+    font-size: 18px;
+  }
+  .sidebar-workspace {
+    margin-bottom: 12px;
+    padding: 8px;
+  }
+  .nav-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  .sidebar-nav {
+    gap: 2px;
+  }
+}
