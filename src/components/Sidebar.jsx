@@ -1,26 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote, User } from 'lucide-react';
-import { supabase } from '../supabase';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote } from 'lucide-react';
 
 export default function Sidebar({ user, onLogout }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-  const [trabajadores, setTrabajadores] = useState([]);
   const isTrabajador = user?.rol === 'Trabajador';
-
-  useEffect(() => {
-    if (!isTrabajador) {
-      const fetchTrabajadores = async () => {
-        const { data, error } = await supabase
-          .from('trabajadores')
-          .select('id, nombre, color');
-        if (!error && data) {
-          setTrabajadores(data);
-        }
-      };
-      fetchTrabajadores();
-    }
-  }, [isTrabajador]);
 
   return (
     <aside className="sidebar">
@@ -177,20 +161,6 @@ export default function Sidebar({ user, onLogout }) {
               <span style={{ fontSize: '9px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>Próximamente</span>
             </span>
           </button>
-
-          {trabajadores.length > 0 && (
-            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--border-color)' }}>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px', paddingLeft: '16px', textTransform: 'uppercase' }}>
-                Plantilla Activa
-              </div>
-              {trabajadores.map(t => (
-                <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 16px', opacity: 0.8 }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: t.color || 'var(--accent-blue)' }} />
-                  <span style={{ fontSize: '13px', color: 'var(--text-main)' }}>{t.nombre}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
         </>
         )}
