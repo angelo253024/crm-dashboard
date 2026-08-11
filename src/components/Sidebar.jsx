@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot } from 'lucide-react';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote } from 'lucide-react';
 
 export default function Sidebar({ user, onLogout }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
@@ -136,6 +136,35 @@ export default function Sidebar({ user, onLogout }) {
             </NavLink>
           </>
         )}
+
+        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', paddingLeft: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Nómina (Trabajadores)
+          </div>
+          <button 
+            className="nav-item" 
+            style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', opacity: 0.7, cursor: 'pointer' }}
+            onClick={(e) => { e.preventDefault(); alert('Liquidación de semana - Próximamente'); }}
+          >
+            <Wallet size={20} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Liquidación
+              <span style={{ fontSize: '9px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>Próximamente</span>
+            </span>
+          </button>
+          
+          <button 
+            className="nav-item" 
+            style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', opacity: 0.7, cursor: 'pointer' }}
+            onClick={(e) => { e.preventDefault(); alert('Anticipo de pago - Próximamente'); }}
+          >
+            <Banknote size={20} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Anticipos
+              <span style={{ fontSize: '9px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>Próximamente</span>
+            </span>
+          </button>
+        </div>
       </nav>
 
     </aside>
