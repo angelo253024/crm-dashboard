@@ -21,6 +21,7 @@ export default function Sidebar({ user, onLogout }) {
     const { data } = await supabase
       .from('trabajadores')
       .select('id, nombre, foto_url')
+      .eq('rol', 'Trabajador')
       .order('nombre', { ascending: true });
     if (data) setTrabajadores(data);
   };
