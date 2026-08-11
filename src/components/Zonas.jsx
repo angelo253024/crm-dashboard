@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Navigation, Clock, User, Phone, Car, RefreshCw, Briefcase, Activity } from 'lucide-react';
+import { MapPin, Navigation, Clock, User, Phone, Car, RefreshCw, Briefcase, Activity, ShieldCheck } from 'lucide-react';
 import { supabase } from '../supabase';
+import GeofencingAdmin from './GeofencingAdmin';
 
 // Helper: Custom Icons para dar un aspecto "Senior / Premium"
 const createCustomIcon = (color, iconHtml) => {
@@ -95,6 +96,7 @@ function MapController({ markers }) {
 }
 
 export default function Zonas() {
+  const [activeTab, setActiveTab] = useState('monitoreo'); // 'monitoreo' | 'cobertura'
   const [reservas, setReservas] = useState([]);
   const [trabajadores, setTrabajadores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -236,126 +238,159 @@ export default function Zonas() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div className="card" style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h2 className="text-h2">Control de Flota en Tiempo Real</h2>
-            <p className="text-muted text-small" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Activity size={14} color="var(--accent-green)" />
-              Ubicaciones sincronizadas con Supabase en vivo
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-secondary" onClick={fetchData} disabled={loading} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <RefreshCw size={16} className={loading ? 'spin' : ''} />
-              Actualizar Ahora
-            </button>
-          </div>
+      
+      {/* Header y Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <MapPin color="var(--accent-cyan)" /> Mapa y Cobertura
+          </h1>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Gestión territorial y monitoreo de la flota en tiempo real.</p>
         </div>
         
-        {reservasSinUbicacion.length > 0 && (
-          <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', color: '#f59e0b', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
-            ⚠️ Hay {reservasSinUbicacion.length} reserva(s) que no tienen una ubicación válida y no se mostrarán en el mapa.
-          </div>
-        )}
-
-        {/* Leyenda Visual */}
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-             <span style={{ fontSize: '18px' }}>🏍️</span> Trabajadores
-           </div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-             <span style={{ fontSize: '18px' }}>⏳</span> Trabajos Pendientes
-           </div>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-             <span style={{ fontSize: '18px' }}>📍</span> Trabajos En Proceso
-           </div>
-        </div>
-        
-        {/* Contenedor del Mapa de React Leaflet */}
-        <div style={{ height: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }}>
-          <MapContainer 
-            center={[-17.7833, -63.1821]} // Santa Cruz de la Sierra por defecto
-            zoom={13} 
-            style={{ height: '100%', width: '100%', background: '#0f172a' }} // Dark mode base para mapa (tileset oscuro seria ideal, usamos claro base con filtro opcional por CSS, pero aqui lo dejamos estandar)
-          >
-            <MapController markers={markers} />
-            {/* TileLayer minimalista (CartoDB Positron) para un estilo más CRM */}
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            />
-            {routes.map(route => (
-              <Polyline 
-                key={route.id}
-                positions={route.positions} 
-                color="#0ea5e9" 
-                weight={3} 
-                dashArray="5, 10" 
-                opacity={0.8}
-              />
-            ))}
-            
-            {markers.map(marker => (
-              <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={marker.icon}>
-                <Popup>
-                  {marker.type === 'reserva' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ padding: '12px 16px', borderBottom: '1px solid #334155', background: marker.data.estado_reserva === 'pendiente' ? 'linear-gradient(to right, #78350f, #0f172a)' : 'linear-gradient(to right, #064e3b, #0f172a)' }}>
-                        <div style={{ fontWeight: '700', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Car size={16} />
-                          {marker.data.vehiculo || 'Servicio de Lavado'}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{marker.data.estado_reserva.toUpperCase()}</span>
-                          <span style={{ fontWeight: 'bold' }}>Bs {marker.data.precio_total}</span>
-                        </div>
-                      </div>
-                      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0f172a' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px' }}>
-                          <User size={14} color="#94a3b8" style={{ marginTop: '2px' }} />
-                          <span style={{ color: '#e2e8f0' }}>{marker.data.cliente_nombre}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px' }}>
-                          <MapPin size={14} color="#94a3b8" style={{ marginTop: '2px' }} />
-                          <span style={{ color: '#e2e8f0' }}>
-                            {!marker.isExact && <strong style={{ color: '#f59e0b', display: 'block', fontSize: '11px', marginBottom: '2px' }}>Ubicación Aproximada</strong>}
-                            {marker.data.ubicacion_gps && !marker.data.ubicacion_gps.includes(',') 
-                              ? marker.data.ubicacion_gps 
-                              : (marker.isExact ? 'Ubicación GPS Exacta' : 'Centro de la ciudad')}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', borderTop: '1px dashed #334155', paddingTop: '12px', marginTop: '4px' }}>
-                          <Briefcase size={14} color="#0ea5e9" />
-                          <span style={{ color: '#e2e8f0' }}>Asignado a: <strong>{marker.data.trabajador_nombre}</strong></span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                       <div style={{ padding: '12px 16px', borderBottom: '1px solid #334155', background: 'linear-gradient(to right, #0c4a6e, #0f172a)' }}>
-                        <div style={{ fontWeight: '700', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <User size={16} />
-                          {marker.data.nombre}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#38bdf8', marginTop: '4px' }}>
-                          Personal Lava Móvil
-                        </div>
-                      </div>
-                      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0f172a' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: marker.data.colorStatus }}></div>
-                          <span style={{ color: '#e2e8f0' }}>Estado: <strong style={{ color: marker.data.colorStatus }}>{marker.data.estadoActual}</strong></span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+        <div style={{ display: 'flex', backgroundColor: 'var(--card-bg)', borderRadius: '12px', padding: '4px', border: '1px solid var(--border-color)' }}>
+          <button 
+            onClick={() => setActiveTab('monitoreo')}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'monitoreo' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'monitoreo' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'monitoreo' ? 'bold' : 'normal', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+            <Activity size={16} /> Monitoreo en Vivo
+          </button>
+          <button 
+            onClick={() => setActiveTab('cobertura')}
+            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'cobertura' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'cobertura' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'cobertura' ? 'bold' : 'normal', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+            <ShieldCheck size={16} /> Cobertura de Servicio
+          </button>
         </div>
       </div>
+
+      {activeTab === 'cobertura' ? (
+        <GeofencingAdmin />
+      ) : (
+        <>
+          {/* Tarjetas KPI */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="card" style={{ padding: '32px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div>
+                  <h2 className="text-h2">Control de Flota en Tiempo Real</h2>
+                  <p className="text-muted text-small" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Activity size={14} color="var(--accent-green)" />
+                    Ubicaciones sincronizadas con Supabase en vivo
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button className="btn-secondary" onClick={fetchData} disabled={loading} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <RefreshCw size={16} className={loading ? 'spin' : ''} />
+                    Actualizar Ahora
+                  </button>
+                </div>
+              </div>
+              
+              {reservasSinUbicacion.length > 0 && (
+                <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', color: '#f59e0b', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+                  ⚠️ Hay {reservasSinUbicacion.length} reserva(s) que no tienen una ubicación válida y no se mostrarán en el mapa.
+                </div>
+              )}
+
+              {/* Leyenda Visual */}
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                   <span style={{ fontSize: '18px' }}>🏍️</span> Trabajadores
+                 </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                   <span style={{ fontSize: '18px' }}>⏳</span> Trabajos Pendientes
+                 </div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                   <span style={{ fontSize: '18px' }}>📍</span> Trabajos En Proceso
+                 </div>
+              </div>
+              
+              {/* Contenedor del Mapa de React Leaflet */}
+              <div style={{ height: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }}>
+                <MapContainer 
+                  center={[-17.7833, -63.1821]} // Santa Cruz de la Sierra por defecto
+                  zoom={13} 
+                  style={{ height: '100%', width: '100%', background: '#0f172a' }} // Dark mode base para mapa (tileset oscuro seria ideal, usamos claro base con filtro opcional por CSS, pero aqui lo dejamos estandar)
+                >
+                  <MapController markers={markers} />
+                  {/* TileLayer minimalista (CartoDB Positron) para un estilo más CRM */}
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                  />
+                  {routes.map(route => (
+                    <Polyline 
+                      key={route.id}
+                      positions={route.positions} 
+                      color="#0ea5e9" 
+                      weight={3} 
+                      dashArray="5, 10" 
+                      opacity={0.8}
+                    />
+                  ))}
+                  
+                  {markers.map(marker => (
+                    <Marker key={marker.id} position={[marker.lat, marker.lng]} icon={marker.icon}>
+                      <Popup>
+                        {marker.type === 'reserva' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #334155', background: marker.data.estado_reserva === 'pendiente' ? 'linear-gradient(to right, #78350f, #0f172a)' : 'linear-gradient(to right, #064e3b, #0f172a)' }}>
+                              <div style={{ fontWeight: '700', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Car size={16} />
+                                {marker.data.vehiculo || 'Servicio de Lavado'}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{marker.data.estado_reserva.toUpperCase()}</span>
+                                <span style={{ fontWeight: 'bold' }}>Bs {marker.data.precio_total}</span>
+                              </div>
+                            </div>
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0f172a' }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px' }}>
+                                <User size={14} color="#94a3b8" style={{ marginTop: '2px' }} />
+                                <span style={{ color: '#e2e8f0' }}>{marker.data.cliente_nombre}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px' }}>
+                                <MapPin size={14} color="#94a3b8" style={{ marginTop: '2px' }} />
+                                <span style={{ color: '#e2e8f0' }}>
+                                  {!marker.isExact && <strong style={{ color: '#f59e0b', display: 'block', fontSize: '11px', marginBottom: '2px' }}>Ubicación Aproximada</strong>}
+                                  {marker.data.ubicacion_gps && !marker.data.ubicacion_gps.includes(',') 
+                                    ? marker.data.ubicacion_gps 
+                                    : (marker.isExact ? 'Ubicación GPS Exacta' : 'Centro de la ciudad')}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', borderTop: '1px dashed #334155', paddingTop: '12px', marginTop: '4px' }}>
+                                <Briefcase size={14} color="#0ea5e9" />
+                                <span style={{ color: '#e2e8f0' }}>Asignado a: <strong>{marker.data.trabajador_nombre}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <div style={{ padding: '12px 16px', borderBottom: '1px solid #334155', background: 'linear-gradient(to right, #0c4a6e, #0f172a)' }}>
+                              <div style={{ fontWeight: '700', fontSize: '15px', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <User size={16} />
+                                {marker.data.nombre}
+                              </div>
+                              <div style={{ fontSize: '12px', color: '#38bdf8', marginTop: '4px' }}>
+                                Personal Lava Móvil
+                              </div>
+                            </div>
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0f172a' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: marker.data.colorStatus }}></div>
+                                <span style={{ color: '#e2e8f0' }}>Estado: <strong style={{ color: marker.data.colorStatus }}>{marker.data.estadoActual}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
