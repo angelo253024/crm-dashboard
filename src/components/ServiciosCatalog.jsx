@@ -186,6 +186,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     }
   };
 
+  const isSecondaryService = (s) => {
+    const isOtros = s.categoria === 'Otros';
+    const isMenorA40 = Number(s.precio) < 40;
+    const isMotoP = s.nombre?.toLowerCase().includes('moto "p"');
+    const isBici = s.nombre?.toLowerCase().includes('bici');
+    const isLustrado = s.nombre?.toLowerCase().includes('lustrado');
+    return isOtros || isMenorA40 || isMotoP || isBici || isLustrado;
+  };
+
   const fetchServicios = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: false });
@@ -214,7 +223,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       
       setServicios(sortedData);
       
-      const uniqueCats = [...new Set(sortedData.map(s => s.categoria).filter(Boolean))];
+      // Solo mostrar pestañas para categorías que tienen servicios principales
+      const primaryServicios = sortedData.filter(s => !isSecondaryService(s));
+      const uniqueCats = [...new Set(primaryServicios.map(s => s.categoria).filter(Boolean))];
       uniqueCats.sort((a, b) => (categoryOrder[a] || 99) - (categoryOrder[b] || 99));
       
       const cats = ['Todos', ...uniqueCats];
@@ -428,8 +439,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   };
 
   const filteredServicios = categoriaActiva === 'Todos' 
-    ? servicios 
-    : servicios.filter(s => s.categoria === categoriaActiva);
+    ? servicios.filter(s => !isSecondaryService(s))
+    : servicios.filter(s => s.categoria === categoriaActiva && !isSecondaryService(s));
 
   return (
     <div className="landing-page" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
