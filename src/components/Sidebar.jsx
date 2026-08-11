@@ -134,10 +134,7 @@ export default function Sidebar({ user, onLogout }) {
               <Bot size={20} />
               <span>Admin Bot</span>
             </NavLink>
-          </>
-        )}
-
-        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
           <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', paddingLeft: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Nómina (Trabajadores)
           </div>
@@ -165,6 +162,8 @@ export default function Sidebar({ user, onLogout }) {
             </span>
           </button>
         </div>
+        </>
+        )}
       </nav>
 
     </aside>
