@@ -99,28 +99,43 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         .channel('worker-reservas-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` },
+          { event: '*', schema: 'public', table: 'reservas' },
           (payload) => {
+             const newRecord = payload.new || {};
+             const oldRecord = payload.old || {};
+             
+             const isForMe = newRecord.trabajador_id === user.id || oldRecord.trabajador_id === user.id;
+             const isPending = newRecord.estado_reserva === 'pendiente';
+             
+             if (!isForMe && !isPending) return;
+             
              let msj = '';
              let tipo = 'info';
+             
              if (payload.eventType === 'INSERT') {
-               msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
-             } else if (payload.eventType === 'UPDATE') {
-               if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'asignado') {
-                 msj = `Se te ha reasignado un servicio: ${payload.new.cliente_nombre}`;
-               } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
-                 msj = `El cliente canceló el servicio: ${payload.new.cliente_nombre}`;
+               if (newRecord.trabajador_id === user.id) {
+                 msj = `Nuevo servicio asignado: ${newRecord.cliente_nombre} - ${newRecord.vehiculo} - ${newRecord.servicio}`;
+               } else if (isPending) {
+                 msj = `Nuevo trabajo pendiente disponible: ${newRecord.vehiculo} - ${newRecord.servicio}`;
                  tipo = 'warning';
-               } else if (payload.old.servicio !== payload.new.servicio) {
-                 msj = `Se agregaron o modificaron extras del servicio: ${payload.new.servicio}`;
-               } else if (payload.old.fecha_reserva !== payload.new.fecha_reserva || payload.old.hora_reserva !== payload.new.hora_reserva) {
+               }
+             } else if (payload.eventType === 'UPDATE') {
+               if (oldRecord.estado_reserva !== newRecord.estado_reserva && newRecord.estado_reserva === 'asignado' && newRecord.trabajador_id === user.id) {
+                 msj = `Se te ha asignado un servicio: ${newRecord.cliente_nombre}`;
+               } else if (isForMe && oldRecord.estado !== newRecord.estado && newRecord.estado === 'Cancelado') {
+                 msj = `El cliente canceló el servicio: ${newRecord.cliente_nombre}`;
+                 tipo = 'warning';
+               } else if (isForMe && oldRecord.servicio !== newRecord.servicio) {
+                 msj = `Se agregaron o modificaron extras del servicio: ${newRecord.servicio}`;
+               } else if (isForMe && (oldRecord.fecha_reserva !== newRecord.fecha_reserva || oldRecord.hora_reserva !== newRecord.hora_reserva)) {
                  msj = `El cliente modificó el horario o ubicación de su cita.`;
                  tipo = 'warning';
-               } else if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'completado') {
+               } else if (isForMe && oldRecord.estado_reserva !== newRecord.estado_reserva && newRecord.estado_reserva === 'completado') {
                  msj = `El servicio ha finalizado correctamente. ¡Gran trabajo!`;
                  tipo = 'success';
                }
              }
+             
              if (msj) {
                const notif = {
                  id: 'local_' + Date.now(),
