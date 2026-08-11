@@ -18,12 +18,29 @@ export default function Sidebar({ user, onLogout }) {
   }, [isTrabajador]);
 
   const fetchTrabajadores = async () => {
-    const { data } = await supabase
+    const { data: workers } = await supabase
       .from('trabajadores')
       .select('id, nombre, foto_url')
       .eq('rol', 'Trabajador')
       .order('nombre', { ascending: true });
-    if (data) setTrabajadores(data);
+
+    if (!workers) return;
+
+    const { data: reservas } = await supabase
+      .from('reservas')
+      .select('trabajador_id, precio_total, precio, estado_reserva');
+
+    const workersWithStats = workers.map(w => {
+      const wReservas = (reservas || []).filter(r => 
+        r.trabajador_id === w.id && 
+        r.estado_reserva !== 'Cancelado'
+      );
+      const ventas = wReservas.length;
+      const ganancias = wReservas.reduce((sum, r) => sum + (Number(r.precio_total) || Number(r.precio) || 0), 0);
+      return { ...w, ventas, ganancias };
+    });
+
+    setTrabajadores(workersWithStats);
   };
 
   return (
@@ -176,8 +193,15 @@ export default function Sidebar({ user, onLogout }) {
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
                 ) : (
                   trabajadores.map(t => (
-                    <button key={t.id} onClick={() => alert('Módulo de liquidación en construcción')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px 0', fontSize: '13px' }}>
-                      <User size={14} /> {t.nombre}
+                    <button key={t.id} onClick={() => alert('Módulo de liquidación en construcción')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+                        <User size={14} /> 
+                        <span style={{ fontWeight: '500' }}>{t.nombre}</span>
+                      </div>
+                      <div style={{ paddingLeft: '22px', fontSize: '11px', display: 'flex', gap: '8px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>Bs {t.ganancias || 0}</span>
+                        <span style={{ opacity: 0.6 }}>• {t.ventas || 0} ventas</span>
+                      </div>
                     </button>
                   ))
                 )}
@@ -203,8 +227,15 @@ export default function Sidebar({ user, onLogout }) {
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
                 ) : (
                   trabajadores.map(t => (
-                    <button key={t.id} onClick={() => alert('Módulo de anticipos en construcción')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px 0', fontSize: '13px' }}>
-                      <User size={14} /> {t.nombre}
+                    <button key={t.id} onClick={() => alert('Módulo de anticipos en construcción')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+                        <User size={14} /> 
+                        <span style={{ fontWeight: '500' }}>{t.nombre}</span>
+                      </div>
+                      <div style={{ paddingLeft: '22px', fontSize: '11px', display: 'flex', gap: '8px' }}>
+                        <span style={{ color: '#10b981', fontWeight: 'bold' }}>Bs {t.ganancias || 0}</span>
+                        <span style={{ opacity: 0.6 }}>• {t.ventas || 0} ventas</span>
+                      </div>
                     </button>
                   ))
                 )}
