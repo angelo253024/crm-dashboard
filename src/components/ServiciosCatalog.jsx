@@ -193,13 +193,31 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       console.error('Error fetching servicios:', error);
     } else {
       let sortedData = data || [];
+      
+      const categoryOrder = {
+        'Lavado Clásico': 1,
+        'Lavado Premium': 2,
+        'Lavado Bicis y Motos': 3,
+        'Personaliza tu lavado': 4,
+        'Otros': 5
+      };
+
       sortedData.sort((a, b) => {
+        const catA = categoryOrder[a.categoria] || 99;
+        const catB = categoryOrder[b.categoria] || 99;
+        if (catA !== catB) return catA - catB;
+        
         if (a.imagen_url && !b.imagen_url) return -1;
         if (!a.imagen_url && b.imagen_url) return 1;
         return 0;
       });
+      
       setServicios(sortedData);
-      const cats = ['Todos', ...new Set(sortedData.map(s => s.categoria).filter(Boolean))];
+      
+      const uniqueCats = [...new Set(sortedData.map(s => s.categoria).filter(Boolean))];
+      uniqueCats.sort((a, b) => (categoryOrder[a] || 99) - (categoryOrder[b] || 99));
+      
+      const cats = ['Todos', ...uniqueCats];
       setCategorias(cats);
     }
     setLoading(false);
