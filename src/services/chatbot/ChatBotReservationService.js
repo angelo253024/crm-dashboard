@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase';
 import { GeminiService } from './GeminiService';
+import { geofencingService } from '../geofencing/GeofencingService';
 
 /**
  * ChatBotReservationService — Máquina de estados para reservas guiadas desde el chatbot.
@@ -398,6 +399,18 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         }
 
         if (input === 'CONFIRMAR_SI' || input.toLowerCase().includes('si') || input.toLowerCase().includes('sí') || input.toLowerCase().includes('confirmar')) {
+          // Fase 6: Validación de Geofencing
+          const isAllowed = await geofencingService.isLocationAllowed(_reservationState.data.ubicacion);
+          if (!isAllowed) {
+            _reservationState = null;
+            return {
+              text: "⚠️ Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas.\n\nPor políticas de la empresa, no podemos agendar tu servicio.",
+              source: 'reservation',
+              buttons: null,
+              requestGPS: false,
+            };
+          }
+
           // Crear la reserva en Supabase (misma lógica que ServiciosCatalog)
           const result = await this._createReservation();
           _reservationState.step = STEPS.DONE;

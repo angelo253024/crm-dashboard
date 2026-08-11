@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
+import { geofencingService } from '../services/geofencing/GeofencingService';
 
 // --- Inline Chat Component for Client ---
 function ClientChat({ sessionId, onClose }) {
@@ -306,6 +307,14 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // Fase 6: Validación de Geofencing
+    const isAllowed = await geofencingService.isLocationAllowed(ubicacion);
+    if (!isAllowed) {
+      alert("Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const validServices = selectedServices.filter(s => !s.isPlaceholder);
     if (validServices.length === 0) {
       alert("Debes seleccionar al menos un servicio.");
