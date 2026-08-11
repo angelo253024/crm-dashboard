@@ -1,10 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote } from 'lucide-react';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote, User } from 'lucide-react';
+import { supabase } from '../supabase';
 
 export default function Sidebar({ user, onLogout }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const isTrabajador = user?.rol === 'Trabajador';
+
+  const [trabajadores, setTrabajadores] = useState([]);
+  const [isLiquidacionOpen, setIsLiquidacionOpen] = useState(false);
+  const [isAnticiposOpen, setIsAnticiposOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isTrabajador) {
+      fetchTrabajadores();
+    }
+  }, [isTrabajador]);
+
+  const fetchTrabajadores = async () => {
+    const { data } = await supabase
+      .from('trabajadores')
+      .select('id, nombre, foto_url')
+      .order('nombre', { ascending: true });
+    if (data) setTrabajadores(data);
+  };
 
   return (
     <aside className="sidebar">
@@ -138,29 +157,59 @@ export default function Sidebar({ user, onLogout }) {
           <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '8px', paddingLeft: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
             Nómina (Trabajadores)
           </div>
-          <button 
-            className="nav-item" 
-            style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', opacity: 0.7, cursor: 'pointer' }}
-            onClick={(e) => { e.preventDefault(); alert('Liquidación de semana - Próximamente'); }}
-          >
-            <Wallet size={20} />
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Liquidación
-              <span style={{ fontSize: '9px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>Próximamente</span>
-            </span>
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <button 
+              className={`nav-item ${isLiquidacionOpen ? 'active' : ''}`}
+              style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', justifyContent: 'space-between' }}
+              onClick={(e) => { e.preventDefault(); setIsLiquidacionOpen(!isLiquidacionOpen); setIsAnticiposOpen(false); }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Wallet size={20} />
+                <span>Liquidación</span>
+              </div>
+              <ChevronDown size={14} style={{ transform: isLiquidacionOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+            {isLiquidacionOpen && (
+              <div style={{ paddingLeft: '32px', display: 'flex', flexDirection: 'column', gap: '4px', animation: 'fadeIn 0.2s' }}>
+                {trabajadores.length === 0 ? (
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
+                ) : (
+                  trabajadores.map(t => (
+                    <button key={t.id} onClick={() => alert('Módulo de liquidación en construcción')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px 0', fontSize: '13px' }}>
+                      <User size={14} /> {t.nombre}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           
-          <button 
-            className="nav-item" 
-            style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', opacity: 0.7, cursor: 'pointer' }}
-            onClick={(e) => { e.preventDefault(); alert('Anticipo de pago - Próximamente'); }}
-          >
-            <Banknote size={20} />
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Anticipos
-              <span style={{ fontSize: '9px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>Próximamente</span>
-            </span>
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <button 
+              className={`nav-item ${isAnticiposOpen ? 'active' : ''}`}
+              style={{ width: '100%', border: 'none', background: 'none', textAlign: 'left', cursor: 'pointer', justifyContent: 'space-between' }}
+              onClick={(e) => { e.preventDefault(); setIsAnticiposOpen(!isAnticiposOpen); setIsLiquidacionOpen(false); }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Banknote size={20} />
+                <span>Anticipos</span>
+              </div>
+              <ChevronDown size={14} style={{ transform: isAnticiposOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+            {isAnticiposOpen && (
+              <div style={{ paddingLeft: '32px', display: 'flex', flexDirection: 'column', gap: '4px', animation: 'fadeIn 0.2s' }}>
+                {trabajadores.length === 0 ? (
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
+                ) : (
+                  trabajadores.map(t => (
+                    <button key={t.id} onClick={() => alert('Módulo de anticipos en construcción')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '8px 0', fontSize: '13px' }}>
+                      <User size={14} /> {t.nombre}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
         </>
         )}
