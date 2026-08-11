@@ -115,10 +115,9 @@ export default function MotoDashboard({ user }) {
   const [montoRecibido, setMontoRecibido] = useState('');
   const [qrUrl, setQrUrl] = useState('');
 
-  const getTelefono = (nombreStr) => {
+  const formatClienteNombre = (nombreStr) => {
     if (!nombreStr) return '';
-    const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
-    return match ? match[1].trim() : '';
+    return nombreStr.replace(/\s*-\s*Tel:\s*[\d\+\-\s]+/, '').trim();
   };
 
   useEffect(() => {
@@ -490,7 +489,7 @@ export default function MotoDashboard({ user }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
-                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre || 'No especificado'}</p>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {formatClienteNombre(res.cliente_nombre) || 'No especificado'}</p>
                 </div>
                 <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: res.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: res.estado_reserva === 'asignado' ? '#3b82f6' : '#10b981' }}>
                   {res.estado_reserva === 'asignado' ? 'NUEVO ASIGNADO' : 'EN CAMINO'}
@@ -564,19 +563,8 @@ export default function MotoDashboard({ user }) {
                 <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <PlusCircle size={18} /> Agregar Extra
                 </button>
-
-                {getTelefono(res.cliente_nombre) && (
-                  <a 
-                    href={`https://wa.me/${getTelefono(res.cliente_nombre).replace(/\s+/g, '')}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: '#25D366', color: 'white', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                  >
-                    <MessageSquare size={18} /> WhatsApp Cliente
-                  </a>
-                )}
               </div>
-
+              
               {showExtraService === res.id && (
                 <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px dashed #8b5cf6' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -621,7 +609,7 @@ export default function MotoDashboard({ user }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                   <div>
                     <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre || 'No especificado'}</p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {formatClienteNombre(res.cliente_nombre) || 'No especificado'}</p>
                     <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Hora:</strong> {res.hora_reserva || res.hora}</p>
                   </div>
                   <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
@@ -808,7 +796,7 @@ export default function MotoDashboard({ user }) {
             .map(res => (
               <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{res.cliente_nombre}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{formatClienteNombre(res.cliente_nombre)}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Vehículo</strong><br/>{res.vehiculo}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Servicio</strong><br/>{res.servicio}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Generado</strong><br/>Bs {res.precio_total || res.precio || 0}</div>

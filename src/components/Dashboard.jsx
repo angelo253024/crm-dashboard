@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye, MessageSquare } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -24,6 +24,12 @@ export default function Dashboard() {
     fetchServicios();
     fetchTrabajadores();
   }, []);
+
+  const getTelefono = (nombreStr) => {
+    if (!nombreStr) return '';
+    const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
+    return match ? match[1].trim() : '';
+  };
 
   const fetchPromos = async () => {
     const { data, error } = await supabase.from('promociones').select('*');
@@ -301,6 +307,19 @@ export default function Dashboard() {
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                              {getTelefono(s.cliente_nombre || s.cliente) && (
+                                <a 
+                                  href={`https://wa.me/${getTelefono(s.cliente_nombre || s.cliente).replace(/\s+/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  style={{ background: 'none', border: 'none', color: '#25D366', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s', textDecoration: 'none' }} 
+                                  title="Contactar por WhatsApp"
+                                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(37, 211, 102, 0.1)'; }}
+                                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                >
+                                  <MessageSquare size={18} />
+                                </a>
+                              )}
                               <button 
                                 onClick={() => setSelectedOrder(s)} 
                                 style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }} 
