@@ -249,12 +249,13 @@ export default function Sidebar({ user, onLogout }) {
         )}
       </nav>
 
-      {selectedWorkerForStats && (
-        <WorkerStatsModal 
-          worker={selectedWorkerForStats} 
-          onClose={() => setSelectedWorkerForStats(null)} 
-        />
-      )}
+        {selectedWorkerForStats && (
+          <WorkerStatsModal 
+            worker={selectedWorkerForStats} 
+            currentUser={user}
+            onClose={() => setSelectedWorkerForStats(null)} 
+          />
+        )}
 
     </aside>
   );

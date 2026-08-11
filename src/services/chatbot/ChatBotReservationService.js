@@ -479,6 +479,19 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
       const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
       const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
+      let serviciosDetalleJSON = [];
+      if (d.servicioId) {
+        const { data: sData } = await supabase.from('servicios').select('*').eq('id', d.servicioId).single();
+        if (sData) {
+          serviciosDetalleJSON = [{
+            id: sData.id,
+            nombre: sData.nombre,
+            categoria: sData.categoria,
+            precio: Number(d.servicioPrecio)
+          }];
+        }
+      }
+
       const { data: insertData, error } = await supabase.from('reservas').insert([{
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
         vehiculo: d.vehiculo,
@@ -491,6 +504,7 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva,
         chat_session_id: newChatSessionId,
+        servicios_detalle: serviciosDetalleJSON
       }]).select();
 
       if (error) {

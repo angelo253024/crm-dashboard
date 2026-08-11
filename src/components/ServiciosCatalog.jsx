@@ -331,6 +331,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const totalPrice = validServices.reduce((sum, s) => sum + Number(s.precio), 0);
     const additionalNames = validServices.length > 1 ? ` (Adicionales: ${validServices.slice(1).map(s => s.nombre).join(', ')})` : '';
 
+    const serviciosDetalleJSON = validServices.map(s => ({
+      id: s.id,
+      nombre: s.nombre,
+      categoria: s.categoria,
+      precio: Number(s.precio)
+    }));
+
     if (isEditing) {
       const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
       const { data: updateData, error } = await supabase.from('reservas').update({
@@ -375,7 +382,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         estado: 'Reservado',
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva,
-        chat_session_id: newChatSessionId
+        chat_session_id: newChatSessionId,
+        servicios_detalle: serviciosDetalleJSON
       }
     ]).select();
 
