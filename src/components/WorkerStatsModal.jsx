@@ -15,6 +15,7 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
   // Liquidación Tab State
   const [comisiones, setComisiones] = useState([]);
   const [anticipos, setAnticipos] = useState([]);
+  const [comisionesFilter, setComisionesFilter] = useState('all'); // 'all', 'today', 'week'
   
   // Modals
   const [showAnticipoModal, setShowAnticipoModal] = useState(false);
@@ -255,12 +256,40 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
   };
 
   const renderComisionesTable = () => {
+    let title = "Detalle de Comisiones Pendientes";
+    let filteredComisiones = comisiones;
+
+    if (comisionesFilter === 'today') {
+      title = "Comisiones Pendientes (Hoy)";
+      const todayStr = new Date().toISOString().split('T')[0];
+      filteredComisiones = comisiones.filter(c => String(c.created_at).split('T')[0] === todayStr);
+    } else if (comisionesFilter === 'week') {
+      title = "Comisiones Pendientes (Semana)";
+      const today = new Date();
+      const currentDay = today.getDay();
+      const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - distanceToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      filteredComisiones = comisiones.filter(c => {
+        const d = new Date(c.created_at);
+        return d >= startOfWeek && d <= today;
+      });
+    }
+
     return (
       <div style={{ marginBottom: '32px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px', marginTop: '24px' }}>Detalle de Comisiones Pendientes</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', marginTop: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>{title}</h3>
+          {comisionesFilter !== 'all' && (
+            <button onClick={() => setComisionesFilter('all')} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
+              Ver Todas
+            </button>
+          )}
+        </div>
         <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-          {comisiones.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay comisiones pendientes.</div>
+          {filteredComisiones.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay comisiones para el filtro seleccionado.</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -275,8 +304,8 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {comisiones.map((c, i) => (
-                    <tr key={c.id} style={{ borderBottom: i === comisiones.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
+                  {filteredComisiones.map((c, i) => (
+                    <tr key={c.id} style={{ borderBottom: i === filteredComisiones.length - 1 ? 'none' : '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)' }}>
                       <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleDateString()}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{c.servicio_nombre}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px' }}>
@@ -395,16 +424,22 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                   
                   {/* Liquidacion KPIs */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)', borderTop: '4px solid #2ecc71' }}>
+                    <div 
+                      onClick={() => setComisionesFilter('all')}
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)', borderTop: comisionesFilter === 'all' ? '4px solid #2ecc71' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}>
                       <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Saldo Pendiente a Pagar</p>
                       <p style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: '#2ecc71' }}>Bs {liquidacionStats.saldoAcumulado}</p>
                     </div>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Hoy</p>
+                    <div 
+                      onClick={() => setComisionesFilter('today')}
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: comisionesFilter === 'today' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: comisionesFilter === 'today' ? '0 0 0 1px var(--accent-cyan)' : 'none' }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Hoy (Clic para ver)</p>
                       <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesHoy}</p>
                     </div>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Semana</p>
+                    <div 
+                      onClick={() => setComisionesFilter('week')}
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: comisionesFilter === 'week' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: comisionesFilter === 'week' ? '0 0 0 1px var(--accent-cyan)' : 'none' }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Semana (Clic para ver)</p>
                       <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesSemana}</p>
                     </div>
                     <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)' }}>
