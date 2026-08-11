@@ -143,7 +143,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         'postgres_changes',
         { event: '*', schema: 'public', table: 'trabajadores' },
         (payload) => {
-          fetchTrabajadores();
+          if (payload.eventType === 'UPDATE') {
+            setTrabajadores(prev => prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t));
+          } else {
+            fetchTrabajadores();
+          }
         }
       )
       .subscribe();
