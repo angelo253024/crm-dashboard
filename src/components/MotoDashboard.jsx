@@ -126,16 +126,23 @@ export default function MotoDashboard({ user }) {
       fetchTrabajadorEstado();
       fetchReservasAsignadas();
       
-      // Suscribirse a cambios en reservas para esta moto
+      // Suscribirse a cambios en reservas (ahora global para ver pendientes en tiempo real)
       const channel = supabase
         .channel('reservas_moto')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, payload => {
           fetchReservasAsignadas();
           
-          if (payload.eventType === 'INSERT' || (payload.eventType === 'UPDATE' && payload.new.estado_reserva === 'asignado')) {
-            // Notificar al trabajador si es un nuevo trabajo
+          const isNewForMe = payload.eventType === 'INSERT' && payload.new?.trabajador_id === user.id;
+          const isNewPending = payload.eventType === 'INSERT' && payload.new?.estado_reserva === 'pendiente';
+          const isNewlyAssignedToMe = payload.eventType === 'UPDATE' && payload.new?.estado_reserva === 'asignado' && payload.new?.trabajador_id === user.id;
+          
+          if (isNewForMe || isNewlyAssignedToMe) {
             if(window.Notification && Notification.permission === "granted") {
               new Notification("¡Nuevo Lavado Asignado!", { body: "Revisa tu panel de trabajos." });
+            }
+          } else if (isNewPending) {
+             if(window.Notification && Notification.permission === "granted") {
+              new Notification("¡Nuevo Lavado Pendiente!", { body: "Hay un nuevo trabajo disponible para tomar." });
             }
           }
         })
