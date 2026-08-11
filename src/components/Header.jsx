@@ -83,7 +83,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         (payload) => {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const notifDate = new Date(payload.new.fecha);
+          const notifDate = new Date(payload.new.created_at);
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
             if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
@@ -125,7 +125,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                const notif = {
                  id: 'local_' + Date.now(),
                  mensaje: msj,
-                 fecha: new Date().toISOString(),
+                 created_at: new Date().toISOString(),
                  tipo: tipo,
                  leida: false
                };
@@ -176,7 +176,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                const notif = {
                  id: 'local_admin_' + Date.now() + Math.random(),
                  mensaje: msj,
-                 fecha: new Date().toISOString(),
+                 created_at: new Date().toISOString(),
                  tipo: tipo,
                  leida: false
                };
@@ -193,7 +193,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
              const notif = {
                id: 'local_admin_prod_' + Date.now() + Math.random(),
                mensaje: msj,
-               fecha: new Date().toISOString(),
+               created_at: new Date().toISOString(),
                tipo: 'info',
                leida: false
              };
@@ -228,8 +228,8 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
     const { data } = await supabase
       .from('notificaciones')
       .select('*')
-      .gte('fecha', today.toISOString())
-      .order('fecha', { ascending: false });
+      .gte('created_at', today.toISOString())
+      .order('created_at', { ascending: false });
       
     if (data) setNotificaciones(data);
   };
@@ -438,7 +438,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                       <div>
                         <div style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: '4px', lineHeight: '1.4' }}>{notif.mensaje}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {new Date(notif.fecha).toLocaleString()}
+                            {new Date(notif.created_at).toLocaleString()}
                         </div>
                       </div>
                     </div>
