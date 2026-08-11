@@ -14,6 +14,7 @@
   --accent-green-light: rgba(28, 169, 201, 0.1);
   --accent-green-text: #168a9c;
   --accent-dark: #1E4C9A; /* Deep blue from image */
+  --accent-blue: #3b82f6; /* Added for chatbot buttons */
   --border-color: #e2e8f0;
   --sidebar-active-bg: #00a2e8; 
 
@@ -41,6 +42,7 @@
   
   /* Mantener el branding */
   --accent-dark: #3b82f6;
+  --accent-blue: #3b82f6;
   --accent-green: #22d3ee;
   --accent-green-light: rgba(34, 211, 238, 0.15);
   --accent-green-text: #67e8f9;
