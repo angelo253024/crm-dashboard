@@ -356,13 +356,21 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         // Botones de hora
         const timeButtons = [
           { label: '🕘 08:00', value: '08:00' },
+          { label: '🕥 08:30', value: '08:30' },
           { label: '🕙 09:00', value: '09:00' },
-          { label: '🕥 10:00', value: '10:00' },
-          { label: '🕦 11:00', value: '11:00' },
-          { label: '🕐 14:00', value: '14:00' },
-          { label: '🕑 15:00', value: '15:00' },
+          { label: '🕦 09:30', value: '09:30' },
+          { label: '🕚 10:00', value: '10:00' },
+          { label: '🕛 10:30', value: '10:30' },
+          { label: '🕐 11:00', value: '11:00' },
+          { label: '🕜 11:30', value: '11:30' },
+          { label: '🕑 14:00', value: '14:00' },
+          { label: '🕝 14:30', value: '14:30' },
+          { label: '🕒 15:00', value: '15:00' },
+          { label: '🕞 15:30', value: '15:30' },
           { label: '🕓 16:00', value: '16:00' },
+          { label: '🕟 16:30', value: '16:30' },
           { label: '🕔 17:00', value: '17:00' },
+          { label: '🕠 17:30', value: '17:30' },
         ];
 
         return {
@@ -417,9 +425,13 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
           
           if (result.success) {
             const reserva = result.data;
+            const hoy = new Date().toISOString().split('T')[0];
+            const isHoy = reserva.fechaReserva === hoy;
+            const mensajeExtra = isHoy ? '\n\n🛵 **Tiempo estimado de llegada:** 30 a 50 minutos.' : '';
+
             _reservationState = null; // Limpiar estado
             return {
-              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio: Bs. ${reserva.servicioPrecio}\n\nPronto un trabajador se pondrá en contacto contigo. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
+              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio: Bs. ${reserva.servicioPrecio}${mensajeExtra}\n\nPronto un trabajador se pondrá en contacto contigo. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
@@ -550,14 +562,14 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
     const dates = [];
     const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 0; i < 5; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       const dayName = dayNames[d.getDay()];
       const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
       const isoDate = d.toISOString().split('T')[0]; // YYYY-MM-DD for DB
       dates.push({
-        label: `📅 ${dayName} ${formatted}`,
+        label: `📅 ${i === 0 ? 'Hoy' : dayName} ${formatted}`,
         value: isoDate,
       });
     }
