@@ -823,6 +823,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer o presiona el botón" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
+                <div style={{ fontSize: '13px', color: 'var(--accent-cyan)', marginBottom: '12px', textAlign: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', padding: '8px', borderRadius: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '14px' }}>⏰</span> Tiempo estimado en llegar 30 min a 40 min
+                </div>
+                
                 <div style={{ display: 'flex', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fecha</label>
