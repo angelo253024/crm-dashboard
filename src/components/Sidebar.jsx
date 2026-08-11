@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote, User } from 'lucide-react';
 import { supabase } from '../supabase';
+import WorkerStatsModal from './WorkerStatsModal';
 
 export default function Sidebar({ user, onLogout }) {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
@@ -10,6 +11,7 @@ export default function Sidebar({ user, onLogout }) {
   const [trabajadores, setTrabajadores] = useState([]);
   const [isLiquidacionOpen, setIsLiquidacionOpen] = useState(false);
   const [isAnticiposOpen, setIsAnticiposOpen] = useState(false);
+  const [selectedWorkerForStats, setSelectedWorkerForStats] = useState(null);
 
   useEffect(() => {
     if (!isTrabajador) {
@@ -193,7 +195,7 @@ export default function Sidebar({ user, onLogout }) {
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
                 ) : (
                   trabajadores.map(t => (
-                    <button key={t.id} onClick={() => alert('Módulo de liquidación en construcción')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button key={t.id} onClick={() => setSelectedWorkerForStats(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
                         <User size={14} /> 
                         <span style={{ fontWeight: '500' }}>{t.nombre}</span>
@@ -227,7 +229,7 @@ export default function Sidebar({ user, onLogout }) {
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No hay trabajadores</span>
                 ) : (
                   trabajadores.map(t => (
-                    <button key={t.id} onClick={() => alert('Módulo de anticipos en construcción')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <button key={t.id} onClick={() => setSelectedWorkerForStats(t)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '10px 0', fontSize: '13px', width: '100%', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
                         <User size={14} /> 
                         <span style={{ fontWeight: '500' }}>{t.nombre}</span>
@@ -246,6 +248,13 @@ export default function Sidebar({ user, onLogout }) {
         </>
         )}
       </nav>
+
+      {selectedWorkerForStats && (
+        <WorkerStatsModal 
+          worker={selectedWorkerForStats} 
+          onClose={() => setSelectedWorkerForStats(null)} 
+        />
+      )}
 
     </aside>
   );
