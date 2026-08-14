@@ -205,9 +205,9 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
 
     return (
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>{title}</h3>
-          <div style={{ position: 'relative', width: '250px' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '250px' }}>
             <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               type="text" 
@@ -219,12 +219,12 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
           </div>
         </div>
         
-        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+        <div className="table-responsive" style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
           {filtered.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay servicios para mostrar.</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
@@ -281,7 +281,7 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
 
     return (
       <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', marginTop: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', marginTop: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>{title}</h3>
           {comisionesFilter !== 'all' && (
             <button onClick={() => setComisionesFilter('all')} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
@@ -289,12 +289,12 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
             </button>
           )}
         </div>
-        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+        <div className="table-responsive" style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
           {filteredComisiones.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay comisiones para el filtro seleccionado.</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</th>
@@ -334,9 +334,9 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
     return (
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>Anticipos Descontados (Aún no liquidados)</h3>
-        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+        <div className="table-responsive" style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                 <tr>
                   <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</th>
@@ -361,45 +361,45 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
   };
 
   return createPortal(
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '24px' }}>
-      <div style={{ backgroundColor: 'var(--bg-color)', width: '100%', maxWidth: '1000px', maxHeight: '90vh', borderRadius: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '16px' }}>
+      <div style={{ backgroundColor: 'var(--bg-color)', width: '100%', maxWidth: '1000px', maxHeight: '92vh', borderRadius: '16px', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--card-bg)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', backgroundColor: 'var(--card-bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
               Perfil de: <span style={{ color: 'var(--accent-cyan)' }}>{worker.nombre}</span>
             </h2>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setActiveTab('general')} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '14px', backgroundColor: activeTab === 'general' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'general' ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>
-                <FileText size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} /> General
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              <button onClick={() => setActiveTab('general')} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px', backgroundColor: activeTab === 'general' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'general' ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>
+                <FileText size={15} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> General
               </button>
-              <button onClick={() => setActiveTab('liquidacion')} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '14px', backgroundColor: activeTab === 'liquidacion' ? 'rgba(46, 204, 113, 0.1)' : 'transparent', color: activeTab === 'liquidacion' ? '#2ecc71' : 'var(--text-muted)' }}>
-                <DollarSign size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'text-bottom' }} /> Liquidación y Nómina
+              <button onClick={() => setActiveTab('liquidacion')} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '13px', backgroundColor: activeTab === 'liquidacion' ? 'rgba(46, 204, 113, 0.1)' : 'transparent', color: activeTab === 'liquidacion' ? '#2ecc71' : 'var(--text-muted)' }}>
+                <DollarSign size={15} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> Liquidación
               </button>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
-            <X size={24} />
+            <X size={22} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {loading ? (
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando datos...</div>
           ) : (
             <>
               {activeTab === 'general' && (
                 <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid var(--border-color)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--text-muted)' }}>Ingresos Generados a la Empresa (Hoy)</p>
-                      <p style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>Bs {generalStats.ingresosHoy}</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '18px', border: '1px solid var(--border-color)' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Ingresos Generados (Hoy)</p>
+                      <p style={{ margin: 0, fontSize: '26px', fontWeight: 'bold' }}>Bs {generalStats.ingresosHoy}</p>
                     </div>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '24px', border: '1px solid var(--border-color)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--text-muted)' }}>Ingresos Generados a la Empresa (Semana)</p>
-                      <p style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>Bs {generalStats.ingresosSemana}</p>
+                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '18px', border: '1px solid var(--border-color)' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Ingresos Generados (Semana)</p>
+                      <p style={{ margin: 0, fontSize: '26px', fontWeight: 'bold' }}>Bs {generalStats.ingresosSemana}</p>
                     </div>
                   </div>
                   {renderGeneralTable(generalStats.todayReservas, searchToday, 'Servicios Completados este Día')}
@@ -410,17 +410,17 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
               {activeTab === 'liquidacion' && (
                 <div>
                   {/* Liquidacion Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>Cálculo Automático de Comisiones</h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>Cálculo de Comisiones</h3>
                     {isAdmin && (
-                      <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={() => setShowEditPercentagesModal(true)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--accent-cyan)', backgroundColor: 'transparent', color: 'var(--accent-cyan)', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Settings size={16} /> Editar Porcentajes
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <button onClick={() => setShowEditPercentagesModal(true)} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--accent-cyan)', backgroundColor: 'transparent', color: 'var(--accent-cyan)', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Settings size={15} /> Porcentajes
                         </button>
-                        <button onClick={() => setShowAnticipoModal(true)} disabled={liquidacionStats.saldoAcumulado <= 0} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontWeight: 'bold', cursor: liquidacionStats.saldoAcumulado <= 0 ? 'not-allowed' : 'pointer', opacity: liquidacionStats.saldoAcumulado <= 0 ? 0.5 : 1 }}>
-                          Registrar Anticipo
+                        <button onClick={() => setShowAnticipoModal(true)} disabled={liquidacionStats.saldoAcumulado <= 0} style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontWeight: 'bold', fontSize: '13px', cursor: liquidacionStats.saldoAcumulado <= 0 ? 'not-allowed' : 'pointer', opacity: liquidacionStats.saldoAcumulado <= 0 ? 0.5 : 1 }}>
+                          Anticipo
                         </button>
-                        <button onClick={() => setShowPagoModal(true)} disabled={liquidacionStats.saldoAcumulado <= 0} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#2ecc71', color: '#fff', fontWeight: 'bold', cursor: liquidacionStats.saldoAcumulado <= 0 ? 'not-allowed' : 'pointer', opacity: liquidacionStats.saldoAcumulado <= 0 ? 0.5 : 1 }}>
+                        <button onClick={() => setShowPagoModal(true)} disabled={liquidacionStats.saldoAcumulado <= 0} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: '#2ecc71', color: '#fff', fontWeight: 'bold', fontSize: '13px', cursor: liquidacionStats.saldoAcumulado <= 0 ? 'not-allowed' : 'pointer', opacity: liquidacionStats.saldoAcumulado <= 0 ? 0.5 : 1 }}>
                           Pagar Liquidación
                         </button>
                       </div>
@@ -428,28 +428,28 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                   </div>
                   
                   {/* Liquidacion KPIs */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                     <div 
                       onClick={() => setComisionesFilter('all')}
-                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)', borderTop: comisionesFilter === 'all' ? '4px solid #2ecc71' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Saldo Pendiente a Pagar</p>
-                      <p style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: '#2ecc71' }}>Bs {liquidacionStats.saldoAcumulado}</p>
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-color)', borderTop: comisionesFilter === 'all' ? '4px solid #2ecc71' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: 'var(--text-muted)' }}>Saldo Pendiente</p>
+                      <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#2ecc71' }}>Bs {liquidacionStats.saldoAcumulado}</p>
                     </div>
                     <div 
                       onClick={() => setComisionesFilter('today')}
-                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: comisionesFilter === 'today' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: comisionesFilter === 'today' ? '0 0 0 1px var(--accent-cyan)' : 'none' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Hoy (Clic para ver)</p>
-                      <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesHoy}</p>
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '16px', border: comisionesFilter === 'today' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: 'var(--text-muted)' }}>Comisión Hoy</p>
+                      <p style={{ margin: 0, fontSize: '22px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesHoy}</p>
                     </div>
                     <div 
                       onClick={() => setComisionesFilter('week')}
-                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: comisionesFilter === 'week' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s', boxShadow: comisionesFilter === 'week' ? '0 0 0 1px var(--accent-cyan)' : 'none' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Comisión Semana (Clic para ver)</p>
-                      <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesSemana}</p>
+                      style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '16px', border: comisionesFilter === 'week' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: 'var(--text-muted)' }}>Comisión Semana</p>
+                      <p style={{ margin: 0, fontSize: '22px', fontWeight: 'bold' }}>Bs {liquidacionStats.comisionesSemana}</p>
                     </div>
-                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '20px', border: '1px solid var(--border-color)' }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Anticipos Descontados</p>
-                      <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#e74c3c' }}>Bs {liquidacionStats.totalAnticipos}</p>
+                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '16px', border: '1px solid var(--border-color)' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '12px', color: 'var(--text-muted)' }}>Anticipos</p>
+                      <p style={{ margin: 0, fontSize: '22px', fontWeight: 'bold', color: '#e74c3c' }}>Bs {liquidacionStats.totalAnticipos}</p>
                     </div>
                   </div>
 
@@ -465,23 +465,23 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
 
       {/* Anticipo Modal */}
       {showAnticipoModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100000 }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: '16px', width: '400px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 'bold' }}>Registrar Anticipo a {worker.nombre}</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>Saldo disponible para adelantar: <strong>Bs {liquidacionStats.saldoAcumulado}</strong></p>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', fontWeight: 'bold' }}>Registrar Anticipo a {worker.nombre}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '20px' }}>Saldo disponible: <strong>Bs {liquidacionStats.saldoAcumulado}</strong></p>
             
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Monto (Bs)</label>
-              <input type="number" value={anticipoAmount} onChange={(e) => setAnticipoAmount(e.target.value)} placeholder="0.00" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Monto (Bs)</label>
+              <input type="number" value={anticipoAmount} onChange={(e) => setAnticipoAmount(e.target.value)} placeholder="0.00" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
             </div>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>Observaciones</label>
-              <input type="text" value={anticipoObs} onChange={(e) => setAnticipoObs(e.target.value)} placeholder="Ej. Adelanto para almuerzo" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Observaciones</label>
+              <input type="text" value={anticipoObs} onChange={(e) => setAnticipoObs(e.target.value)} placeholder="Ej. Adelanto para almuerzo" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowAnticipoModal(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={handleRegistrarAnticipo} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--accent-cyan)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>Guardar Anticipo</button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowAnticipoModal(false)} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleRegistrarAnticipo} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--accent-cyan)', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>Guardar</button>
             </div>
           </div>
         </div>
@@ -489,36 +489,36 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
 
       {/* Pago Liquidación Modal */}
       {showPagoModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100000 }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: '16px', width: '450px', border: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', color: '#2ecc71' }}>
-              <CheckCircle size={32} />
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: 'var(--text-main)' }}>Confirmar Pago de Liquidación</h3>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '440px', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: '#2ecc71' }}>
+              <CheckCircle size={28} />
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>Confirmar Pago de Liquidación</h3>
             </div>
             
-            <div style={{ backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ backgroundColor: 'var(--bg-color)', padding: '14px', borderRadius: '8px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Ganancias Acumuladas:</span>
                 <span>Bs {liquidacionStats.totalComisiones}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', color: '#e74c3c' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', color: '#e74c3c', fontSize: '14px' }}>
                 <span>Anticipos Descontados:</span>
                 <span>- Bs {liquidacionStats.totalAnticipos}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '16px', fontWeight: 'bold', fontSize: '18px' }}>
-                <span>Total a Pagar ahora:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '12px', fontWeight: 'bold', fontSize: '17px' }}>
+                <span>Total a Pagar:</span>
                 <span style={{ color: '#2ecc71' }}>Bs {liquidacionStats.saldoAcumulado}</span>
               </div>
             </div>
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '24px', display: 'flex', gap: '8px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '20px', display: 'flex', gap: '8px' }}>
               <AlertTriangle size={16} style={{ color: '#f1c40f', flexShrink: 0 }} /> 
-              Al confirmar, el saldo del trabajador volverá a cero y esta liquidación quedará en el historial inmutable de pagos.
+              Al confirmar, el saldo del trabajador volverá a cero y esta liquidación quedará registrada.
             </p>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowPagoModal(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Cancelar</button>
-              <button onClick={handlePagarLiquidacion} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#2ecc71', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>Sí, Efectuar Pago</button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowPagoModal(false)} style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handlePagarLiquidacion} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#2ecc71', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>Efectuar Pago</button>
             </div>
           </div>
         </div>

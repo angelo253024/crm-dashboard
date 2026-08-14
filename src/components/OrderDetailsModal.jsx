@@ -16,53 +16,53 @@ export default function OrderDetailsModal({ reserva, servicios, onClose }) {
   const clientPhone = (reserva.cliente_nombre || reserva.cliente || '').split(' - Tel: ')[1] || 'No registrado';
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '20px' }}>
-      <div className="service-glass-card" style={{ padding: '32px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', animation: 'fadeUp 0.3s ease-out forwards' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, padding: '16px' }}>
+      <div className="service-glass-card" style={{ padding: '20px', width: '100%', maxWidth: '600px', maxHeight: '92vh', overflowY: 'auto', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', animation: 'fadeUp 0.3s ease-out forwards' }}>
         
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
              DETALLE DEL SERVICIO
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <X size={24} />
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}>
+            <X size={22} />
           </button>
         </div>
 
         {/* Info Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '20px' }}>
           <div style={{ padding: '12px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Código de la reserva</div>
-            <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>#{reserva.id.toString().substring(0,8).toUpperCase()}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Código de la reserva</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '13px' }}>#{reserva.id.toString().substring(0,8).toUpperCase()}</div>
           </div>
           <div style={{ padding: '12px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Estado</div>
-            <div style={{ fontWeight: 'bold', color: 'var(--accent-green)', textTransform: 'uppercase' }}>{reserva.estado_reserva?.replace('_', ' ') || reserva.estado || 'Completado'}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Estado</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--accent-green)', textTransform: 'uppercase', fontSize: '13px' }}>{reserva.estado_reserva?.replace('_', ' ') || reserva.estado || 'Completado'}</div>
           </div>
           <div style={{ padding: '12px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Fecha y Hora</div>
-            <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{String(reserva.fecha_reserva || reserva.fecha || '').split('T')[0]} {String(reserva.hora_reserva || reserva.hora || '').substring(0, 5)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Fecha y Hora</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '13px' }}>{String(reserva.fecha_reserva || reserva.fecha || '').split('T')[0]} {String(reserva.hora_reserva || reserva.hora || '').substring(0, 5)}</div>
           </div>
           <div style={{ padding: '12px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Método de Pago</div>
-            <div style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{reserva.payment_method === 'QR' ? 'QR' : (reserva.payment_method === 'EFECTIVO' ? 'Efectivo' : 'Pendiente / Efectivo')}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Método de Pago</div>
+            <div style={{ fontWeight: 'bold', color: 'var(--text-main)', fontSize: '13px' }}>{reserva.payment_method === 'QR' ? 'QR' : (reserva.payment_method === 'EFECTIVO' ? 'Efectivo' : 'Pendiente / Efectivo')}</div>
           </div>
         </div>
 
         {/* Client & Worker Info */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ padding: '16px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '12px' }}>Información del Cliente y Vehículo</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ padding: '14px', backgroundColor: 'var(--card-bg)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '10px' }}>Información del Cliente y Vehículo</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', fontSize: '13px' }}>
                <div><span style={{ color: 'var(--text-muted)' }}>Cliente:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{clientName}</span></div>
                <div><span style={{ color: 'var(--text-muted)' }}>WhatsApp:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{clientPhone}</span></div>
                <div><span style={{ color: 'var(--text-muted)' }}>Vehículo:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{vehicleName}</span></div>
-               <div style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center' }}>
+               <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
                     <span style={{ color: 'var(--text-muted)' }}>Dirección:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps || 'No registrada'}</span>
                   </div>
                   {reserva.ubicacion_gps && reserva.ubicacion_gps.includes(',') && (
-                    <button style={{ marginLeft: '12px', padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(28, 169, 201, 0.3)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <button style={{ padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(28, 169, 201, 0.3)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <MapPin size={12} /> Ver en el mapa
                     </button>
                   )}

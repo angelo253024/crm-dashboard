@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check, Users } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check, Users, Menu } from 'lucide-react';
 import { supabase } from '../supabase';
 
-export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogout }) {
+export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogout, onToggleSidebar }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
@@ -99,43 +99,28 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         .channel('worker-reservas-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'reservas' },
+          { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` },
           (payload) => {
-             const newRecord = payload.new || {};
-             const oldRecord = payload.old || {};
-             
-             const isForMe = newRecord.trabajador_id === user.id || oldRecord.trabajador_id === user.id;
-             const isPending = newRecord.estado_reserva === 'pendiente';
-             
-             if (!isForMe && !isPending) return;
-             
              let msj = '';
              let tipo = 'info';
-             
              if (payload.eventType === 'INSERT') {
-               if (newRecord.trabajador_id === user.id) {
-                 msj = `Nuevo servicio asignado: ${newRecord.cliente_nombre} - ${newRecord.vehiculo} - ${newRecord.servicio}`;
-               } else if (isPending) {
-                 msj = `Nuevo trabajo pendiente disponible: ${newRecord.vehiculo} - ${newRecord.servicio}`;
-                 tipo = 'warning';
-               }
+               msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
              } else if (payload.eventType === 'UPDATE') {
-               if (oldRecord.estado_reserva !== newRecord.estado_reserva && newRecord.estado_reserva === 'asignado' && newRecord.trabajador_id === user.id) {
-                 msj = `Se te ha asignado un servicio: ${newRecord.cliente_nombre}`;
-               } else if (isForMe && oldRecord.estado !== newRecord.estado && newRecord.estado === 'Cancelado') {
-                 msj = `El cliente canceló el servicio: ${newRecord.cliente_nombre}`;
+               if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'asignado') {
+                 msj = `Se te ha reasignado un servicio: ${payload.new.cliente_nombre}`;
+               } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
+                 msj = `El cliente canceló el servicio: ${payload.new.cliente_nombre}`;
                  tipo = 'warning';
-               } else if (isForMe && oldRecord.servicio !== newRecord.servicio) {
-                 msj = `Se agregaron o modificaron extras del servicio: ${newRecord.servicio}`;
-               } else if (isForMe && (oldRecord.fecha_reserva !== newRecord.fecha_reserva || oldRecord.hora_reserva !== newRecord.hora_reserva)) {
+               } else if (payload.old.servicio !== payload.new.servicio) {
+                 msj = `Se agregaron o modificaron extras del servicio: ${payload.new.servicio}`;
+               } else if (payload.old.fecha_reserva !== payload.new.fecha_reserva || payload.old.hora_reserva !== payload.new.hora_reserva) {
                  msj = `El cliente modificó el horario o ubicación de su cita.`;
                  tipo = 'warning';
-               } else if (isForMe && oldRecord.estado_reserva !== newRecord.estado_reserva && newRecord.estado_reserva === 'completado') {
+               } else if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'completado') {
                  msj = `El servicio ha finalizado correctamente. ¡Gran trabajo!`;
                  tipo = 'success';
                }
              }
-             
              if (msj) {
                const notif = {
                  id: 'local_' + Date.now(),
@@ -324,9 +309,20 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
   return (
     <header className="header">
-      <div className="search-bar">
-        <Search size={18} className="text-muted" />
-        <input type="text" placeholder="Buscar clientes, servicios o placas..." />
+      <div className="header-left">
+        <button 
+          className="mobile-menu-btn" 
+          onClick={onToggleSidebar}
+          type="button"
+          aria-label="Abrir menú de navegación"
+        >
+          <Menu size={22} />
+        </button>
+
+        <div className="search-bar">
+          <Search size={18} className="text-muted" />
+          <input type="text" placeholder="Buscar clientes, servicios o placas..." />
+        </div>
       </div>
 
       <div className="header-actions">
@@ -335,24 +331,28 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           <MapPin size={16} /> Notificar Llegada
         </button>
         <button 
-          className="btn-outline-cyan" 
+          className="btn-outline-cyan header-btn-chat" 
           onClick={() => window.dispatchEvent(new CustomEvent('openChatBot'))}
           style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px' }}
         >
-          <MessageSquare size={16} /> Chatbot
+          <MessageSquare size={16} /> <span className="header-btn-text">Chatbot</span>
         </button>
-        <button onClick={handleNuevoServicioClick} className="btn-primary" style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}>
-          <Plus size={16} /> {user?.rol === 'Trabajador' ? 'Agregar Extra' : 'Nuevo Servicio'}
+        <button 
+          onClick={handleNuevoServicioClick} 
+          className="btn-primary header-btn-action" 
+          style={{ borderRadius: '30px', padding: '8px 20px', fontSize: '14px', backgroundColor: '#3b82f6', color: 'white' }}
+        >
+          <Plus size={16} /> <span className="header-btn-text">{user?.rol === 'Trabajador' ? 'Agregar Extra' : 'Nuevo Servicio'}</span>
         </button>
 
         {/* Trabajadores Status Button */}
         <div style={{ position: 'relative' }}>
           <button 
-            className="btn-secondary" 
+            className="btn-secondary header-btn-workers" 
             onClick={() => setIsWorkersMenuOpen(!isWorkersMenuOpen)}
             style={{ borderRadius: '30px', padding: '8px 16px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
           >
-            <Users size={16} className="text-muted" /> Trabajadores
+            <Users size={16} className="text-muted" /> <span className="header-btn-text">Trabajadores</span>
           </button>
 
           {isWorkersMenuOpen && (
@@ -367,6 +367,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               border: '1px solid var(--border-color)',
               zIndex: 100,
               width: '280px',
+              maxWidth: 'calc(100vw - 32px)',
               animation: 'fadeIn 0.2s ease-out'
             }}>
               <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)' }}>
@@ -435,6 +436,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               border: '1px solid var(--border-color)',
               zIndex: 100,
               width: '320px',
+              maxWidth: 'calc(100vw - 32px)',
               animation: 'fadeIn 0.2s ease-out'
             }}>
               <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -496,13 +498,13 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               </div>
             )}
             
-            <div>
-              <div className="text-small font-semibold">{userName}</div>
-              <div className="text-small text-muted">{userRole} - ID: {userId}</div>
+            <div className="user-profile-info">
+              <div className="text-small font-semibold user-profile-name">{userName}</div>
+              <div className="text-small text-muted user-profile-role">{userRole} - ID: {userId}</div>
             </div>
             <ChevronDown 
               size={16} 
-              className="text-muted" 
+              className="text-muted user-profile-chevron" 
               style={{ 
                 transform: isProfileMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                 transition: 'transform 0.3s ease'
@@ -523,6 +525,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               border: '1px solid var(--border-color)',
               zIndex: 100,
               minWidth: '200px',
+              maxWidth: 'calc(100vw - 32px)',
               animation: 'fadeIn 0.2s ease-out'
             }}>
               <div style={{ padding: '8px' }}>
@@ -556,8 +559,8 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
       {/* Modal para Editar Perfil */}
       {isEditModalOpen && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '400px', boxShadow: 'var(--shadow-soft)' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-soft)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <h2 className="text-h2">Editar Mi Perfil</h2>
               <button onClick={() => setIsEditModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>

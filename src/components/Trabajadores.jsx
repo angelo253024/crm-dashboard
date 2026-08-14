@@ -129,8 +129,8 @@ export default function Trabajadores() {
   const [activeTab, setActiveTab] = useState('directorio');
 
   const renderDirectorio = () => (
-    <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+    <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
+      <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
           <tr>
             <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
@@ -161,19 +161,39 @@ export default function Trabajadores() {
                     {t.nombre}
                   </div>
                 </td>
-                <td style={{ padding: '12px 16px', fontSize: '14px' }}>{t.rol}</td>
                 <td style={{ padding: '12px 16px', fontSize: '14px' }}>
-                  <span className={`status-badge ${t.estado === 'Activo' || t.estado === 'Disponible' ? 'status-won' : 'status-open'}`}>
-                    {t.estado}
+                  <span style={{ 
+                    display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: '500',
+                    backgroundColor: t.rol === 'Administrador' ? 'rgba(28, 169, 201, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                    color: t.rol === 'Administrador' ? 'var(--accent-cyan)' : 'var(--text-main)'
+                  }}>
+                    {t.rol || 'Trabajador'}
+                  </span>
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                  <span style={{ 
+                    display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px',
+                    color: t.estado === 'Activo' ? 'var(--accent-green)' : 'var(--text-muted)'
+                  }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: t.estado === 'Activo' ? 'var(--accent-green)' : 'var(--text-muted)' }}></span>
+                    {t.estado || 'Inactivo'}
                   </span>
                 </td>
                 <td style={{ padding: '12px 16px' }}>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <button onClick={() => handleOpenEdit(t)} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-blue)' }}>
-                      <Edit2 size={16} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => handleOpenEdit(t)}
+                      style={{ padding: '6px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-main)' }}
+                    >
+                      <Edit2 size={14} />
                     </button>
-                    <button onClick={() => handleDelete(t.id, t.nombre)} title="Eliminar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-red, #ef4444)' }}>
-                      <Trash2 size={16} />
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => handleDelete(t.id, t.nombre)}
+                      style={{ padding: '6px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: '#ef4444' }}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </td>
@@ -186,14 +206,14 @@ export default function Trabajadores() {
   );
 
   const renderHorarios = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ padding: '16px', backgroundColor: 'rgba(28, 169, 201, 0.05)', border: '1px solid var(--accent-cyan)', borderRadius: 'var(--radius-md)', color: 'var(--text-main)' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Turnos Pendientes de Hoy</h3>
         <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Asigna horarios de trabajo a tus empleados y revisa si están pendientes o en servicio.</p>
       </div>
 
-      <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
+        <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
             <tr>
               <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Trabajador</th>
@@ -209,7 +229,6 @@ export default function Trabajadores() {
               <tr><td colSpan="4" style={{ padding: '24px', textAlign: 'center' }}>No hay trabajadores.</td></tr>
             ) : (
               trabajadores.map((t, index) => {
-                // Simular algunos turnos pendientes para la UI
                 const isPending = index % 2 === 0;
                 const statusColor = isPending ? 'var(--accent-cyan)' : 'var(--accent-green)';
                 const statusText = isPending ? 'Pendiente' : 'En Servicio';
@@ -255,8 +274,8 @@ export default function Trabajadores() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div className="card" style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
           <div>
             <h2 className="text-h2">Equipo de Trabajo</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
@@ -272,10 +291,10 @@ export default function Trabajadores() {
         </div>
 
         {/* Custom Tabs */}
-        <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-color)', marginBottom: '24px', overflowX: 'auto' }}>
           <button 
             style={{ 
-              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap',
               color: activeTab === 'directorio' ? 'var(--accent-cyan)' : 'var(--text-muted)',
               borderBottom: activeTab === 'directorio' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
               transition: 'all 0.2s ease'
@@ -286,7 +305,7 @@ export default function Trabajadores() {
           </button>
           <button 
             style={{ 
-              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+              background: 'none', border: 'none', padding: '12px 0', fontSize: '14px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap',
               color: activeTab === 'horarios' ? 'var(--accent-cyan)' : 'var(--text-muted)',
               borderBottom: activeTab === 'horarios' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
               transition: 'all 0.2s ease'
@@ -301,9 +320,9 @@ export default function Trabajadores() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, overflowY: 'auto', padding: '20px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '500px', boxShadow: 'var(--shadow-soft)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, overflowY: 'auto', padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '480px', boxShadow: 'var(--shadow-soft)', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
               <h2 className="text-h2">{isEditing ? 'Editar Usuario' : 'Agregar Nuevo Usuario'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
             </div>

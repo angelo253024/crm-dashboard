@@ -154,8 +154,8 @@ export default function AdminServicios() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div className="card" style={{ padding: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="card" style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
           <div>
             <h2 className="text-h2">Administración de Servicios</h2>
             <p className="text-muted text-small">Gestiona los servicios que aparecerán en el catálogo público.</p>
@@ -170,7 +170,7 @@ export default function AdminServicios() {
         ) : servicios.length === 0 ? (
            <p style={{ textAlign: 'center', padding: '24px' }}>No hay servicios registrados. Agrega uno nuevo.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
             {servicios.map((s) => (
               <div key={s.id} style={{ 
                 border: '1px solid var(--border-color)', 
@@ -224,9 +224,9 @@ export default function AdminServicios() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 className="text-h2" style={{ marginBottom: '24px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '480px', maxHeight: '92vh', overflowY: 'auto' }}>
+            <h2 className="text-h2" style={{ marginBottom: '20px' }}>
               {editingId ? 'Editar Servicio' : 'Nuevo Servicio'}
             </h2>
             
@@ -243,8 +243,8 @@ export default function AdminServicios() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div className="form-group" style={{ flex: 1 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                <div className="form-group" style={{ flex: '1 1 180px' }}>
                   <label>Categoría</label>
                   <select 
                     value={categoria} 
@@ -259,7 +259,7 @@ export default function AdminServicios() {
                   </select>
                 </div>
                 
-                <div className="form-group" style={{ flex: 1 }}>
+                <div className="form-group" style={{ flex: '1 1 140px' }}>
                   <label>Precio (Bs.)</label>
                   <input 
                     type="number" 

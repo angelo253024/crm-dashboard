@@ -115,7 +115,7 @@ export default function AdminPromos() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="text-h1">Promociones</h1>
           <p className="text-body text-muted">Gestiona descuentos y combos para tus clientes.</p>
@@ -125,8 +125,8 @@ export default function AdminPromos() {
         </button>
       </div>
 
-      <div className="card" style={{ padding: '0' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid var(--border-color)' }}>
+      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)' }}>
           <h2 className="text-h2">Listado de Promociones</h2>
         </div>
         
@@ -138,8 +138,8 @@ export default function AdminPromos() {
             <p>No tienes promociones creadas.</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)', fontSize: '13px', textTransform: 'uppercase' }}>
                   <th style={{ padding: '16px 24px', fontWeight: '600' }}>Promoción</th>
@@ -159,40 +159,51 @@ export default function AdminPromos() {
                     <td style={{ padding: '16px 24px' }}>
                       {promo.tipo === 'descuento' ? (
                         <div>
-                          <span style={{ fontWeight: 'bold', color: 'var(--accent-green)' }}>-{promo.descuento_porcentaje}%</span>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            {servicios.find(s => s.id === promo.servicio_id)?.nombre || 'Servicio'}
+                          <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', fontWeight: 'bold', fontSize: '12px' }}>
+                            {promo.descuento_porcentaje}% OFF
+                          </span>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            {promo.servicios ? promo.servicios.nombre : 'Servicio específico'}
                           </div>
                         </div>
                       ) : (
-                        <div>
-                          <span style={{ fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs {promo.precio_combo}</span>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Combo Especial</div>
-                        </div>
+                        <span style={{ display: 'inline-block', padding: '4px 8px', borderRadius: '4px', backgroundColor: 'rgba(46, 204, 113, 0.1)', color: '#2ecc71', fontWeight: 'bold', fontSize: '12px' }}>
+                          Combo: Bs {promo.precio_combo}
+                        </span>
                       )}
                     </td>
-                    <td style={{ padding: '16px 24px' }}>
+                    <td style={{ padding: '16px 24px', fontSize: '13px', color: 'var(--text-muted)' }}>
                       {promo.es_temporal ? (
-                        <div style={{ fontSize: '13px' }}>
-                          <div><strong style={{ color: 'var(--text-muted)' }}>De:</strong> {new Date(promo.fecha_inicio).toLocaleString()}</div>
-                          <div><strong style={{ color: 'var(--text-muted)' }}>A:</strong> {new Date(promo.fecha_fin).toLocaleString()}</div>
+                        <div>
+                          <div>Hasta: {new Date(promo.fecha_fin).toLocaleDateString()}</div>
+                          <div style={{ fontSize: '11px', color: '#f1c40f' }}>Temporal</div>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Indefinida</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Permanente</span>
                       )}
                     </td>
                     <td style={{ padding: '16px 24px' }}>
-                      <button onClick={() => toggleStatus(promo)} style={{ padding: '4px 12px', borderRadius: '20px', border: 'none', fontSize: '12px', fontWeight: '600', cursor: 'pointer', backgroundColor: promo.activa ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: promo.activa ? 'var(--accent-green)' : '#ef4444' }}>
+                      <button 
+                        onClick={() => toggleStatus(promo)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', border: 'none',
+                          backgroundColor: promo.activa ? 'rgba(46, 204, 113, 0.1)' : 'rgba(231, 76, 60, 0.1)',
+                          color: promo.activa ? '#2ecc71' : '#e74c3c'
+                        }}
+                      >
+                        {promo.activa ? <CheckCircle size={14} /> : <XCircle size={14} />}
                         {promo.activa ? 'Activa' : 'Inactiva'}
                       </button>
                     </td>
                     <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                      <button onClick={() => handleOpenModal(promo)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', marginRight: '12px' }}>
-                        <Edit size={18} />
-                      </button>
-                      <button onClick={() => handleDelete(promo.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                        <Trash2 size={18} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                        <button onClick={() => handleOpenModal(promo)} style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer' }}>
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(promo.id)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -203,13 +214,13 @@ export default function AdminPromos() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '32px', borderRadius: '16px', width: '100%', maxWidth: '600px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-lg)', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: '16px', width: '100%', maxWidth: '580px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-lg)', maxHeight: '92vh', overflowY: 'auto' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 className="text-h2">{editingPromo ? 'Modificar Promo' : 'Crear Promo'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={24} />
+                <X size={22} />
               </button>
             </div>
 
@@ -224,8 +235,8 @@ export default function AdminPromos() {
                 <input type="text" value={formData.descripcion} onChange={e => setFormData({...formData, descripcion: e.target.value})} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
               </div>
 
-              <div style={{ display: 'flex', gap: '16px' }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ flex: '1 1 180px' }}>
                   <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tipo de Promo</label>
                   <select value={formData.tipo} onChange={e => setFormData({...formData, tipo: e.target.value})} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}>
                     <option value="descuento">Descuento a Servicio</option>
@@ -234,12 +245,12 @@ export default function AdminPromos() {
                 </div>
 
                 {formData.tipo === 'descuento' ? (
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: '1 1 140px' }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>% de Descuento</label>
                     <input type="number" min="1" max="100" value={formData.descuento_porcentaje} onChange={e => setFormData({...formData, descuento_porcentaje: e.target.value})} required={formData.tipo === 'descuento'} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} placeholder="Ej. 20" />
                   </div>
                 ) : (
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: '1 1 140px' }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Precio del Combo (Bs)</label>
                     <input type="number" min="1" value={formData.precio_combo} onChange={e => setFormData({...formData, precio_combo: e.target.value})} required={formData.tipo === 'combo'} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} placeholder="Ej. 150" />
                   </div>
@@ -261,18 +272,18 @@ export default function AdminPromos() {
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '8px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '16px' }}>
                   <input type="checkbox" checked={formData.es_temporal} onChange={e => setFormData({...formData, es_temporal: e.target.checked})} style={{ width: '18px', height: '18px' }} />
-                  <span style={{ fontSize: '15px', color: 'var(--text-main)', fontWeight: '500' }}>Promoción Temporal (Fecha límite)</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-main)', fontWeight: '500' }}>Promoción Temporal (Fecha límite)</span>
                 </label>
 
                 {formData.es_temporal && (
-                  <div style={{ display: 'flex', gap: '16px', backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Inicio</label>
-                      <input type="datetime-local" value={formData.fecha_inicio} onChange={e => setFormData({...formData, fecha_inicio: e.target.value})} required={formData.es_temporal} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }} />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', backgroundColor: 'var(--bg-color)', padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ flex: '1 1 180px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Inicio</label>
+                      <input type="datetime-local" value={formData.fecha_inicio} onChange={e => setFormData({...formData, fecha_inicio: e.target.value})} required={formData.es_temporal} style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px' }} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fin</label>
-                      <input type="datetime-local" value={formData.fecha_fin} onChange={e => setFormData({...formData, fecha_fin: e.target.value})} required={formData.es_temporal} style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)' }} />
+                    <div style={{ flex: '1 1 180px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Fin</label>
+                      <input type="datetime-local" value={formData.fecha_fin} onChange={e => setFormData({...formData, fecha_fin: e.target.value})} required={formData.es_temporal} style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px' }} />
                     </div>
                   </div>
                 )}

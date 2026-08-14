@@ -73,8 +73,6 @@ const parseCoords = (ubicacionGps) => {
   return null;
 };
 
-// Eliminado getFallbackLocation para NO inventar ubicaciones nunca.
-
 function MapController({ markers }) {
   const map = useMap();
   useEffect(() => {
@@ -183,7 +181,7 @@ export default function Zonas() {
 
   // B) Marcadores de Trabajadores
   trabajadores.forEach(trab => {
-    // Si el trabajador NO transmite GPS (o si le quitaste las coordenadas), no lo mostramos en el mapa
+    // Si el trabajador NO transmite GPS, no lo mostramos en el mapa
     if (trab.latitud == null || trab.longitud == null) return;
     
     const tLat = parseFloat(trab.latitud);
@@ -240,24 +238,24 @@ export default function Zonas() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Header y Tabs */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <MapPin color="var(--accent-cyan)" /> Mapa y Cobertura
           </h1>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Gestión territorial y monitoreo de la flota en tiempo real.</p>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '13px' }}>Gestión territorial y monitoreo de la flota en tiempo real.</p>
         </div>
         
-        <div style={{ display: 'flex', backgroundColor: 'var(--card-bg)', borderRadius: '12px', padding: '4px', border: '1px solid var(--border-color)' }}>
+        <div style={{ display: 'flex', backgroundColor: 'var(--card-bg)', borderRadius: '12px', padding: '4px', border: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '4px' }}>
           <button 
             onClick={() => setActiveTab('monitoreo')}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'monitoreo' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'monitoreo' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'monitoreo' ? 'bold' : 'normal', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+            style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'monitoreo' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'monitoreo' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'monitoreo' ? 'bold' : 'normal', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
             <Activity size={16} /> Monitoreo en Vivo
           </button>
           <button 
             onClick={() => setActiveTab('cobertura')}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'cobertura' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'cobertura' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'cobertura' ? 'bold' : 'normal', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
-            <ShieldCheck size={16} /> Cobertura de Servicio
+            style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', backgroundColor: activeTab === 'cobertura' ? 'rgba(28, 169, 201, 0.1)' : 'transparent', color: activeTab === 'cobertura' ? 'var(--accent-cyan)' : 'var(--text-muted)', fontWeight: activeTab === 'cobertura' ? 'bold' : 'normal', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
+            <ShieldCheck size={16} /> Cobertura
           </button>
         </div>
       </div>
@@ -267,9 +265,9 @@ export default function Zonas() {
       ) : (
         <>
           {/* Tarjetas KPI */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            <div className="card" style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+            <div className="card" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
                 <div>
                   <h2 className="text-h2">Control de Flota en Tiempo Real</h2>
                   <p className="text-muted text-small" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -292,7 +290,7 @@ export default function Zonas() {
               )}
 
               {/* Leyenda Visual */}
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                    <span style={{ fontSize: '18px' }}>🏍️</span> Trabajadores
                  </div>
@@ -305,11 +303,11 @@ export default function Zonas() {
               </div>
               
               {/* Contenedor del Mapa de React Leaflet */}
-              <div style={{ height: '600px', borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }}>
+              <div style={{ height: 'min(550px, 65vh)', borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1, boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }}>
                 <MapContainer 
                   center={[-17.7833, -63.1821]} // Santa Cruz de la Sierra por defecto
                   zoom={13} 
-                  style={{ height: '100%', width: '100%', background: '#0f172a' }} // Dark mode base para mapa (tileset oscuro seria ideal, usamos claro base con filtro opcional por CSS, pero aqui lo dejamos estandar)
+                  style={{ height: '100%', width: '100%', background: '#0f172a' }}
                 >
                   <MapController markers={markers} />
                   {/* TileLayer minimalista (CartoDB Positron) para un estilo más CRM */}

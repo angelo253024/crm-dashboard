@@ -73,12 +73,12 @@ export default function AdminBot() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', overflowX: 'auto' }}>
         <button 
           onClick={() => setActiveTab('faq')}
           style={{ 
-            background: 'none', border: 'none', fontSize: '16px', fontWeight: 'bold', 
-            color: activeTab === 'faq' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            background: 'none', border: 'none', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap',
+            color: activeTab === 'faq' ? 'var(--accent-cyan)' : 'var(--text-muted)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
           }}
         >
@@ -87,8 +87,8 @@ export default function AdminBot() {
         <button 
           onClick={() => setActiveTab('history')}
           style={{ 
-            background: 'none', border: 'none', fontSize: '16px', fontWeight: 'bold', 
-            color: activeTab === 'history' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            background: 'none', border: 'none', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap',
+            color: activeTab === 'history' ? 'var(--accent-cyan)' : 'var(--text-muted)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
           }}
         >
@@ -97,8 +97,8 @@ export default function AdminBot() {
         <button 
           onClick={() => setActiveTab('horarios')}
           style={{ 
-            background: 'none', border: 'none', fontSize: '16px', fontWeight: 'bold', 
-            color: activeTab === 'horarios' ? 'var(--accent-blue)' : 'var(--text-muted)',
+            background: 'none', border: 'none', fontSize: '15px', fontWeight: 'bold', whiteSpace: 'nowrap',
+            color: activeTab === 'horarios' ? 'var(--accent-cyan)' : 'var(--text-muted)',
             cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
           }}
         >
@@ -107,131 +107,139 @@ export default function AdminBot() {
       </div>
 
       {activeTab === 'faq' && (
-        <div className="card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div className="card" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
             <h2 className="text-h2">Base de Conocimiento Local</h2>
             <button className="btn-primary" onClick={handleAddFaq}><Plus size={16} /> Nueva Regla</button>
           </div>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px' }}>Intención</th>
-                <th style={{ padding: '12px' }}>Sinónimos</th>
-                <th style={{ padding: '12px' }}>Respuesta</th>
-                <th style={{ padding: '12px', width: '100px' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {faqs.map(faq => (
-                <tr key={faq.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: 'var(--accent-blue)' }}>{faq.keyword}</td>
-                  <td style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {faq.sinonimos ? faq.sinonimos.split(',').map(s => (
-                      <span key={s} style={{ background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', marginRight: '4px', display: 'inline-block', marginBottom: '4px', border: '1px solid var(--border-color)' }}>{s.trim()}</span>
-                    )) : faq.keyword}
-                  </td>
-                  <td style={{ padding: '12px' }}>{faq.respuesta}</td>
-                  <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
-                    <button onClick={() => handleEditFaq(faq)} style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', cursor: 'pointer' }} title="Editar"><Edit size={18} /></button>
-                    <button onClick={() => handleDeleteFaq(faq.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Eliminar"><Trash2 size={18} /></button>
-                  </td>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px' }}>Intención</th>
+                  <th style={{ padding: '12px' }}>Sinónimos</th>
+                  <th style={{ padding: '12px' }}>Respuesta</th>
+                  <th style={{ padding: '12px', width: '100px' }}>Acciones</th>
                 </tr>
-              ))}
-              {faqs.length === 0 && <tr><td colSpan="4" style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay respuestas configuradas</td></tr>}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {faqs.map(faq => (
+                  <tr key={faq.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{faq.keyword}</td>
+                    <td style={{ padding: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                      {faq.sinonimos ? faq.sinonimos.split(',').map(s => (
+                        <span key={s} style={{ background: 'var(--bg-color)', padding: '2px 6px', borderRadius: '4px', marginRight: '4px', display: 'inline-block', marginBottom: '4px', border: '1px solid var(--border-color)' }}>{s.trim()}</span>
+                      )) : faq.keyword}
+                    </td>
+                    <td style={{ padding: '12px' }}>{faq.respuesta}</td>
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleEditFaq(faq)} style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer' }} title="Editar"><Edit size={18} /></button>
+                        <button onClick={() => handleDeleteFaq(faq.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Eliminar"><Trash2 size={18} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {faqs.length === 0 && <tr><td colSpan="4" style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay respuestas configuradas</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {activeTab === 'history' && (
-        <div className="card" style={{ padding: '24px' }}>
+        <div className="card" style={{ padding: '20px' }}>
           <h2 className="text-h2" style={{ marginBottom: '20px' }}>Últimas 50 interacciones</h2>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px' }}>Fecha</th>
-                <th style={{ padding: '12px' }}>Usuario</th>
-                <th style={{ padding: '12px' }}>Pregunta</th>
-                <th style={{ padding: '12px' }}>Origen</th>
-                <th style={{ padding: '12px' }}>Tiempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map(h => (
-                <tr key={h.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '12px' }}>{new Date(h.created_at).toLocaleString()}</td>
-                  <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{h.session_id.substring(0,8)}...</td>
-                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{h.pregunta}</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{ 
-                      backgroundColor: h.origen === 'openai' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                      color: h.origen === 'openai' ? '#8b5cf6' : '#10b981',
-                      padding: '4px 8px', borderRadius: '4px', fontSize: '12px', textTransform: 'capitalize'
-                    }}>
-                      {h.origen}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{h.tiempo_ms} ms</td>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px' }}>Fecha</th>
+                  <th style={{ padding: '12px' }}>Usuario</th>
+                  <th style={{ padding: '12px' }}>Pregunta</th>
+                  <th style={{ padding: '12px' }}>Origen</th>
+                  <th style={{ padding: '12px' }}>Tiempo</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {history.map(h => (
+                  <tr key={h.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '12px' }}>{new Date(h.created_at).toLocaleString()}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{h.session_id.substring(0,8)}...</td>
+                    <td style={{ padding: '12px', fontWeight: 'bold' }}>{h.pregunta}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{ 
+                        backgroundColor: h.origen === 'openai' ? 'rgba(139, 92, 246, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                        color: h.origen === 'openai' ? '#8b5cf6' : '#10b981',
+                        padding: '4px 8px', borderRadius: '4px', fontSize: '12px', textTransform: 'capitalize'
+                      }}>
+                        {h.origen}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px', color: 'var(--text-muted)' }}>{h.tiempo_ms} ms</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {activeTab === 'horarios' && (
-        <div className="card" style={{ padding: '24px' }}>
-          <h2 className="text-h2" style={{ marginBottom: '20px' }}>Horarios de Atención</h2>
+        <div className="card" style={{ padding: '20px' }}>
+          <h2 className="text-h2" style={{ marginBottom: '12px' }}>Horarios de Atención</h2>
           <p className="text-body text-muted" style={{ marginBottom: '20px' }}>Estos horarios son leídos automáticamente por el bot cuando los clientes preguntan.</p>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px' }}>Día</th>
-                <th style={{ padding: '12px' }}>Apertura</th>
-                <th style={{ padding: '12px' }}>Cierre</th>
-                <th style={{ padding: '12px' }}>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {horarios.map(h => (
-                <tr key={h.id} style={{ borderBottom: '1px solid var(--border-color)', opacity: h.cerrado ? 0.6 : 1 }}>
-                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{h.dia_semana}</td>
-                  <td style={{ padding: '12px' }}>
-                    <input 
-                      type="time" 
-                      value={h.hora_apertura || ''} 
-                      onChange={(e) => updateHorario(h.id, 'hora_apertura', e.target.value)}
-                      disabled={h.cerrado}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)' }}
-                    />
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <input 
-                      type="time" 
-                      value={h.hora_cierre || ''} 
-                      onChange={(e) => updateHorario(h.id, 'hora_cierre', e.target.value)}
-                      disabled={h.cerrado}
-                      style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)' }}
-                    />
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={h.cerrado} 
-                        onChange={(e) => updateHorario(h.id, 'cerrado', e.target.checked)}
-                        style={{ width: '18px', height: '18px' }}
-                      />
-                      {h.cerrado ? <span style={{ color: '#ef4444' }}>Cerrado</span> : <span style={{ color: '#10b981' }}>Abierto</span>}
-                    </label>
-                  </td>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  <th style={{ padding: '12px' }}>Día</th>
+                  <th style={{ padding: '12px' }}>Apertura</th>
+                  <th style={{ padding: '12px' }}>Cierre</th>
+                  <th style={{ padding: '12px' }}>Estado</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {horarios.map(h => (
+                  <tr key={h.id} style={{ borderBottom: '1px solid var(--border-color)', opacity: h.cerrado ? 0.6 : 1 }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold' }}>{h.dia_semana}</td>
+                    <td style={{ padding: '12px' }}>
+                      <input 
+                        type="time" 
+                        value={h.hora_apertura || ''} 
+                        onChange={(e) => updateHorario(h.id, 'hora_apertura', e.target.value)}
+                        disabled={h.cerrado}
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)' }}
+                      />
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <input 
+                        type="time" 
+                        value={h.hora_cierre || ''} 
+                        onChange={(e) => updateHorario(h.id, 'hora_cierre', e.target.value)}
+                        disabled={h.cerrado}
+                        style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-color)', color: 'var(--text-main)' }}
+                      />
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={h.cerrado} 
+                          onChange={(e) => updateHorario(h.id, 'cerrado', e.target.checked)}
+                          style={{ width: '18px', height: '18px' }}
+                        />
+                        {h.cerrado ? <span style={{ color: '#ef4444' }}>Cerrado</span> : <span style={{ color: '#10b981' }}>Abierto</span>}
+                      </label>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

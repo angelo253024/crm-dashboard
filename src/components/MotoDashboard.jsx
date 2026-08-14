@@ -115,9 +115,10 @@ export default function MotoDashboard({ user }) {
   const [montoRecibido, setMontoRecibido] = useState('');
   const [qrUrl, setQrUrl] = useState('');
 
-  const formatClienteNombre = (nombreStr) => {
+  const getTelefono = (nombreStr) => {
     if (!nombreStr) return '';
-    return nombreStr.replace(/\s*-\s*Tel:\s*[\d\+\-\s]+/, '').trim();
+    const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
+    return match ? match[1].trim() : '';
   };
 
   useEffect(() => {
@@ -125,23 +126,16 @@ export default function MotoDashboard({ user }) {
       fetchTrabajadorEstado();
       fetchReservasAsignadas();
       
-      // Suscribirse a cambios en reservas (ahora global para ver pendientes en tiempo real)
+      // Suscribirse a cambios en reservas para esta moto
       const channel = supabase
         .channel('reservas_moto')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, payload => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` }, payload => {
           fetchReservasAsignadas();
           
-          const isNewForMe = payload.eventType === 'INSERT' && payload.new?.trabajador_id === user.id;
-          const isNewPending = payload.eventType === 'INSERT' && payload.new?.estado_reserva === 'pendiente';
-          const isNewlyAssignedToMe = payload.eventType === 'UPDATE' && payload.new?.estado_reserva === 'asignado' && payload.new?.trabajador_id === user.id;
-          
-          if (isNewForMe || isNewlyAssignedToMe) {
+          if (payload.eventType === 'INSERT' || (payload.eventType === 'UPDATE' && payload.new.estado_reserva === 'asignado')) {
+            // Notificar al trabajador si es un nuevo trabajo
             if(window.Notification && Notification.permission === "granted") {
               new Notification("¡Nuevo Lavado Asignado!", { body: "Revisa tu panel de trabajos." });
-            }
-          } else if (isNewPending) {
-             if(window.Notification && Notification.permission === "granted") {
-              new Notification("¡Nuevo Lavado Pendiente!", { body: "Hay un nuevo trabajo disponible para tomar." });
             }
           }
         })
@@ -387,18 +381,18 @@ export default function MotoDashboard({ user }) {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="text-h1">Mi Panel de Trabajo</h1>
           <p className="text-muted" style={{ marginTop: '4px' }}>Hola, {user?.nombre}. Gestiona tus lavados.</p>
         </div>
-        <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+        <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
           <Bell size={16} /> Activar Notificaciones
         </button>
       </div>
 
-      <div style={{ marginBottom: '32px' }}>
+      <div>
         <h2 className="text-h2" style={{ marginBottom: '16px' }}>Tus Estadísticas Personales</h2>
         <div className="kpi-container">
           <div className="kpi-card">
@@ -436,7 +430,7 @@ export default function MotoDashboard({ user }) {
         </div>
       </div>
 
-      <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-color)' }}>
+      <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', border: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: estado === 'disponible' ? 'rgba(16, 185, 129, 0.2)' : estado === 'en_proceso' ? 'rgba(250, 204, 21, 0.2)' : estado === 'ocupado' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <User size={24} color={estado === 'disponible' ? '#10b981' : estado === 'en_proceso' ? '#eab308' : estado === 'ocupado' ? '#f59e0b' : '#ef4444'} />
@@ -489,7 +483,7 @@ export default function MotoDashboard({ user }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
-                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {formatClienteNombre(res.cliente_nombre) || 'No especificado'}</p>
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre || 'No especificado'}</p>
                 </div>
                 <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: res.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: res.estado_reserva === 'asignado' ? '#3b82f6' : '#10b981' }}>
                   {res.estado_reserva === 'asignado' ? 'NUEVO ASIGNADO' : 'EN CAMINO'}
@@ -563,8 +557,19 @@ export default function MotoDashboard({ user }) {
                 <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
                   <PlusCircle size={18} /> Agregar Extra
                 </button>
+
+                {getTelefono(res.cliente_nombre) && (
+                  <a 
+                    href={`https://wa.me/${getTelefono(res.cliente_nombre).replace(/\s+/g, '')}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: '#25D366', color: 'white', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
+                  >
+                    <MessageSquare size={18} /> WhatsApp Cliente
+                  </a>
+                )}
               </div>
-              
+
               {showExtraService === res.id && (
                 <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px dashed #8b5cf6' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -609,7 +614,7 @@ export default function MotoDashboard({ user }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                   <div>
                     <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {formatClienteNombre(res.cliente_nombre) || 'No especificado'}</p>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre || 'No especificado'}</p>
                     <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Hora:</strong> {res.hora_reserva || res.hora}</p>
                   </div>
                   <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
@@ -796,7 +801,7 @@ export default function MotoDashboard({ user }) {
             .map(res => (
               <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{formatClienteNombre(res.cliente_nombre)}</div>
+                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{res.cliente_nombre}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Vehículo</strong><br/>{res.vehiculo}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Servicio</strong><br/>{res.servicio}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Generado</strong><br/>Bs {res.precio_total || res.precio || 0}</div>

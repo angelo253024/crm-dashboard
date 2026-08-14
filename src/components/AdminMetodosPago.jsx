@@ -61,9 +61,9 @@ export default function AdminMetodosPago() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 className="text-h1" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div>
+        <h1 className="text-h1" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <QrCode size={28} color="var(--accent-green)" />
           Métodos de Pago
         </h1>

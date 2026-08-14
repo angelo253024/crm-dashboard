@@ -178,72 +178,74 @@ export default function Citas() {
         {loading ? (
           <p style={{ textAlign: 'center', padding: '40px' }}>Cargando agenda...</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
-              {days.map(day => (
-                <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-              {totalSlots.map((day, index) => {
-                const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
-                const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
-                
-                return (
-                  <div 
-                    key={index} 
-                    onClick={() => handleDayClick(day)}
-                    style={{ 
-                      minHeight: '100px', 
-                      border: '1px solid var(--border-color)', 
-                      borderRadius: 'var(--radius-sm)', 
-                      backgroundColor: day ? 'var(--bg-color)' : 'transparent',
-                      padding: '8px',
-                      cursor: day ? 'pointer' : 'default',
-                      opacity: day ? 1 : 0.5,
-                      transition: 'border-color 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (day) e.currentTarget.style.borderColor = 'var(--accent-green)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (day) e.currentTarget.style.borderColor = 'var(--border-color)';
-                    }}
-                  >
-                    {day && (
-                      <>
-                        <div style={{ fontWeight: '600', marginBottom: '8px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                          {day}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          {dayEvents.slice(0, 3).map(ev => (
-                            <div key={ev.id} style={{ 
-                              fontSize: '11px', 
-                              padding: '4px', 
-                              borderRadius: '4px', 
-                              backgroundColor: 'var(--card-bg)',
-                              borderLeft: `3px solid ${getStatusColor(ev.status)}`,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}>
-                              {ev.time} - {ev.title}
-                            </div>
-                          ))}
-                          {dayEvents.length > 3 && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px' }}>
-                              +{dayEvents.length - 3} más
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
+          <div className="table-responsive" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
+            <div style={{ minWidth: '640px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                {days.map(day => (
+                  <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                    {day}
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+                {totalSlots.map((day, index) => {
+                  const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
+                  const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      onClick={() => handleDayClick(day)}
+                      style={{ 
+                        minHeight: '100px', 
+                        border: '1px solid var(--border-color)', 
+                        borderRadius: 'var(--radius-sm)', 
+                        backgroundColor: day ? 'var(--bg-color)' : 'transparent',
+                        padding: '8px',
+                        cursor: day ? 'pointer' : 'default',
+                        opacity: day ? 1 : 0.5,
+                        transition: 'border-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (day) e.currentTarget.style.borderColor = 'var(--accent-green)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (day) e.currentTarget.style.borderColor = 'var(--border-color)';
+                      }}
+                    >
+                      {day && (
+                        <>
+                          <div style={{ fontWeight: '600', marginBottom: '8px', textAlign: 'right', color: 'var(--text-muted)' }}>
+                            {day}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {dayEvents.slice(0, 3).map(ev => (
+                              <div key={ev.id} style={{ 
+                                fontSize: '11px', 
+                                padding: '4px', 
+                                borderRadius: '4px', 
+                                backgroundColor: 'var(--card-bg)',
+                                borderLeft: `3px solid ${getStatusColor(ev.status)}`,
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                              }}>
+                                {ev.time} - {ev.title}
+                              </div>
+                            ))}
+                            {dayEvents.length > 3 && (
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '4px' }}>
+                                +{dayEvents.length - 3} más
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
