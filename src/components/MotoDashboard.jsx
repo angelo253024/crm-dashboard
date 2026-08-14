@@ -115,10 +115,18 @@ export default function MotoDashboard({ user }) {
   const [montoRecibido, setMontoRecibido] = useState('');
   const [qrUrl, setQrUrl] = useState('');
 
-  const getTelefono = (nombreStr) => {
-    if (!nombreStr) return '';
-    const match = nombreStr.match(/Tel:\s*([\d\+\-\s]+)/);
-    return match ? match[1].trim() : '';
+  const getTelefono = (input) => {
+    if (!input) return '';
+    let text = typeof input === 'object' 
+      ? (input.cliente_telefono || input.telefono || input.cliente_nombre || input.cliente || '') 
+      : String(input);
+    if (!text) return '';
+    const match = text.match(/Tel:\s*([\d\+\-\s]+)/i);
+    if (match) return match[1].trim();
+    if (text.includes(' - Tel: ')) return text.split(' - Tel: ')[1].trim();
+    const digits = text.replace(/\D/g, '');
+    if (digits.length >= 7) return digits;
+    return '';
   };
 
   useEffect(() => {
@@ -532,42 +540,67 @@ export default function MotoDashboard({ user }) {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {res.estado_reserva === 'asignado' ? (
                   <>
-                    <button onClick={() => aceptarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <button onClick={() => aceptarReserva(res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                       <Check size={18} /> Voy en Camino
                     </button>
-                    <button onClick={() => rechazarReserva(res.id)} style={{ padding: '12px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <button onClick={() => rechazarReserva(res.id)} style={{ padding: '12px 16px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                       <X size={18} /> Rechazar
                     </button>
                   </>
                 ) : res.estado_reserva === 'en_camino' ? (
-                  <button onClick={() => llegueAlLugar(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#facc15', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <button onClick={() => llegueAlLugar(res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#facc15', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                     <MapPin size={18} /> Llegué al Lugar
                   </button>
                 ) : (
-                  <button onClick={() => handleOpenPayment(res)} style={{ flex: 1, padding: '12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                  <button onClick={() => handleOpenPayment(res)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                     <Check size={18} /> Marcar Lavado Terminado
                   </button>
                 )}
                 
                 
-                <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                <button onClick={() => setActiveChatSession(res.chat_session_id || `fallback_${res.id}`)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                   <MessageSquare size={18} /> Chat (Web)
                 </button>
                 
-                <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                   <PlusCircle size={18} /> Agregar Extra
                 </button>
 
-                {getTelefono(res.cliente_nombre) && (
-                  <a 
-                    href={`https://wa.me/${getTelefono(res.cliente_nombre).replace(/\s+/g, '')}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ flex: 1, minWidth: '150px', padding: '12px', backgroundColor: '#25D366', color: 'white', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                  >
-                    <MessageSquare size={18} /> WhatsApp Cliente
-                  </a>
-                )}
+                {getTelefono(res) && (() => {
+                  const phoneNum = getTelefono(res);
+                  const digitsOnly = phoneNum.replace(/\D/g, '');
+                  const waNumber = digitsOnly.length === 8 ? `591${digitsOnly}` : digitsOnly;
+                  return (
+                    <a 
+                      href={`https://wa.me/${waNumber}?text=Hola,%20soy%20el%20trabajador%20asignado%20para%20tu%20lavado.%20Voy%20en%20camino.`} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      style={{ 
+                        flex: 1, 
+                        minWidth: '140px', 
+                        padding: '12px 16px', 
+                        backgroundColor: '#25D366', 
+                        color: 'white', 
+                        textDecoration: 'none', 
+                        borderRadius: '6px', 
+                        fontWeight: 'bold', 
+                        cursor: 'pointer', 
+                        display: 'inline-flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        whiteSpace: 'nowrap',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.573-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+                        <path d="M12 2C6.477 2 2 6.477 2 12c0 2.159.685 4.158 1.854 5.793L2.05 21.95l4.302-1.766A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18c-1.804 0-3.486-.478-4.945-1.313l-.354-.203-2.556 1.048 1.058-2.483-.227-.367A7.957 7.957 0 0 1 4 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/>
+                      </svg>
+                      WhatsApp Cliente
+                    </a>
+                  );
+                })()}
               </div>
 
               {showExtraService === res.id && (
