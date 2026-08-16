@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote, User, X } from 'lucide-react';
+import { Home, CalendarClock, Map, Users, CarFront, Package, ChevronDown, Lock, Settings, CreditCard, LogOut, LifeBuoy, Tag, Bot, Wallet, Banknote, User, X, Clock } from 'lucide-react';
 import { supabase } from '../supabase';
 import WorkerStatsModal from './WorkerStatsModal';
 
@@ -163,6 +163,10 @@ export default function Sidebar({ user, onLogout, isOpen, onClose }) {
           <NavLink to="/citas" onClick={handleNavClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <CalendarClock size={20} />
             <span>Citas / Agenda</span>
+          </NavLink>
+          <NavLink to="/horarios" onClick={handleNavClick} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+            <Clock size={20} />
+            <span>Horarios</span>
           </NavLink>
           
           {!isTrabajador && (

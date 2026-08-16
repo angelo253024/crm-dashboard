@@ -21,6 +21,7 @@ const AdminServicios = lazy(() => import('./components/AdminServicios'))
 const AdminPromos = lazy(() => import('./components/AdminPromos'))
 const AdminMetodosPago = lazy(() => import('./components/AdminMetodosPago'))
 const AdminBot = lazy(() => import('./components/AdminBot'))
+const AdminHorarios = lazy(() => import('./components/AdminHorarios'))
 
 function App() {
   const [user, setUserState] = useState(() => {
@@ -49,6 +50,13 @@ function App() {
       try {
         const { supabase } = await import('./supabase');
         await supabase.from('trabajadores').update({ estado: 'Inactivo' }).eq('id', user.id);
+        const today = new Date().toISOString().split('T')[0];
+        await supabase
+          .from('trabajador_horarios')
+          .update({ hora_salida: new Date().toISOString() })
+          .eq('trabajador_id', user.id)
+          .eq('fecha', today)
+          .is('hora_salida', null);
       } catch (err) {
         console.error("Error setting user to Inactivo:", err);
       }
@@ -118,6 +126,7 @@ function App() {
           <Route path="/promos" element={<ProtectedRoute><AdminPromos /></ProtectedRoute>} />
           <Route path="/metodos-pago" element={<ProtectedRoute><AdminMetodosPago /></ProtectedRoute>} />
           <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
+          <Route path="/horarios" element={<ProtectedRoute><AdminHorarios user={user} /></ProtectedRoute>} />
           
           {/* Cualquier ruta que no exista redirige a la Landing */}
           <Route path="*" element={<Navigate to="/" replace />} />

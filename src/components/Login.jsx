@@ -106,6 +106,23 @@ export default function Login({ onLogin }) {
         try {
           await supabase.from('trabajadores').update({ estado: 'Activo' }).eq('id', data.id);
           data.estado = 'Activo';
+
+          // Registrar ingreso en trabajador_horarios si no existe para hoy
+          const today = new Date().toISOString().split('T')[0];
+          const { data: existing } = await supabase
+            .from('trabajador_horarios')
+            .select('id')
+            .eq('trabajador_id', data.id)
+            .eq('fecha', today)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase.from('trabajador_horarios').insert([{
+              trabajador_id: data.id,
+              fecha: today,
+              hora_ingreso: new Date().toISOString()
+            }]);
+          }
         } catch (err) {
           console.error("Error setting user to Activo:", err);
         }
