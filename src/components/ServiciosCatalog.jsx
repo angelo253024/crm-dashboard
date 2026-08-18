@@ -128,7 +128,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [recordarCliente, setRecordarCliente] = useState(true);
   const [isAutofilled, setIsAutofilled] = useState(false);
   const [savedClientsList, setSavedClientsList] = useState([]);
-  const [selectedClientPhone, setSelectedClientPhone] = useState('');
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
 
   const loadSavedClientProfiles = async () => {
     const clientMap = new Map();
@@ -347,6 +347,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setSelectedServices([servicio]);
     setSuccess(false);
     setIsEditing(false);
+    setShowNameSuggestions(false);
+    setIsAutofilled(false);
     loadSavedClientProfiles();
     setShowModal(true);
   };
@@ -948,36 +950,85 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 )}
 
-                <div style={{ marginBottom: '14px', backgroundColor: 'rgba(28, 169, 201, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-green)' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: 'bold', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '15px' }}>👤</span> Seleccionar cliente registrado / autocompletar:
-                  </label>
-                  <select
-                    value={selectedClientPhone}
-                    onChange={(e) => handleSelectClientFromDropdown(e.target.value)}
-                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--accent-green)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none', cursor: 'pointer', fontWeight: '500' }}
-                  >
-                    <option value="" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)' }}>
-                      {savedClientsList.length > 0 ? '-- Selecciona tu usuario registrado --' : '-- Cargar usuarios registrados --'}
-                    </option>
-                    {savedClientsList.map((c, idx) => (
-                      <option key={idx} value={c.telefono} style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}>
-                        {c.nombre} — Tel: {c.telefono} {c.vehiculo ? `(${c.vehiculo})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {isAutofilled && (
                   <div style={{ padding: '10px 14px', backgroundColor: 'rgba(28, 169, 201, 0.12)', borderRadius: '8px', border: '1px solid var(--accent-green)', fontSize: '13px', color: 'var(--accent-green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span>👤 <strong>Cliente Registrado:</strong> Nombre y Teléfono cargados.</span>
-                    <button type="button" onClick={() => { setClienteNombre(''); setClienteTelefono(''); setVehiculo(''); setSelectedClientPhone(''); setIsAutofilled(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline' }}>Limpiar</button>
+                    <span>👤 <strong>Cliente Registrado:</strong> Datos de usuario autocompletados.</span>
+                    <button type="button" onClick={() => { setClienteNombre(''); setClienteTelefono(''); setVehiculo(''); setIsAutofilled(false); setShowNameSuggestions(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline' }}>Limpiar</button>
                   </div>
                 )}
 
-                <div>
+                {/* Campo Tu Nombre con Autocompletado Seguro (Solo sugerencias sin teléfonos al escribir 2+ letras) */}
+                <div style={{ position: 'relative' }}>
                   <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
-                  <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <input 
+                    type="text" 
+                    value={clienteNombre} 
+                    onChange={(e) => { 
+                      setClienteNombre(e.target.value); 
+                      setShowNameSuggestions(true); 
+                    }} 
+                    onFocus={() => { if (clienteNombre.trim().length >= 2) setShowNameSuggestions(true); }}
+                    required 
+                    placeholder="Ej. Juan Pérez (Escribe 2 letras para autocompletar)" 
+                    style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} 
+                  />
+
+                  {/* Sugerencias Flotantes (Privacidad Garantizada: NUNCA muestra teléfonos) */}
+                  {showNameSuggestions && clienteNombre.trim().length >= 2 && (() => {
+                    const matches = savedClientsList.filter(c => 
+                      c.nombre && c.nombre.toLowerCase().includes(clienteNombre.trim().toLowerCase())
+                    );
+                    if (matches.length === 0) return null;
+
+                    return (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        zIndex: 100,
+                        backgroundColor: 'var(--card-bg, #1e293b)',
+                        border: '1px solid var(--accent-green)',
+                        borderRadius: '8px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                        marginTop: '4px',
+                        maxHeight: '180px',
+                        overflowY: 'auto'
+                      }}>
+                        <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--accent-green)', fontWeight: 'bold', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                          👤 Sugerencias de usuario (clic para autocompletar):
+                        </div>
+                        {matches.map((c, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setClienteNombre(c.nombre);
+                              setClienteTelefono(c.telefono || '');
+                              if (c.vehiculo) setVehiculo(c.vehiculo);
+                              setUbicacion(''); // Ubicación NUNCA se pre-llena por privacidad y cambio de lugar
+                              setIsAutofilled(true);
+                              setShowNameSuggestions(false);
+                            }}
+                            style={{
+                              padding: '10px 12px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              color: 'var(--text-main)',
+                              borderBottom: idx === matches.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justify: 'space-between'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.15)'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <span style={{ fontWeight: 'bold' }}>👤 {c.nombre}</span>
+                            {c.vehiculo && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>🚘 {c.vehiculo}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
                 
                 <div>
