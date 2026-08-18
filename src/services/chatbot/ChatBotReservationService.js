@@ -556,8 +556,8 @@ export class ChatBotReservationService {
         _reservationState.data.fechaReserva = parsedDate;
         _reservationState.step = STEPS.ASKING_TIME;
 
-        // Botones de hora
-        const timeButtons = [
+        // Consultar reservas existentes en la fecha seleccionada para evitar choques (rango de 1 hora)
+        let availableTimeButtons = [
           { label: '🕘 08:00', value: '08:00' },
           { label: '🕙 09:00', value: '09:00' },
           { label: '🕥 10:00', value: '10:00' },
@@ -568,10 +568,39 @@ export class ChatBotReservationService {
           { label: '🕔 17:00', value: '17:00' },
         ];
 
+        try {
+          const { data: existingReservasDate } = await supabase
+            .from('reservas')
+            .select('hora_reserva, hora, estado')
+            .eq('fecha_reserva', parsedDate)
+            .neq('estado', 'Cancelado');
+
+          const parseMin = (tStr) => {
+            if (!tStr) return -1;
+            const parts = String(tStr).split(':');
+            if (parts.length < 2) return -1;
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+          };
+
+          const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
+
+          availableTimeButtons = availableTimeButtons.filter(btn => {
+            const btnMin = parseMin(btn.value);
+            return !bookedMins.some(bMin => Math.abs(btnMin - bMin) < 60);
+          });
+        } catch (e) {
+          console.error("Error al verificar disponibilidad de horarios:", e);
+        }
+
+        let timePromptMsg = '🕐 ¿A qué **hora** prefieres?\n\nSelecciona o escribe la hora (formato HH:MM):';
+        if (availableTimeButtons.length === 0) {
+          timePromptMsg = '⚠️ Los horarios estándar están ocupados para esta fecha (requerimos al menos 1 hora de rango entre pedidos).\n\nPor favor escribe un horario disponible (ej: 12:30, 18:00) o ingresa otra fecha.';
+        }
+
         return {
-          text: '🕐 ¿A qué **hora** prefieres?\n\nSelecciona o escribe la hora (formato HH:MM):',
+          text: timePromptMsg,
           source: 'reservation',
-          buttons: timeButtons,
+          buttons: availableTimeButtons.length > 0 ? availableTimeButtons : null,
           requestGPS: false,
         };
 
@@ -580,6 +609,42 @@ export class ChatBotReservationService {
         if (!parsedTime) {
           return { text: 'Formato de hora no válido. Escribe en formato **HH:MM** (ej: 10:30).', source: 'reservation', buttons: null, requestGPS: false };
         }
+
+        // Validar choque de horario (mínimo 1 hora / 60 min entre reservas)
+        try {
+          const targetDateStr = _reservationState.data.fechaReserva;
+          const { data: existingReservasCheck } = await supabase
+            .from('reservas')
+            .select('hora_reserva, hora, estado')
+            .eq('fecha_reserva', targetDateStr)
+            .neq('estado', 'Cancelado');
+
+          const parseMin = (tStr) => {
+            if (!tStr) return -1;
+            const parts = String(tStr).split(':');
+            if (parts.length < 2) return -1;
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+          };
+
+          const reqMin = parseMin(parsedTime);
+          const conflictReserva = (existingReservasCheck || []).find(r => {
+            const rMin = parseMin(r.hora_reserva || r.hora);
+            return rMin !== -1 && Math.abs(reqMin - rMin) < 60;
+          });
+
+          if (conflictReserva) {
+            const conflictTimeStr = String(conflictReserva.hora_reserva || conflictReserva.hora || '').substring(0, 5);
+            return {
+              text: `⚠️ El horario **${parsedTime}** se cruza con otra reserva ya existente (${conflictTimeStr}).\n\nDebe haber al menos **1 hora de margen** entre pedidos. Por favor selecciona o escribe otro horario.`,
+              source: 'reservation',
+              buttons: null,
+              requestGPS: false
+            };
+          }
+        } catch (e) {
+          console.error("Error al validar choque de horario:", e);
+        }
+
         _reservationState.data.horaReserva = parsedTime;
         _reservationState.step = STEPS.CONFIRMING;
 

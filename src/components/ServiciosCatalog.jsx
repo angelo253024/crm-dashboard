@@ -459,6 +459,40 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       precio: Number(s.precio)
     }));
 
+    // Validar choque de horario (mínimo 1 hora / 60 min de rango entre pedidos)
+    const timeToMin = (tStr) => {
+      if (!tStr) return -1;
+      const parts = String(tStr).split(':');
+      if (parts.length < 2) return -1;
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+
+    const reqMin = timeToMin(formattedHora);
+    if (reqMin !== -1 && fechaReserva) {
+      try {
+        const { data: existingReservasCheck } = await supabase
+          .from('reservas')
+          .select('id, hora_reserva, hora, estado')
+          .eq('fecha_reserva', fechaReserva)
+          .neq('estado', 'Cancelado');
+
+        const conflictReserva = (existingReservasCheck || []).find(r => {
+          if (isEditing && r.id === selectedReservaId) return false;
+          const rMin = timeToMin(r.hora_reserva || r.hora);
+          return rMin !== -1 && Math.abs(reqMin - rMin) < 60;
+        });
+
+        if (conflictReserva) {
+          const conflictTimeStr = String(conflictReserva.hora_reserva || conflictReserva.hora || '').substring(0, 5);
+          alert(`⚠️ El horario seleccionado (${formattedHora}) se cruza con otra reserva ya programada a las ${conflictTimeStr}.\n\nDebe haber al menos 1 hora de rango/margen entre pedidos. Por favor selecciona otro horario.`);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (err) {
+        console.error("Error al validar choques de horario:", err);
+      }
+    }
+
     if (isEditing) {
       const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
       const { data: updateData, error } = await supabase.from('reservas').update({
