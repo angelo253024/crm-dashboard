@@ -123,6 +123,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [success, setSuccess] = useState(false);
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
+
+  // Client Profile Registration State
+  const [recordarCliente, setRecordarCliente] = useState(true);
+  const [isAutofilled, setIsAutofilled] = useState(false);
+
+  const loadSavedClientProfile = () => {
+    try {
+      const saved = localStorage.getItem('lavamovil_client_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        let filled = false;
+        if (parsed.nombre) { setClienteNombre(parsed.nombre); filled = true; }
+        if (parsed.telefono) { setClienteTelefono(parsed.telefono); filled = true; }
+        if (parsed.vehiculo) { setVehiculo(parsed.vehiculo); }
+        if (parsed.ubicacion) { setUbicacion(parsed.ubicacion); }
+        if (filled) setIsAutofilled(true);
+      }
+    } catch (e) {
+      console.error('Error cargando perfil de cliente:', e);
+    }
+  };
   
   // Active reservations loaded from local storage
   const [activeReservas, setActiveReservas] = useState([]);
@@ -252,6 +273,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const handleBook = (servicio) => {
     setSelectedServices([servicio]);
     setSuccess(false);
+    setIsEditing(false);
+    loadSavedClientProfile();
     setShowModal(true);
   };
 
@@ -423,6 +446,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }
       setSuccess(true);
       
+      // Guardar perfil de cliente registrado si la opción está activada
+      if (recordarCliente && clienteNombre && clienteTelefono) {
+        const clientProfile = {
+          nombre: clienteNombre,
+          telefono: clienteTelefono,
+          vehiculo: vehiculo,
+          ubicacion: ubicacion
+        };
+        localStorage.setItem('lavamovil_client_profile', JSON.stringify(clientProfile));
+
+        try {
+          await supabase.from('clientes').upsert([{
+            nombre: clienteNombre,
+            telefono: clienteTelefono,
+            vehiculo: vehiculo,
+            direccion: ubicacion
+          }], { onConflict: 'telefono' });
+        } catch (err) {
+          // Ignorar si la tabla no está creada aún en Supabase
+        }
+      }
+
       // Dispatch notification
       await supabase.from('notificaciones').insert([{
         mensaje: `Nueva reserva: ${clienteNombre} - ${validServices.map(s => s.nombre).join(' + ')}`,
@@ -824,6 +869,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 )}
 
+                {isAutofilled && (
+                  <div style={{ padding: '10px 14px', backgroundColor: 'rgba(28, 169, 201, 0.12)', borderRadius: '8px', border: '1px solid var(--accent-green)', fontSize: '13px', color: 'var(--accent-green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <span>👤 <strong>Cliente Registrado:</strong> Datos autocompletados.</span>
+                    <button type="button" onClick={() => { setClienteNombre(''); setClienteTelefono(''); setVehiculo(''); setUbicacion(''); setIsAutofilled(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline' }}>Limpiar</button>
+                  </div>
+                )}
+
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Tu Nombre</label>
                   <input type="text" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} required placeholder="Ej. Juan Pérez" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
@@ -867,6 +919,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Hora</label>
                     <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                   </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="recordarCliente" 
+                    checked={recordarCliente} 
+                    onChange={(e) => setRecordarCliente(e.target.checked)} 
+                    style={{ width: '16px', height: '16px', accentColor: 'var(--accent-green)', cursor: 'pointer' }} 
+                  />
+                  <label htmlFor="recordarCliente" style={{ fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                    💾 Registrar y recordar mis datos para futuras reservas
+                  </label>
                 </div>
 
                 <button type="submit" disabled={isSubmitting} className="btn-glass-primary" style={{ marginTop: '16px', padding: '14px', fontSize: '16px', width: '100%', justifyContent: 'center', opacity: isSubmitting ? 0.7 : 1 }}>

@@ -15,6 +15,7 @@ let _reservationState = null;
 
 const STEPS = {
   IDLE: 'IDLE',
+  ASKING_USE_SAVED_PROFILE: 'ASKING_USE_SAVED_PROFILE',
   ASKING_NAME: 'ASKING_NAME',
   ASKING_PHONE: 'ASKING_PHONE',
   ASKING_VEHICLE: 'ASKING_VEHICLE',
@@ -43,22 +44,45 @@ export class ChatBotReservationService {
    * Inicia un nuevo flujo de reserva
    */
   static start() {
+    let savedProfile = null;
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('lavamovil_client_profile');
+        if (stored) savedProfile = JSON.parse(stored);
+      }
+    } catch(e) {}
+
+    const hasProfile = savedProfile && savedProfile.nombre && savedProfile.telefono;
+
     _reservationState = {
-      step: STEPS.ASKING_NAME,
+      step: hasProfile ? STEPS.ASKING_USE_SAVED_PROFILE : STEPS.ASKING_NAME,
+      savedProfile: savedProfile,
       data: {
-        clienteNombre: '',
-        clienteTelefono: '',
-        vehiculo: '',
+        clienteNombre: savedProfile?.nombre || '',
+        clienteTelefono: savedProfile?.telefono || '',
+        vehiculo: savedProfile?.vehiculo || '',
         paqueteSeleccionado: '',
         servicioId: null,
         servicioNombre: '',
         servicioPrecio: 0,
         serviciosAdicionales: [],
-        ubicacion: '',
+        ubicacion: savedProfile?.ubicacion || '',
         fechaReserva: '',
         horaReserva: '',
       }
     };
+
+    if (hasProfile) {
+      return {
+        text: `¡Hola de nuevo, **${savedProfile.nombre}**! 👋✨\n\nVeo que estás registrado con el WhatsApp **${savedProfile.telefono}**${savedProfile.vehiculo ? ` y vehículo **${savedProfile.vehiculo}**` : ''}.\n\n¿Deseas agendar usando tus datos registrados?`,
+        source: 'reservation',
+        buttons: [
+          { label: '✅ Usar mis datos registrados', value: 'PROFILE_USE_SAVED' },
+          { label: '✏️ Ingresar otros datos', value: 'PROFILE_NEW' }
+        ],
+        requestGPS: false,
+      };
+    }
 
     return {
       text: '¡Perfecto! Vamos a agendar tu cita de lavado. 📅\n\n¿Cuál es tu **nombre completo**?',
@@ -95,6 +119,44 @@ export class ChatBotReservationService {
     }
 
     switch (_reservationState.step) {
+
+      case STEPS.ASKING_USE_SAVED_PROFILE:
+        if (input === 'PROFILE_USE_SAVED' || ['si', 'sí', 'usar', 'confirmar', 'mis datos', 'usar mis datos'].includes(input.toLowerCase())) {
+          if (_reservationState.data.vehiculo) {
+            _reservationState.step = STEPS.ASKING_PACKAGE;
+            return {
+              text: `👍 Usaremos tus datos registrados:\n👤 **${_reservationState.data.clienteNombre}** (${_reservationState.data.clienteTelefono})\n🚗 **${_reservationState.data.vehiculo}**\n\nSelecciona el tipo de paquete que deseas:`,
+              source: 'reservation',
+              buttons: [
+                { label: '🟦 Lavado Clásico', value: 'CLASICO' },
+                { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
+                { label: '🛵 Bicis y Motos', value: 'BICIS_MOTOS' },
+                { label: '🎨 Personaliza tu lavado', value: 'PERSONALIZA' }
+              ],
+              requestGPS: false,
+            };
+          } else {
+            _reservationState.step = STEPS.ASKING_VEHICLE;
+            return {
+              text: `👍 Usaremos tu nombre **${_reservationState.data.clienteNombre}** y teléfono **${_reservationState.data.clienteTelefono}**.\n\n🚗 ¿Cuál es la **marca y modelo** de tu vehículo?`,
+              source: 'reservation',
+              buttons: null,
+              requestGPS: false,
+            };
+          }
+        } else {
+          _reservationState.data.clienteNombre = '';
+          _reservationState.data.clienteTelefono = '';
+          _reservationState.data.vehiculo = '';
+          _reservationState.data.ubicacion = '';
+          _reservationState.step = STEPS.ASKING_NAME;
+          return {
+            text: 'Entendido. Vamos a registrar nuevos datos. 📅\n\n¿Cuál es tu **nombre completo**?',
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
+        }
 
       case STEPS.ASKING_NAME:
         if (input.length < 2) {
@@ -660,6 +722,27 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
 
       if (error) {
         return { success: false, error: error.message };
+      }
+
+      // Guardar perfil de cliente registrado
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('lavamovil_client_profile', JSON.stringify({
+            nombre: d.clienteNombre,
+            telefono: d.clienteTelefono,
+            vehiculo: d.vehiculo ? d.vehiculo.split(' (Adicionales:')[0] : '',
+            ubicacion: d.ubicacion
+          }));
+        }
+
+        await supabase.from('clientes').upsert([{
+          nombre: d.clienteNombre,
+          telefono: d.clienteTelefono,
+          vehiculo: d.vehiculo ? d.vehiculo.split(' (Adicionales:')[0] : '',
+          direccion: d.ubicacion
+        }], { onConflict: 'telefono' });
+      } catch(err) {
+        // Ignorar si la tabla de clientes aún no está creada
       }
 
       // Notificación
