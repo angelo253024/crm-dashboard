@@ -66,7 +66,7 @@ export class ChatBotReservationService {
         servicioNombre: '',
         servicioPrecio: 0,
         serviciosAdicionales: [],
-        ubicacion: savedProfile?.ubicacion || '',
+        ubicacion: '',
         fechaReserva: '',
         horaReserva: '',
       }

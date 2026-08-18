@@ -127,21 +127,75 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   // Client Profile Registration State
   const [recordarCliente, setRecordarCliente] = useState(true);
   const [isAutofilled, setIsAutofilled] = useState(false);
+  const [savedClientsList, setSavedClientsList] = useState([]);
+  const [selectedClientPhone, setSelectedClientPhone] = useState('');
 
-  const loadSavedClientProfile = () => {
+  const loadSavedClientProfiles = async () => {
+    let clients = [];
+    
+    // 1. Cargar desde localStorage
     try {
       const saved = localStorage.getItem('lavamovil_client_profile');
       if (saved) {
         const parsed = JSON.parse(saved);
-        let filled = false;
-        if (parsed.nombre) { setClienteNombre(parsed.nombre); filled = true; }
-        if (parsed.telefono) { setClienteTelefono(parsed.telefono); filled = true; }
-        if (parsed.vehiculo) { setVehiculo(parsed.vehiculo); }
-        if (parsed.ubicacion) { setUbicacion(parsed.ubicacion); }
-        if (filled) setIsAutofilled(true);
+        if (parsed.nombre && parsed.telefono) {
+          clients.push(parsed);
+        }
       }
-    } catch (e) {
-      console.error('Error cargando perfil de cliente:', e);
+      const savedArray = localStorage.getItem('lavamovil_saved_clients_v2');
+      if (savedArray) {
+        const arr = JSON.parse(savedArray);
+        arr.forEach(c => {
+          if (c.telefono && !clients.some(x => x.telefono === c.telefono)) {
+            clients.push(c);
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 2. Cargar desde Supabase clientes table
+    try {
+      const { data } = await supabase.from('clientes').select('nombre, telefono, vehiculo');
+      if (data && data.length > 0) {
+        data.forEach(c => {
+          if (c.telefono && !clients.some(x => x.telefono === c.telefono)) {
+            clients.push(c);
+          }
+        });
+      }
+    } catch(e) {}
+
+    setSavedClientsList(clients);
+
+    // Auto-completar el primer usuario si no se está editando
+    if (!isEditing && clients.length > 0 && !clienteNombre && !clienteTelefono) {
+      const first = clients[0];
+      setClienteNombre(first.nombre || '');
+      setClienteTelefono(first.telefono || '');
+      if (first.vehiculo) setVehiculo(first.vehiculo);
+      // OJO: Ubicación NUNCA se autocompleta por preferencia del usuario
+      setSelectedClientPhone(first.telefono);
+      setIsAutofilled(true);
+    }
+  };
+
+  const handleSelectClientFromDropdown = (phone) => {
+    setSelectedClientPhone(phone);
+    if (!phone) {
+      setClienteNombre('');
+      setClienteTelefono('');
+      setVehiculo('');
+      setIsAutofilled(false);
+      return;
+    }
+    const found = savedClientsList.find(c => c.telefono === phone);
+    if (found) {
+      setClienteNombre(found.nombre || '');
+      setClienteTelefono(found.telefono || '');
+      setVehiculo(found.vehiculo || '');
+      // OJO: Ubicación NUNCA se autocompleta por preferencia del usuario
+      setUbicacion('');
+      setIsAutofilled(true);
     }
   };
   
@@ -274,7 +328,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setSelectedServices([servicio]);
     setSuccess(false);
     setIsEditing(false);
-    loadSavedClientProfile();
+    loadSavedClientProfiles();
     setShowModal(true);
   };
 
@@ -446,22 +500,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }
       setSuccess(true);
       
-      // Guardar perfil de cliente registrado si la opción está activada
+      // Guardar perfil de cliente registrado (SOLO Nombre, Teléfono y Vehículo - NO ubicación)
       if (recordarCliente && clienteNombre && clienteTelefono) {
         const clientProfile = {
           nombre: clienteNombre,
           telefono: clienteTelefono,
-          vehiculo: vehiculo,
-          ubicacion: ubicacion
+          vehiculo: vehiculo
         };
         localStorage.setItem('lavamovil_client_profile', JSON.stringify(clientProfile));
+
+        try {
+          const listStr = localStorage.getItem('lavamovil_saved_clients_v2');
+          let list = listStr ? JSON.parse(listStr) : [];
+          list = list.filter(c => c.telefono !== clienteTelefono);
+          list.unshift(clientProfile);
+          localStorage.setItem('lavamovil_saved_clients_v2', JSON.stringify(list));
+        } catch(e) {}
 
         try {
           await supabase.from('clientes').upsert([{
             nombre: clienteNombre,
             telefono: clienteTelefono,
-            vehiculo: vehiculo,
-            direccion: ubicacion
+            vehiculo: vehiculo
           }], { onConflict: 'telefono' });
         } catch (err) {
           // Ignorar si la tabla no está creada aún en Supabase
@@ -869,10 +929,30 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 )}
 
+                {savedClientsList.length > 0 && (
+                  <div style={{ marginBottom: '14px', backgroundColor: 'rgba(28, 169, 201, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-green)' }}>
+                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--accent-green)', fontWeight: 'bold', marginBottom: '6px' }}>
+                      👤 Seleccionar cliente registrado / autocompletar:
+                    </label>
+                    <select
+                      value={selectedClientPhone}
+                      onChange={(e) => handleSelectClientFromDropdown(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none', cursor: 'pointer' }}
+                    >
+                      <option value="">-- Seleccionar mi usuario / cliente --</option>
+                      {savedClientsList.map((c, idx) => (
+                        <option key={idx} value={c.telefono}>
+                          {c.nombre} — Tel: {c.telefono} {c.vehiculo ? `(${c.vehiculo})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {isAutofilled && (
                   <div style={{ padding: '10px 14px', backgroundColor: 'rgba(28, 169, 201, 0.12)', borderRadius: '8px', border: '1px solid var(--accent-green)', fontSize: '13px', color: 'var(--accent-green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span>👤 <strong>Cliente Registrado:</strong> Datos autocompletados.</span>
-                    <button type="button" onClick={() => { setClienteNombre(''); setClienteTelefono(''); setVehiculo(''); setUbicacion(''); setIsAutofilled(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline' }}>Limpiar</button>
+                    <span>👤 <strong>Cliente Registrado:</strong> Nombre y Teléfono cargados.</span>
+                    <button type="button" onClick={() => { setClienteNombre(''); setClienteTelefono(''); setVehiculo(''); setSelectedClientPhone(''); setIsAutofilled(false); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', textDecoration: 'underline' }}>Limpiar</button>
                   </div>
                 )}
 

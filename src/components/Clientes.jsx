@@ -127,6 +127,36 @@ export default function Clientes() {
     }
   };
 
+  const handleDeleteCliente = async (cliente) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar al cliente "${cliente.nombre}" (${cliente.telefono})?`)) {
+      return;
+    }
+
+    try {
+      if (cliente.id) {
+        await supabase.from('clientes').delete().eq('id', cliente.id);
+      }
+      if (cliente.telefono) {
+        await supabase.from('clientes').delete().eq('telefono', cliente.telefono);
+      }
+
+      // También eliminar de localStorage de perfiles guardados
+      try {
+        const savedStr = localStorage.getItem('lavamovil_saved_clients_v2');
+        if (savedStr) {
+          const list = JSON.parse(savedStr).filter(c => c.telefono !== cliente.telefono);
+          localStorage.setItem('lavamovil_saved_clients_v2', JSON.stringify(list));
+        }
+      } catch (e) {}
+
+      alert("Cliente eliminado exitosamente.");
+      setClientes(prev => prev.filter(c => c.telefono !== cliente.telefono));
+    } catch (err) {
+      console.error("Error al eliminar cliente:", err);
+      alert("Error al eliminar cliente: " + err.message);
+    }
+  };
+
   const filteredClientes = clientes.filter(c => 
     c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.telefono?.includes(searchTerm) ||
@@ -262,14 +292,23 @@ export default function Clientes() {
                       </span>
                     </td>
                     <td style={{ padding: '14px 12px', textAlign: 'right' }}>
-                      <a 
-                        href={waUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#25D366', color: '#fff', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <MessageCircle size={14} /> WhatsApp
-                      </a>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <a 
+                          href={waUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#25D366', color: '#fff', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <MessageCircle size={14} /> WhatsApp
+                        </a>
+                        <button
+                          onClick={() => handleDeleteCliente(cliente)}
+                          title="Eliminar Cliente"
+                          style={{ padding: '6px 10px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Trash2 size={14} /> Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
