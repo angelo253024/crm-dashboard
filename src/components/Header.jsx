@@ -87,6 +87,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
             if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+            setIsNotifMenuOpen(true);
           }
         }
       )
@@ -131,6 +132,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                };
                setNotificaciones(prev => [notif, ...prev]);
                if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+               setIsNotifMenuOpen(true);
              }
           }
         )
