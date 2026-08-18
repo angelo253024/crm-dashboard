@@ -1,6 +1,7 @@
 import { supabase } from '../../supabase';
 import { GeminiService } from './GeminiService';
 import { geofencingService } from '../geofencing/GeofencingService';
+import { VehicleClassifier } from './VehicleClassifier';
 
 /**
  * ChatBotReservationService — Máquina de estados para reservas guiadas desde el chatbot.
@@ -61,6 +62,8 @@ export class ChatBotReservationService {
         clienteNombre: savedProfile?.nombre || '',
         clienteTelefono: savedProfile?.telefono || '',
         vehiculo: savedProfile?.vehiculo || '',
+        tamanoServicio: '',
+        clasificacionDetalle: null,
         paqueteSeleccionado: '',
         servicioId: null,
         servicioNombre: '',
@@ -189,76 +192,94 @@ export class ChatBotReservationService {
         if (input.length < 2) {
           return { text: 'Por favor, escribe la marca y modelo de tu vehículo.', source: 'reservation', buttons: null, requestGPS: false };
         }
-        
-        // Llamada a Gemini
-        const prompt = `Analiza este mensaje de un cliente que indica su vehículo: "${input}". 
-Identifica la Marca, Modelo y Categoría del vehículo (ej. Pequeño, SUV, Camioneta, Van, Sedán Mediano, etc).
-La respuesta DEBE ser ÚNICAMENTE un objeto JSON válido, sin markdown, sin backticks y sin texto adicional.
-Ejemplo de salida correcta:
-{"marca": "Toyota", "modelo": "Corolla", "categoria": "Sedán Mediano"}
-Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde exactamente:
-{"error": true}`;
 
-        let aiResponse = "";
-        let parsed = null;
-        try {
-          aiResponse = await GeminiService.getCompletion(prompt);
-          aiResponse = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-          parsed = JSON.parse(aiResponse);
-        } catch(e) {
-          console.error("Error parsing Gemini vehicle response", e);
+        // Clasificación de vehículo usando el motor híbrido (IA Gemini + Reglas deterministas)
+        const clasificacion = await VehicleClassifier.classify(input);
+
+        // Si la confianza es baja (< 80%), solicitar especificación de marca y modelo
+        if (clasificacion.confianza < 80) {
+          return {
+            text: `🚗 No pude determinar el modelo exacto de tu vehículo ("${input}").\n\nPor favor, indícame la **marca y modelo exacto** (ej: _Toyota Hilux, Ford Ranger, Suzuki Vitara, Toyota Corolla_):`,
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
         }
 
-        if (parsed && !parsed.error && parsed.marca && parsed.modelo) {
-          // Éxito con Gemini
-          const vehiculoIdentificado = `${parsed.marca} ${parsed.modelo} (${parsed.categoria || 'Vehículo'})`;
-          _reservationState.data.vehiculo = vehiculoIdentificado;
+        // Guardar tamaño y detalles de clasificación
+        _reservationState.data.tamanoServicio = clasificacion.tamanoServicio;
+        _reservationState.data.clasificacionDetalle = clasificacion;
+
+        const nombreVehiculo = clasificacion.marca 
+          ? `${clasificacion.marca} ${clasificacion.modelo}`.trim() 
+          : clasificacion.modelo;
+        const vehiculoIdentificado = `${nombreVehiculo} (${clasificacion.tipo})`;
+        _reservationState.data.vehiculo = vehiculoIdentificado;
+
+        // Si es MOTO
+        if (clasificacion.tamanoServicio === 'MOTO') {
           _reservationState.step = STEPS.ASKING_PACKAGE;
-          
           return {
-            text: `Detecté que tu vehículo es un ${vehiculoIdentificado}.\n\nSelecciona el tipo de paquete que deseas:`,
+            text: `🛵 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\nPor sus características, corresponde al servicio de **Lavado Moto**.\n\n¿Deseas continuar?`,
             source: 'reservation',
             buttons: [
-              { label: '🟦 Lavado Clásico', value: 'CLASICO' },
-              { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' }
-            ],
-            requestGPS: false,
-          };
-        } else {
-          // Fallo de Gemini
-          _reservationState.data.vehiculo = input;
-          _reservationState.step = STEPS.ASKING_VEHICLE_CATEGORY;
-          
-          return {
-            text: 'No pude identificar el tipo de vehículo.\n\nSelecciona una categoría:',
-            source: 'reservation',
-            buttons: [
-              { label: '🚗 Pequeño', value: 'Pequeño' },
-              { label: '🚙 SUV', value: 'SUV' },
-              { label: '🛻 Camioneta', value: 'Camioneta' },
-              { label: '🚐 Van', value: 'Van' }
+              { label: '🛵 Lavado Moto', value: 'BICIS_MOTOS' },
+              { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
             ],
             requestGPS: false,
           };
         }
 
-      case STEPS.ASKING_VEHICLE_CATEGORY:
-        // El usuario seleccionó o escribió una categoría
-        const categoria = ['Pequeño', 'SUV', 'Camioneta', 'Van'].find(c => input.toLowerCase().includes(c.toLowerCase())) || input;
-        _reservationState.data.vehiculo = `${_reservationState.data.vehiculo} - ${categoria}`;
+        // Si es automóvil (P, M, L, XL)
         _reservationState.step = STEPS.ASKING_PACKAGE;
-        
         return {
-          text: '¡Perfecto! Selecciona el tipo de paquete que deseas:',
+          text: `🚙 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\nPor sus características, corresponde al tamaño de servicio **${clasificacion.tamanoServicio}**.\n\nSelecciona el tipo de paquete que deseas:`,
           source: 'reservation',
           buttons: [
             { label: '🟦 Lavado Clásico', value: 'CLASICO' },
-            { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' }
+            { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
+            { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
+          ],
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_VEHICLE_CATEGORY:
+        // El usuario seleccionó o escribió una categoría manualmente
+        const categoriaManual = ['Pequeño', 'SUV', 'Camioneta', 'Van'].find(c => input.toLowerCase().includes(c.toLowerCase())) || input;
+        _reservationState.data.vehiculo = `${_reservationState.data.vehiculo} - ${categoriaManual}`;
+        
+        let tamanoManual = 'M';
+        if (categoriaManual.toLowerCase().includes('peque')) tamanoManual = 'P';
+        else if (categoriaManual.toLowerCase().includes('camioneta') || categoriaManual.toLowerCase().includes('van')) tamanoManual = 'XL';
+        else if (categoriaManual.toLowerCase().includes('suv')) tamanoManual = 'L';
+
+        _reservationState.data.tamanoServicio = tamanoManual;
+        _reservationState.step = STEPS.ASKING_PACKAGE;
+        
+        return {
+          text: `¡Perfecto! Para categoría **${categoriaManual}** (tamaño **${tamanoManual}**), selecciona el tipo de paquete:`,
+          source: 'reservation',
+          buttons: [
+            { label: '🟦 Lavado Clásico', value: 'CLASICO' },
+            { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
+            { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
           ],
           requestGPS: false,
         };
 
       case STEPS.ASKING_PACKAGE:
+        if (input === 'CHANGE_VEHICLE' || input.toLowerCase().includes('cambiar vehiculo') || input.toLowerCase().includes('cambiar vehículo')) {
+          _reservationState.data.tamanoServicio = '';
+          _reservationState.data.vehiculo = '';
+          _reservationState.step = STEPS.ASKING_VEHICLE;
+          return {
+            text: '🚗 Por favor, ingresa la marca y modelo exacto de tu vehículo:',
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
+        }
+
         let paquete = '';
         if (input === 'CLASICO' || input.toLowerCase().includes('clásico') || input.toLowerCase().includes('clasico')) {
           paquete = 'Clásico';
@@ -275,8 +296,7 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
             buttons: [
               { label: '🟦 Lavado Clásico', value: 'CLASICO' }, 
               { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
-              { label: '🛵 Bicis y Motos', value: 'BICIS_MOTOS' },
-              { label: '🎨 Personaliza tu lavado', value: 'PERSONALIZA' }
+              { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
             ], 
             requestGPS: false 
           };
@@ -285,9 +305,9 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         _reservationState.data.paqueteSeleccionado = paquete;
         _reservationState.step = STEPS.ASKING_SERVICE;
 
-        // Obtener servicios y filtrar por el paquete
-        const servicios = await this._getServicios();
-        if (servicios.length === 0) {
+        // Obtener servicios existentes de la BD
+        const serviciosBD = await this._getServicios();
+        if (!serviciosBD || serviciosBD.length === 0) {
           return {
             text: '⚠️ No hay servicios configurados en este momento. Contacta al administrador.',
             source: 'reservation',
@@ -298,36 +318,74 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
 
         let serviciosFiltrados = [];
         if (paquete === 'Clásico') {
-          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Clásico' || s.nombre.toLowerCase().includes('lavado clásico'));
+          serviciosFiltrados = serviciosBD.filter(s => s.categoria === 'Lavado Clásico' || s.nombre.toLowerCase().includes('lavado clásico'));
         } else if (paquete === 'Premium') {
-          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Premium' || s.nombre.toLowerCase().includes('lavado premium'));
+          serviciosFiltrados = serviciosBD.filter(s => s.categoria === 'Lavado Premium' || s.nombre.toLowerCase().includes('lavado premium'));
         } else if (paquete === 'Bicis y Motos') {
-          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Bicis y Motos' || s.nombre.toLowerCase().includes('moto') || s.nombre.toLowerCase().includes('bici'));
+          serviciosFiltrados = serviciosBD.filter(s => s.categoria === 'Lavado Bicis y Motos' || s.nombre.toLowerCase().includes('moto') || s.nombre.toLowerCase().includes('bici'));
         } else if (paquete === 'Personaliza tu lavado') {
-          serviciosFiltrados = servicios.filter(s => s.categoria === 'Personaliza tu lavado');
+          serviciosFiltrados = serviciosBD.filter(s => s.categoria === 'Personaliza tu lavado');
         }
 
-        const serviciosAMostrar = serviciosFiltrados.length > 0 ? serviciosFiltrados : servicios;
+        const tamanoActual = _reservationState.data.tamanoServicio || 'M';
 
-        let serviceButtons = [];
-        serviciosAMostrar.forEach(s => {
-          serviceButtons.push({
-            label: `🚗 ${s.nombre} — Bs. ${s.precio}`,
-            value: `SERVICE_${s.id}`,
-            id: s.id,
-            nombre: s.nombre,
-            precio: s.precio,
+        // Buscar el servicio ÚNICO que corresponda exactamente al tamaño detectado en la BD
+        let servicioUnicoBD = null;
+        if (tamanoActual === 'MOTO') {
+          servicioUnicoBD = serviciosFiltrados.find(s => s.nombre.toLowerCase().includes('moto')) || serviciosFiltrados[0];
+        } else {
+          servicioUnicoBD = serviciosFiltrados.find(s => {
+            const n = s.nombre.toUpperCase();
+            return n.includes(`"${tamanoActual}"`) || n.includes(` ${tamanoActual}`) || n.endsWith(tamanoActual);
           });
-        });
+        }
+
+        // Si existe el servicio exacto en la BD, mostrar ÚNICAMENTE ése con su precio real
+        if (servicioUnicoBD) {
+          _reservationState.data.servicioId = servicioUnicoBD.id;
+          _reservationState.data.servicioNombre = servicioUnicoBD.nombre;
+          _reservationState.data.servicioPrecio = Number(servicioUnicoBD.precio);
+
+          return {
+            text: `🚙 Para tu **${_reservationState.data.vehiculo}** (tamaño **${tamanoActual}**):\n\n✨ **${servicioUnicoBD.nombre}** — **Bs. ${servicioUnicoBD.precio}**\n\n¿Deseas seleccionar este servicio?`,
+            source: 'reservation',
+            buttons: [
+              { label: `✅ Seleccionar ${servicioUnicoBD.nombre}`, value: `SERVICE_${servicioUnicoBD.id}` },
+              { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
+            ],
+            requestGPS: false,
+          };
+        }
+
+        // Fallback en caso de no encontrar coincidencia exacta de tamaño
+        let serviceButtons = serviciosFiltrados.map(s => ({
+          label: `🚗 ${s.nombre} — Bs. ${s.precio}`,
+          value: `SERVICE_${s.id}`,
+          id: s.id,
+          nombre: s.nombre,
+          precio: s.precio,
+        }));
 
         return {
-          text: `🧼 Aquí tienes las opciones para **Lavado ${paquete}**:\n\nSelecciona el servicio que deseas:`,
+          text: `🧼 Opciones para **Lavado ${paquete}**:\n\nSelecciona el servicio que deseas:`,
           source: 'reservation',
           buttons: serviceButtons,
           requestGPS: false,
         };
 
       case STEPS.ASKING_SERVICE:
+        if (input === 'CHANGE_VEHICLE' || input.toLowerCase().includes('cambiar vehiculo') || input.toLowerCase().includes('cambiar vehículo')) {
+          _reservationState.data.tamanoServicio = '';
+          _reservationState.data.vehiculo = '';
+          _reservationState.step = STEPS.ASKING_VEHICLE;
+          return {
+            text: '🚗 Por favor, ingresa la marca y modelo exacto de tu vehículo:',
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
+        }
+
         let servicioSeleccionado = null;
 
         if (input.startsWith('SERVICE_')) {
