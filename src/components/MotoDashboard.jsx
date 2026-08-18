@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye } from 'lucide-react';
 import KpiCards from './KpiCards';
 
 // --- Inline Chat Component for Worker ---
@@ -108,6 +108,16 @@ export default function MotoDashboard({ user }) {
   const [historialSearch, setHistorialSearch] = useState('');
   const [historialStatus, setHistorialStatus] = useState('Todos');
 
+  // Liquidación State
+  const [liquidacionData, setLiquidacionData] = useState({
+    totalComisiones: 0,
+    totalAnticipos: 0,
+    saldoDisponible: 0,
+    comisionesList: [],
+    anticiposList: []
+  });
+  const [showLiquidacionDetalle, setShowLiquidacionDetalle] = useState(false);
+
   // Payment Modal State
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedReservaForPayment, setSelectedReservaForPayment] = useState(null);
@@ -133,12 +143,14 @@ export default function MotoDashboard({ user }) {
     if (user) {
       fetchTrabajadorEstado();
       fetchReservasAsignadas();
+      fetchLiquidacionData();
       
       // Suscribirse a cambios en reservas para esta moto
       const channel = supabase
         .channel('reservas_moto')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` }, payload => {
           fetchReservasAsignadas();
+          fetchLiquidacionData();
           
           if (payload.eventType === 'INSERT' || (payload.eventType === 'UPDATE' && payload.new.estado_reserva === 'asignado')) {
             // Notificar al trabajador si es un nuevo trabajo
@@ -148,9 +160,21 @@ export default function MotoDashboard({ user }) {
           }
         })
         .subscribe();
+
+      // Suscribirse a cambios en comisiones y anticipos para actualizar la liquidación en tiempo real
+      const liqChannel = supabase
+        .channel(`liq_${user.id}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comisiones', filter: `trabajador_id=eq.${user.id}` }, () => {
+          fetchLiquidacionData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'anticipos', filter: `trabajador_id=eq.${user.id}` }, () => {
+          fetchLiquidacionData();
+        })
+        .subscribe();
         
       return () => {
         supabase.removeChannel(channel);
+        supabase.removeChannel(liqChannel);
       }
     }
   }, [user]);
@@ -219,6 +243,68 @@ export default function MotoDashboard({ user }) {
     }
     
     setLoading(false);
+  };
+
+  const fetchLiquidacionData = async () => {
+    if (!user?.id) return;
+
+    try {
+      // 1. Obtener comisiones pendientes
+      const { data: comisionesData } = await supabase
+        .from('comisiones')
+        .select('*')
+        .eq('trabajador_id', user.id)
+        .eq('estado', 'pendiente')
+        .order('created_at', { ascending: false });
+
+      // 2. Obtener anticipos pendientes
+      const { data: anticiposData } = await supabase
+        .from('anticipos')
+        .select('*')
+        .eq('trabajador_id', user.id)
+        .eq('estado', 'pendiente')
+        .order('created_at', { ascending: false });
+
+      let comisionesList = comisionesData || [];
+      let anticiposList = anticiposData || [];
+
+      // Si no hay filas registradas en 'comisiones', estimamos a partir de reservas completadas
+      if (comisionesList.length === 0) {
+        const { data: resCompletadas } = await supabase
+          .from('reservas')
+          .select('*')
+          .eq('trabajador_id', user.id)
+          .eq('estado_reserva', 'completado');
+
+        if (resCompletadas && resCompletadas.length > 0) {
+          comisionesList = resCompletadas.map(r => {
+            const precio = Number(r.precio_total || r.precio || 0);
+            return {
+              id: r.id,
+              created_at: r.created_at || r.fecha_reserva,
+              servicio_nombre: r.servicio || 'Servicio de Lavado',
+              tipo: 'Lavado',
+              precio: precio,
+              monto_comision: precio * 0.5
+            };
+          });
+        }
+      }
+
+      const totalComisiones = comisionesList.reduce((sum, c) => sum + Number(c.monto_comision || 0), 0);
+      const totalAnticipos = anticiposList.reduce((sum, a) => sum + Number(a.monto || 0), 0);
+      const saldoDisponible = Math.max(0, totalComisiones - totalAnticipos);
+
+      setLiquidacionData({
+        totalComisiones,
+        totalAnticipos,
+        saldoDisponible,
+        comisionesList,
+        anticiposList
+      });
+    } catch (err) {
+      console.error("Error al obtener datos de liquidación:", err);
+    }
   };
 
   const kpis = React.useMemo(() => {
@@ -436,6 +522,156 @@ export default function MotoDashboard({ user }) {
             <div className="kpi-value">{kpis.totalExtras}</div>
           </div>
         </div>
+      </div>
+
+      {/* Sección: Saldo de Liquidación del Trabajador */}
+      <div style={{
+        backgroundColor: 'var(--card-bg)',
+        padding: '20px 24px',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid rgba(16, 185, 129, 0.3)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(28, 169, 201, 0.04) 100%)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ padding: '10px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <DollarSign size={24} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>Tu Saldo de Liquidación</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Monto disponible para cobrar o solicitar como adelanto</p>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => setShowLiquidacionDetalle(!showLiquidacionDetalle)} 
+            style={{
+              backgroundColor: 'var(--bg-color)',
+              color: 'var(--accent-cyan)',
+              border: '1px solid var(--border-color)',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Eye size={16} /> {showLiquidacionDetalle ? 'Ocultar Desglose' : 'Ver Desglose'}
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          {/* Card Principal: Saldo Disponible */}
+          <div style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Saldo Disponible para Retiro
+            </div>
+            <div style={{ fontSize: '28px', fontWeight: '800', color: '#10b981', marginTop: '6px' }}>
+              Bs {liquidacionData.saldoDisponible}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Puedes solicitar de liquidación/adelanto hasta: <strong style={{ color: '#10b981' }}>Bs {liquidacionData.saldoDisponible}</strong>
+            </div>
+          </div>
+
+          {/* Card Secundario 1: Comisiones Acumuladas */}
+          <div style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Comisiones Ganadas (Pendientes)
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-main)', marginTop: '6px' }}>
+              Bs {liquidacionData.totalComisiones}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Total de {liquidacionData.comisionesList.length} servicio(s) acumulado(s)
+            </div>
+          </div>
+
+          {/* Card Secundario 2: Adelantos Recibidos */}
+          <div style={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: liquidacionData.totalAnticipos > 0 ? '#ef4444' : 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Adelantos / Anticipos Recibidos
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: '700', color: liquidacionData.totalAnticipos > 0 ? '#ef4444' : 'var(--text-main)', marginTop: '6px' }}>
+              - Bs {liquidacionData.totalAnticipos}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {liquidacionData.anticiposList.length} adelanto(s) descontado(s)
+            </div>
+          </div>
+        </div>
+
+        {/* Desglose desplegable de comisiones y anticipos */}
+        {showLiquidacionDetalle && (
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed var(--border-color)' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 'bold' }}>Detalle de Comisiones y Adelantos</h4>
+            
+            {/* Tabla de Comisiones */}
+            <div style={{ marginBottom: '16px' }}>
+              <h5 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#10b981' }}>Comisiones acumuladas</h5>
+              {liquidacionData.comisionesList.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No tienes comisiones pendientes de cobro.</p>
+              ) : (
+                <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                    <thead style={{ backgroundColor: 'var(--bg-color)' }}>
+                      <tr>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>Fecha</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>Servicio</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>Tipo</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)', textAlign: 'right' }}>Cobrado</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)', textAlign: 'right' }}>Tu Comisión</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {liquidacionData.comisionesList.map((c, i) => (
+                        <tr key={c.id || i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '8px 12px' }}>{new Date(c.created_at).toLocaleDateString()}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '500' }}>{c.servicio_nombre || 'Servicio'}</td>
+                          <td style={{ padding: '8px 12px' }}>{c.tipo || 'Lavado'}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right' }}>Bs {c.precio}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 'bold', color: '#10b981' }}>+ Bs {c.monto_comision}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Tabla de Adelantos */}
+            {liquidacionData.anticiposList.length > 0 && (
+              <div>
+                <h5 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#ef4444' }}>Adelantos Descontados</h5>
+                <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                    <thead style={{ backgroundColor: 'var(--bg-color)' }}>
+                      <tr>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>Fecha</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>Concepto / Observación</th>
+                        <th style={{ padding: '8px 12px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto Descontado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {liquidacionData.anticiposList.map((a, i) => (
+                        <tr key={a.id || i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '8px 12px' }}>{new Date(a.created_at).toLocaleDateString()}</td>
+                          <td style={{ padding: '8px 12px' }}>{a.observaciones || 'Adelanto de sueldo'}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 'bold', color: '#ef4444' }}>- Bs {a.monto}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', border: '1px solid var(--border-color)' }}>
