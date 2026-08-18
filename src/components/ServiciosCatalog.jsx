@@ -131,52 +131,70 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [selectedClientPhone, setSelectedClientPhone] = useState('');
 
   const loadSavedClientProfiles = async () => {
-    let clients = [];
-    
+    const clientMap = new Map();
+
     // 1. Cargar desde localStorage
     try {
       const saved = localStorage.getItem('lavamovil_client_profile');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.nombre && parsed.telefono) {
-          clients.push(parsed);
+        const p = JSON.parse(saved);
+        if (p.nombre && p.telefono) {
+          const key = p.telefono.replace(/\D/g, '');
+          clientMap.set(key, { nombre: p.nombre, telefono: p.telefono, vehiculo: p.vehiculo || '' });
         }
       }
+
       const savedArray = localStorage.getItem('lavamovil_saved_clients_v2');
       if (savedArray) {
         const arr = JSON.parse(savedArray);
-        arr.forEach(c => {
-          if (c.telefono && !clients.some(x => x.telefono === c.telefono)) {
-            clients.push(c);
+        arr.forEach(p => {
+          if (p.nombre && p.telefono) {
+            const key = p.telefono.replace(/\D/g, '');
+            if (!clientMap.has(key)) {
+              clientMap.set(key, { nombre: p.nombre, telefono: p.telefono, vehiculo: p.vehiculo || '' });
+            }
           }
         });
       }
     } catch (e) {}
 
-    // 2. Cargar desde Supabase clientes table
+    // 2. Cargar desde Supabase tabla 'clientes'
     try {
-      const { data } = await supabase.from('clientes').select('nombre, telefono, vehiculo');
-      if (data && data.length > 0) {
-        data.forEach(c => {
-          if (c.telefono && !clients.some(x => x.telefono === c.telefono)) {
-            clients.push(c);
+      const { data: dbClientes } = await supabase.from('clientes').select('nombre, telefono, vehiculo');
+      if (dbClientes && dbClientes.length > 0) {
+        dbClientes.forEach(c => {
+          if (c.nombre && c.telefono) {
+            const key = c.telefono.replace(/\D/g, '');
+            if (!clientMap.has(key)) {
+              clientMap.set(key, { nombre: c.nombre, telefono: c.telefono, vehiculo: c.vehiculo || '' });
+            }
           }
         });
       }
     } catch(e) {}
 
-    setSavedClientsList(clients);
+    // 3. Extraer clientes previos desde Supabase tabla 'reservas' (para tener todos los usuarios previos)
+    try {
+      const { data: dbReservas } = await supabase.from('reservas').select('cliente_nombre, vehiculo').order('created_at', { ascending: false });
+      if (dbReservas && dbReservas.length > 0) {
+        dbReservas.forEach(r => {
+          if (!r.cliente_nombre) return;
+          const parts = r.cliente_nombre.split(' - Tel: ');
+          const nombre = parts[0] ? parts[0].trim() : '';
+          const telefono = parts[1] ? parts[1].trim() : '';
+          if (nombre && telefono) {
+            const key = telefono.replace(/\D/g, '');
+            if (!clientMap.has(key) && key.length >= 7) {
+              const vehiculoClean = r.vehiculo ? r.vehiculo.split(' (Adicionales:')[0].trim() : '';
+              clientMap.set(key, { nombre, telefono, vehiculo: vehiculoClean });
+            }
+          }
+        });
+      }
+    } catch(e) {}
 
-    // Auto-completar el primer usuario si no se está editando
-    if (!isEditing && clients.length > 0 && !clienteNombre && !clienteTelefono) {
-      const first = clients[0];
-      setClienteNombre(first.nombre || '');
-      setClienteTelefono(first.telefono || '');
-      if (first.vehiculo) setVehiculo(first.vehiculo);
-      // OJO: Ubicación NUNCA se autocompleta por preferencia del usuario
-      setSelectedClientPhone(first.telefono);
-      setIsAutofilled(true);
-    }
+    const clients = Array.from(clientMap.values());
+    setSavedClientsList(clients);
   };
 
   const handleSelectClientFromDropdown = (phone) => {
@@ -188,12 +206,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       setIsAutofilled(false);
       return;
     }
-    const found = savedClientsList.find(c => c.telefono === phone);
+    const found = savedClientsList.find(c => c.telefono === phone || c.telefono.replace(/\D/g, '') === phone.replace(/\D/g, ''));
     if (found) {
       setClienteNombre(found.nombre || '');
       setClienteTelefono(found.telefono || '');
       setVehiculo(found.vehiculo || '');
-      // OJO: Ubicación NUNCA se autocompleta por preferencia del usuario
+      // OJO: Ubicación NUNCA se autocompleta por instrucción explícita del usuario
       setUbicacion('');
       setIsAutofilled(true);
     }
@@ -205,6 +223,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   useEffect(() => {
     fetchServicios();
+    loadSavedClientProfiles();
     
     // Check local storage for active reservations
     const savedReservas = localStorage.getItem('active_reservas_list_v2');
@@ -929,25 +948,25 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                 )}
 
-                {savedClientsList.length > 0 && (
-                  <div style={{ marginBottom: '14px', backgroundColor: 'rgba(28, 169, 201, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-green)' }}>
-                    <label style={{ display: 'block', fontSize: '13px', color: 'var(--accent-green)', fontWeight: 'bold', marginBottom: '6px' }}>
-                      👤 Seleccionar cliente registrado / autocompletar:
-                    </label>
-                    <select
-                      value={selectedClientPhone}
-                      onChange={(e) => handleSelectClientFromDropdown(e.target.value)}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none', cursor: 'pointer' }}
-                    >
-                      <option value="">-- Seleccionar mi usuario / cliente --</option>
-                      {savedClientsList.map((c, idx) => (
-                        <option key={idx} value={c.telefono}>
-                          {c.nombre} — Tel: {c.telefono} {c.vehiculo ? `(${c.vehiculo})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div style={{ marginBottom: '14px', backgroundColor: 'rgba(28, 169, 201, 0.08)', padding: '12px', borderRadius: '8px', border: '1px solid var(--accent-green)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: 'bold', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '15px' }}>👤</span> Seleccionar cliente registrado / autocompletar:
+                  </label>
+                  <select
+                    value={selectedClientPhone}
+                    onChange={(e) => handleSelectClientFromDropdown(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--accent-green)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '14px', outline: 'none', cursor: 'pointer', fontWeight: '500' }}
+                  >
+                    <option value="" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-muted)' }}>
+                      {savedClientsList.length > 0 ? '-- Selecciona tu usuario registrado --' : '-- Cargar usuarios registrados --'}
+                    </option>
+                    {savedClientsList.map((c, idx) => (
+                      <option key={idx} value={c.telefono} style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }}>
+                        {c.nombre} — Tel: {c.telefono} {c.vehiculo ? `(${c.vehiculo})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 {isAutofilled && (
                   <div style={{ padding: '10px 14px', backgroundColor: 'rgba(28, 169, 201, 0.12)', borderRadius: '8px', border: '1px solid var(--accent-green)', fontSize: '13px', color: 'var(--accent-green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
