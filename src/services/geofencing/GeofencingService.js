@@ -93,6 +93,49 @@ class GeofencingService {
     if (error) throw error;
     return true;
   }
+
+  /**
+   * Verifica si una ubicación (coordenadas GPS lat,lng o texto) está permitida dentro de las zonas activas.
+   * @param {string} ubicacion - String con la ubicación (ej: "-17.803982, -63.220555" o dirección)
+   * @returns {Promise<boolean>}
+   */
+  async isLocationAllowed(ubicacion) {
+    try {
+      if (!ubicacion) return true;
+
+      const zonas = await this.getZonas(true);
+      if (!zonas || zonas.length === 0) return true;
+
+      const match = String(ubicacion).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+      if (!match) {
+        return true;
+      }
+
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+
+      const insideAnyZone = zonas.some(zona => {
+        const coords = zona.coordenadas;
+        if (!Array.isArray(coords) || coords.length < 3) return false;
+
+        let inside = false;
+        for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+          const xi = coords[i].lat, yi = coords[i].lng;
+          const xj = coords[j].lat, yj = coords[j].lng;
+
+          const intersect = ((yi > lng) !== (yj > lng)) &&
+            (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      });
+
+      return insideAnyZone;
+    } catch (e) {
+      console.error('Error al validar geofencing:', e);
+      return true;
+    }
+  }
 }
 
 // Exportamos una única instancia (Singleton) para centralizar la lógica en toda la app
