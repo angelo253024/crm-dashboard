@@ -22,12 +22,21 @@ export default function Clientes() {
   const fetchClientes = async () => {
     setLoading(true);
     let loadedClientes = [];
+    let deletedPhones = [];
+
+    try {
+      const deletedStr = localStorage.getItem('deleted_client_phones_v1');
+      if (deletedStr) deletedPhones = JSON.parse(deletedStr);
+    } catch(e) {}
 
     // 1. Intentar cargar desde la tabla 'clientes' de Supabase
     try {
       const { data, error } = await supabase.from('clientes').select('*').order('created_at', { ascending: false });
       if (!error && data && data.length > 0) {
-        loadedClientes = data;
+        loadedClientes = data.filter(c => {
+          const key = c.telefono ? c.telefono.replace(/\D/g, '') : '';
+          return key && !deletedPhones.includes(key);
+        });
       }
     } catch (err) {
       console.log('Tabla clientes no disponible, extrayendo de reservas...');
@@ -42,15 +51,17 @@ export default function Clientes() {
         // Primero metemos los que ya cargamos de la tabla clientes
         loadedClientes.forEach(c => {
           const key = c.telefono.replace(/\D/g, '');
-          clientMap.set(key, {
-            id: c.id,
-            nombre: c.nombre,
-            telefono: c.telefono,
-            vehiculo: c.vehiculo || 'No especificado',
-            direccion: c.direccion || 'Sin dirección',
-            fecha_registro: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A',
-            total_reservas: 0
-          });
+          if (key && !deletedPhones.includes(key)) {
+            clientMap.set(key, {
+              id: c.id,
+              nombre: c.nombre,
+              telefono: c.telefono,
+              vehiculo: c.vehiculo || 'No especificado',
+              direccion: c.direccion || 'Sin dirección',
+              fecha_registro: c.created_at ? new Date(c.created_at).toLocaleDateString() : 'N/A',
+              total_reservas: 0
+            });
+          }
         });
 
         // Complementar con reservas
@@ -60,6 +71,8 @@ export default function Clientes() {
           const nombre = parts[0] || 'Cliente';
           const telefono = parts[1] || 'S/N';
           const key = telefono.replace(/\D/g, '');
+
+          if (deletedPhones.includes(key)) return;
 
           const vehiculo = r.vehiculo ? r.vehiculo.split(' (Adicionales:')[0] : 'Vehículo';
           const fecha = r.fecha_reserva || (r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A');
@@ -107,6 +120,16 @@ export default function Clientes() {
     };
 
     try {
+      const cleanPhone = newTelefono.trim().replace(/\D/g, '');
+      // Si estaba en la lista de eliminados, removerlo al volver a crear
+      try {
+        const deletedStr = localStorage.getItem('deleted_client_phones_v1');
+        if (deletedStr) {
+          const list = JSON.parse(deletedStr).filter(p => p !== cleanPhone);
+          localStorage.setItem('deleted_client_phones_v1', JSON.stringify(list));
+        }
+      } catch(e) {}
+
       const { data, error } = await supabase.from('clientes').insert([newClientObj]).select();
       if (error) {
         console.error("Error insertando cliente en DB:", error);
@@ -133,24 +156,52 @@ export default function Clientes() {
     }
 
     try {
+      const cleanPhone = cliente.telefono ? cliente.telefono.replace(/\D/g, '') : '';
+
+      // 1. Eliminar de la tabla 'clientes' en Supabase
       if (cliente.id) {
         await supabase.from('clientes').delete().eq('id', cliente.id);
       }
-      if (cliente.telefono) {
-        await supabase.from('clientes').delete().eq('telefono', cliente.telefono);
+      if (cleanPhone) {
+        await supabase.from('clientes').delete().ilike('telefono', `%${cleanPhone}%`);
       }
 
-      // También eliminar de localStorage de perfiles guardados
+      // 2. Intentar eliminar de la tabla 'reservas' en Supabase para evitar que reaparezca
+      if (cleanPhone) {
+        try {
+          await supabase.from('reservas').delete().ilike('cliente_nombre', `%${cleanPhone}%`);
+        } catch (e) {
+          console.log('No se pudo borrar reservas por RLS/FK, ignorando...');
+        }
+      }
+
+      // 3. Registrar en lista de eliminados (deleted_client_phones_v1) para bloqueo permanente en recargas
       try {
+        const deletedStr = localStorage.getItem('deleted_client_phones_v1');
+        let deletedList = deletedStr ? JSON.parse(deletedStr) : [];
+        if (cleanPhone && !deletedList.includes(cleanPhone)) {
+          deletedList.push(cleanPhone);
+          localStorage.setItem('deleted_client_phones_v1', JSON.stringify(deletedList));
+        }
+
+        // Limpiar perfiles locales
         const savedStr = localStorage.getItem('lavamovil_saved_clients_v2');
         if (savedStr) {
-          const list = JSON.parse(savedStr).filter(c => c.telefono !== cliente.telefono);
+          const list = JSON.parse(savedStr).filter(c => c.telefono.replace(/\D/g, '') !== cleanPhone);
           localStorage.setItem('lavamovil_saved_clients_v2', JSON.stringify(list));
+        }
+
+        const activeProfile = localStorage.getItem('lavamovil_client_profile');
+        if (activeProfile) {
+          const p = JSON.parse(activeProfile);
+          if (p.telefono && p.telefono.replace(/\D/g, '') === cleanPhone) {
+            localStorage.removeItem('lavamovil_client_profile');
+          }
         }
       } catch (e) {}
 
       alert("Cliente eliminado exitosamente.");
-      setClientes(prev => prev.filter(c => c.telefono !== cliente.telefono));
+      setClientes(prev => prev.filter(c => c.telefono.replace(/\D/g, '') !== cleanPhone));
     } catch (err) {
       console.error("Error al eliminar cliente:", err);
       alert("Error al eliminar cliente: " + err.message);
