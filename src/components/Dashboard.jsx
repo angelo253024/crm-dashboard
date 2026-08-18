@@ -52,12 +52,23 @@ export default function Dashboard() {
   const deleteReserva = async (id) => {
     if (!window.confirm("¿Estás seguro de eliminar este servicio? Esto reducirá el monto de ingresos y borrará el historial de esta prueba.")) return;
     
-    const { error } = await supabase.from('reservas').delete().eq('id', id);
-    if (error) {
-      alert("Error al eliminar el servicio: " + error.message);
-      console.error(error);
-    } else {
-      setReservas(prev => prev.filter(r => r.id !== id));
+    try {
+      // 1. Eliminar comisiones vinculadas a esta reserva
+      await supabase.from('comisiones').delete().eq('reserva_id', id);
+
+      // 2. Eliminar comisiones huérfanas sin reserva_id activo
+      await supabase.from('comisiones').delete().is('reserva_id', null);
+
+      // 3. Eliminar la reserva de la base de datos
+      const { error } = await supabase.from('reservas').delete().eq('id', id);
+      if (error) {
+        alert("Error al eliminar el servicio: " + error.message);
+        console.error(error);
+      } else {
+        setReservas(prev => prev.filter(r => r.id !== id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar reserva:", err);
     }
   };
 
