@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye, MessageCircle } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -59,6 +59,18 @@ export default function Dashboard() {
     } else {
       setReservas(prev => prev.filter(r => r.id !== id));
     }
+  };
+
+  const getTelefono = (s) => {
+    if (!s) return '';
+    const raw = s.cliente_telefono || s.telefono || s.cliente_nombre || s.cliente || '';
+    const text = String(raw);
+    const match = text.match(/Tel:\s*([\d\+\-\s]+)/i);
+    if (match) return match[1].replace(/\D/g, '');
+    if (text.includes(' - Tel: ')) return text.split(' - Tel: ')[1].replace(/\D/g, '');
+    const digits = text.replace(/\D/g, '');
+    if (digits.length >= 7) return digits;
+    return '';
   };
 
   // Calculate KPIs
@@ -264,7 +276,7 @@ export default function Dashboard() {
                 </div>
                 
                 <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                       <tr>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
@@ -273,7 +285,7 @@ export default function Dashboard() {
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Servicio Realizado</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Método</th>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto</th>
-                        <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', width: '40px' }}></th>
+                        <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center' }}>Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -300,24 +312,54 @@ export default function Dashboard() {
                             Bs {s.precio_total || s.precio}
                           </td>
                           <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'nowrap' }}>
+                              {(() => {
+                                const tel = getTelefono(s);
+                                const waUrl = tel ? `https://wa.me/591${tel}` : null;
+                                return waUrl ? (
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      backgroundColor: '#25D366',
+                                      color: '#ffffff',
+                                      padding: '5px 9px',
+                                      borderRadius: '6px',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      transition: 'all 0.2s',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                    title="Contactar por WhatsApp"
+                                  >
+                                    <MessageCircle size={14} /> WhatsApp
+                                  </a>
+                                ) : null;
+                              })()}
+
                               <button 
                                 onClick={() => setSelectedOrder(s)} 
-                                style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }} 
+                                style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)', cursor: 'pointer', padding: '5px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', transition: 'all 0.2s', whiteSpace: 'nowrap' }} 
                                 title="Ver Detalles"
                                 onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.1)'; }}
                                 onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                               >
-                                <Eye size={18} />
+                                <Eye size={14} /> Ver
                               </button>
+
                               <button 
                                 onClick={() => deleteReserva(s.id)} 
-                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', transition: 'all 0.2s' }} 
+                                style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', cursor: 'pointer', padding: '5px 9px', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', transition: 'all 0.2s', whiteSpace: 'nowrap' }} 
                                 title="Eliminar registro"
-                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
-                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'; }}
+                                onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; }}
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={14} /> Eliminar
                               </button>
                             </div>
                           </td>
