@@ -41,10 +41,55 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'precios' || intent === 'servicios') {
-        const { data: servicios } = await supabase.from('servicios').select('nombre, precio');
+        const { data: servicios } = await supabase.from('servicios').select('nombre, precio, categoria').eq('disponible', true);
         if (servicios && servicios.length > 0) {
-          const listado = servicios.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n\n');
-          return `🚗 **Nuestros servicios**\n\n${listado}`;
+          const categoryOrder = {
+            'Lavado Clásico': 1,
+            'Lavado Premium': 2,
+            'Lavado Bicis y Motos': 3,
+            'Personaliza tu lavado': 4,
+            'Otros': 5
+          };
+
+          const getSizeOrder = (nombre) => {
+            if (!nombre) return 99;
+            const n = nombre.toUpperCase();
+            if (n.includes('"P"') || n.includes(' "P"') || n.endsWith(' P')) return 1;
+            if (n.includes('"M"') || n.includes(' "M"') || n.endsWith(' M')) return 2;
+            if (n.includes('"L"') || n.includes(' "L"') || n.endsWith(' L')) return 3;
+            if (n.includes('"XL"') || n.includes(' "XL"') || n.endsWith(' XL')) return 4;
+            return 10;
+          };
+
+          const sorted = [...servicios].sort((a, b) => {
+            const catA = categoryOrder[a.categoria] || 99;
+            const catB = categoryOrder[b.categoria] || 99;
+            if (catA !== catB) return catA - catB;
+
+            const sizeA = getSizeOrder(a.nombre);
+            const sizeB = getSizeOrder(b.nombre);
+            if (sizeA !== sizeB) return sizeA - sizeB;
+
+            return Number(a.precio) - Number(b.precio);
+          });
+
+          const grouped = {};
+          sorted.forEach(s => {
+            const cat = s.categoria || 'Otros';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(s);
+          });
+
+          let resultText = "🚗 **Nuestros Servicios y Tarifas**\n\n";
+          for (const cat of Object.keys(grouped)) {
+            resultText += `🔹 **${cat}**\n`;
+            grouped[cat].forEach(s => {
+              resultText += `• ${s.nombre} — Bs. ${s.precio}\n`;
+            });
+            resultText += "\n";
+          }
+          resultText += "¡Puedes agendar la reserva de cualquiera de estos servicios conmigo! 📅";
+          return resultText.trim();
         }
       }
 

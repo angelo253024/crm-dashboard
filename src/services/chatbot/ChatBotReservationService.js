@@ -21,6 +21,8 @@ const STEPS = {
   ASKING_VEHICLE_CATEGORY: 'ASKING_VEHICLE_CATEGORY',
   ASKING_PACKAGE: 'ASKING_PACKAGE',
   ASKING_SERVICE: 'ASKING_SERVICE',
+  ASKING_ADDITIONAL_PROMPT: 'ASKING_ADDITIONAL_PROMPT',
+  ASKING_ADDITIONAL_SERVICE: 'ASKING_ADDITIONAL_SERVICE',
   ASKING_LOCATION: 'ASKING_LOCATION',
   ASKING_DATE: 'ASKING_DATE',
   ASKING_TIME: 'ASKING_TIME',
@@ -51,6 +53,7 @@ export class ChatBotReservationService {
         servicioId: null,
         servicioNombre: '',
         servicioPrecio: 0,
+        serviciosAdicionales: [],
         ubicacion: '',
         fechaReserva: '',
         horaReserva: '',
@@ -199,13 +202,19 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
           paquete = 'Clásico';
         } else if (input === 'PREMIUM' || input.toLowerCase().includes('premium')) {
           paquete = 'Premium';
+        } else if (input === 'BICIS_MOTOS' || input.toLowerCase().includes('bici') || input.toLowerCase().includes('moto')) {
+          paquete = 'Bicis y Motos';
+        } else if (input === 'PERSONALIZA' || input.toLowerCase().includes('personaliza')) {
+          paquete = 'Personaliza tu lavado';
         } else {
           return { 
             text: 'Por favor, selecciona una opción válida.', 
             source: 'reservation', 
             buttons: [
               { label: '🟦 Lavado Clásico', value: 'CLASICO' }, 
-              { label: '⭐ Lavado Premium', value: 'PREMIUM' }
+              { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
+              { label: '🛵 Bicis y Motos', value: 'BICIS_MOTOS' },
+              { label: '🎨 Personaliza tu lavado', value: 'PERSONALIZA' }
             ], 
             requestGPS: false 
           };
@@ -225,34 +234,21 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
           };
         }
 
-        const serviciosFiltrados = servicios.filter(s => {
-          const str = `${s.nombre} ${s.categoria || ''}`.toLowerCase();
-          if (paquete === 'Premium') {
-            return str.includes('premium');
-          } else {
-            return !str.includes('premium');
-          }
-        });
+        let serviciosFiltrados = [];
+        if (paquete === 'Clásico') {
+          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Clásico' || s.nombre.toLowerCase().includes('lavado clásico'));
+        } else if (paquete === 'Premium') {
+          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Premium' || s.nombre.toLowerCase().includes('lavado premium'));
+        } else if (paquete === 'Bicis y Motos') {
+          serviciosFiltrados = servicios.filter(s => s.categoria === 'Lavado Bicis y Motos' || s.nombre.toLowerCase().includes('moto') || s.nombre.toLowerCase().includes('bici'));
+        } else if (paquete === 'Personaliza tu lavado') {
+          serviciosFiltrados = servicios.filter(s => s.categoria === 'Personaliza tu lavado');
+        }
 
-        // Fallback: si el filtro es muy estricto y no deja nada, mostramos todo
         const serviciosAMostrar = serviciosFiltrados.length > 0 ? serviciosFiltrados : servicios;
 
-        const isPrincipal = (name) => {
-          const lower = name.toLowerCase();
-          if (lower.includes('lavado')) {
-             if (lower.includes('techo') || lower.includes('tapiz') || lower.includes('alfombra') || lower.includes('salón')) return false;
-             return true;
-          }
-          if (lower.includes('exterior') || lower.includes('completo') || lower === 'premium' || lower === 'clásico') return true;
-          return false;
-        };
-
-        const principales = serviciosAMostrar.filter(s => isPrincipal(s.nombre));
-        const adicionales = serviciosAMostrar.filter(s => !isPrincipal(s.nombre));
-
         let serviceButtons = [];
-        
-        principales.forEach(s => {
+        serviciosAMostrar.forEach(s => {
           serviceButtons.push({
             label: `🚗 ${s.nombre} — Bs. ${s.precio}`,
             value: `SERVICE_${s.id}`,
@@ -262,26 +258,6 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
           });
         });
 
-        if (adicionales.length > 0) {
-          // Si no hay principales (raro), no agregamos el separador de extras para que no se vea feo, o sí lo agregamos igual
-          if (principales.length > 0) {
-            serviceButtons.push({
-              isSeparator: true,
-              label: 'Complementa tu lavado con:'
-            });
-          }
-          
-          adicionales.forEach(s => {
-            serviceButtons.push({
-              label: `✨ ${s.nombre} — Bs. ${s.precio}`,
-              value: `SERVICE_${s.id}`,
-              id: s.id,
-              nombre: s.nombre,
-              precio: s.precio,
-            });
-          });
-        }
-
         return {
           text: `🧼 Aquí tienes las opciones para **Lavado ${paquete}**:\n\nSelecciona el servicio que deseas:`,
           source: 'reservation',
@@ -290,24 +266,16 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         };
 
       case STEPS.ASKING_SERVICE:
-        // El input puede ser "SERVICE_uuid" si viene de un botón, o texto
         let servicioSeleccionado = null;
 
         if (input.startsWith('SERVICE_')) {
           const serviceId = input.replace('SERVICE_', '');
-          const { data } = await supabase.from('servicios').select('id, nombre, precio').eq('id', serviceId).single();
+          const { data } = await supabase.from('servicios').select('id, nombre, precio, categoria').eq('id', serviceId).single();
           servicioSeleccionado = data;
         } else {
-          // Búsqueda por nombre
-          const { data: servicios2 } = await supabase.from('servicios').select('id, nombre, precio, categoria');
+          const { data: servicios2 } = await supabase.from('servicios').select('id, nombre, precio, categoria').eq('disponible', true);
           if (servicios2) {
-            const pq = _reservationState.data.paqueteSeleccionado;
-            const serviciosFiltrados2 = servicios2.filter(s => {
-              const str = `${s.nombre} ${s.categoria || ''}`.toLowerCase();
-              if (pq === 'Premium') return str.includes('premium');
-              return !str.includes('premium');
-            });
-            servicioSeleccionado = serviciosFiltrados2.find(s => 
+            servicioSeleccionado = servicios2.find(s => 
               s.nombre.toLowerCase().includes(input.toLowerCase())
             );
           }
@@ -319,14 +287,129 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
 
         _reservationState.data.servicioId = servicioSeleccionado.id;
         _reservationState.data.servicioNombre = servicioSeleccionado.nombre;
-        _reservationState.data.servicioPrecio = servicioSeleccionado.precio;
-        _reservationState.step = STEPS.ASKING_LOCATION;
+        _reservationState.data.servicioPrecio = Number(servicioSeleccionado.precio);
+        _reservationState.data.serviciosAdicionales = [];
+        _reservationState.step = STEPS.ASKING_ADDITIONAL_PROMPT;
 
         return {
-          text: `✅ **${servicioSeleccionado.nombre}** — Bs. ${servicioSeleccionado.precio}\n\n📍 ¿Dónde te recogemos? Puedes:\n- Presionar el botón **"Enviar ubicación"**\n- O escribir tu dirección manualmente`,
+          text: `✅ Seleccionaste: **${servicioSeleccionado.nombre}** — Bs. ${servicioSeleccionado.precio}\n\n✨ ¿Deseas **adicionar un servicio extra** a tu lavado? (Ej. Lavado especial para Cerámicos, Limpieza de Motor, Lustrado, etc.)`,
           source: 'reservation',
-          buttons: null,
-          requestGPS: true,
+          buttons: [
+            { label: '➕ Sí, agregar servicio extra', value: 'EXTRA_SI' },
+            { label: '➡️ No, continuar con la reserva', value: 'EXTRA_NO' }
+          ],
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_ADDITIONAL_PROMPT:
+        const isSi = input === 'EXTRA_SI' || ['si', 'sí', 'agregar', 'adicionar', 'extra', 'mas', 'más'].includes(input.toLowerCase());
+        const isNo = input === 'EXTRA_NO' || input === 'EXTRA_DONE' || ['no', 'continuar', 'listo', 'ninguno', 'pasar', 'siguiente'].includes(input.toLowerCase());
+
+        if (isSi) {
+          _reservationState.step = STEPS.ASKING_ADDITIONAL_SERVICE;
+          const todosServicios = await this._getServicios();
+          
+          const selectedIds = [
+            _reservationState.data.servicioId,
+            ...(_reservationState.data.serviciosAdicionales || []).map(a => a.id)
+          ];
+
+          const extrasDisponibles = todosServicios.filter(s => !selectedIds.includes(s.id));
+
+          let extraButtons = [];
+          extrasDisponibles.forEach(s => {
+            extraButtons.push({
+              label: `✨ ${s.nombre} — Bs. ${s.precio}`,
+              value: `EXTRA_SERVICE_${s.id}`,
+              id: s.id,
+              nombre: s.nombre,
+              precio: s.precio,
+            });
+          });
+
+          extraButtons.push({
+            label: '🏁 Listo, continuar sin más extras',
+            value: 'EXTRA_DONE'
+          });
+
+          return {
+            text: '✨ Selecciona el servicio adicional que deseas agregar:',
+            source: 'reservation',
+            buttons: extraButtons,
+            requestGPS: false,
+          };
+        }
+
+        if (isNo) {
+          _reservationState.step = STEPS.ASKING_LOCATION;
+          return {
+            text: `📍 ¿Dónde te recogemos? Puedes:\n- Presionar el botón **"Enviar ubicación"**\n- O escribir tu dirección manualmente`,
+            source: 'reservation',
+            buttons: null,
+            requestGPS: true,
+          };
+        }
+
+        return {
+          text: 'Por favor selecciona si deseas agregar un servicio adicional:',
+          source: 'reservation',
+          buttons: [
+            { label: '➕ Sí, agregar servicio extra', value: 'EXTRA_SI' },
+            { label: '➡️ No, continuar con la reserva', value: 'EXTRA_NO' }
+          ],
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_ADDITIONAL_SERVICE:
+        if (input === 'EXTRA_DONE' || ['no', 'continuar', 'listo', 'ninguno', 'pasar', 'siguiente'].includes(input.toLowerCase())) {
+          _reservationState.step = STEPS.ASKING_LOCATION;
+          return {
+            text: `📍 ¿Dónde te recogemos? Puedes:\n- Presionar el botón **"Enviar ubicación"**\n- O escribir tu dirección manualmente`,
+            source: 'reservation',
+            buttons: null,
+            requestGPS: true,
+          };
+        }
+
+        let extraSeleccionado = null;
+        if (input.startsWith('EXTRA_SERVICE_')) {
+          const serviceId = input.replace('EXTRA_SERVICE_', '');
+          const { data } = await supabase.from('servicios').select('id, nombre, precio, categoria').eq('id', serviceId).single();
+          extraSeleccionado = data;
+        } else {
+          const { data: servicios2 } = await supabase.from('servicios').select('id, nombre, precio, categoria').eq('disponible', true);
+          if (servicios2) {
+            extraSeleccionado = servicios2.find(s => s.nombre.toLowerCase().includes(input.toLowerCase()));
+          }
+        }
+
+        if (!extraSeleccionado) {
+          return { text: 'No encontré ese servicio extra. Por favor, selecciona uno de los botones o presiona **Listo, continuar**.', source: 'reservation', buttons: null, requestGPS: false };
+        }
+
+        if (!_reservationState.data.serviciosAdicionales) {
+          _reservationState.data.serviciosAdicionales = [];
+        }
+        
+        _reservationState.data.serviciosAdicionales.push({
+          id: extraSeleccionado.id,
+          nombre: extraSeleccionado.nombre,
+          precio: Number(extraSeleccionado.precio),
+          categoria: extraSeleccionado.categoria || 'Otros'
+        });
+
+        const totalAcumulado = _reservationState.data.servicioPrecio + _reservationState.data.serviciosAdicionales.reduce((sum, s) => sum + Number(s.precio), 0);
+
+        _reservationState.step = STEPS.ASKING_ADDITIONAL_PROMPT;
+
+        return {
+          text: `👍 ¡Agregado! **${extraSeleccionado.nombre}** — Bs. ${extraSeleccionado.precio}\n\n💰 Total acumulado: **Bs. ${totalAcumulado}**\n\n¿Deseas agregar **otro servicio adicional**?`,
+          source: 'reservation',
+          buttons: [
+            { label: '➕ Agregar otro extra', value: 'EXTRA_SI' },
+            { label: '➡️ No, continuar a la ubicación', value: 'EXTRA_DONE' }
+          ],
+          requestGPS: false,
         };
 
       case STEPS.ASKING_LOCATION:
@@ -381,13 +464,21 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
         _reservationState.step = STEPS.CONFIRMING;
 
         const d = _reservationState.data;
+        const extrasResumen = d.serviciosAdicionales || [];
+        const totalPriceResumen = d.servicioPrecio + extrasResumen.reduce((sum, s) => sum + Number(s.precio), 0);
+        
+        let extraListText = '';
+        if (extrasResumen.length > 0) {
+          extraListText = '\n✨ **Servicios Adicionales:**\n' + extrasResumen.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n') + '\n';
+        }
+
         const confirmButtons = [
           { label: '✅ Confirmar Reserva', value: 'CONFIRMAR_SI' },
           { label: '❌ Cancelar', value: 'CONFIRMAR_NO' },
         ];
 
         return {
-          text: `📋 **Resumen de tu Reserva:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio:** ${d.servicioNombre}\n💰 **Precio:** Bs. ${d.servicioPrecio}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Todo correcto?`,
+          text: `📋 **Resumen de tu Reserva:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Todo correcto?`,
           source: 'reservation',
           buttons: confirmButtons,
           requestGPS: false,
@@ -419,7 +510,7 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
             const reserva = result.data;
             _reservationState = null; // Limpiar estado
             return {
-              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio: Bs. ${reserva.servicioPrecio}\n\nPronto un trabajador se pondrá en contacto contigo. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
+              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio Total: Bs. ${reserva.servicioPrecio}\n\nPronto un trabajador se pondrá en contacto contigo. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
@@ -462,13 +553,46 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
     const { data, error } = await supabase
       .from('servicios')
       .select('id, nombre, precio, categoria')
-      .order('precio', { ascending: true });
+      .eq('disponible', true);
     
     if (error) {
       console.error('Error fetching servicios:', error);
       return [];
     }
-    return data || [];
+
+    let list = data || [];
+
+    const categoryOrder = {
+      'Lavado Clásico': 1,
+      'Lavado Premium': 2,
+      'Lavado Bicis y Motos': 3,
+      'Personaliza tu lavado': 4,
+      'Otros': 5
+    };
+
+    const getSizeOrder = (nombre) => {
+      if (!nombre) return 99;
+      const n = nombre.toUpperCase();
+      if (n.includes('"P"') || n.includes(' "P"') || n.endsWith(' P')) return 1;
+      if (n.includes('"M"') || n.includes(' "M"') || n.endsWith(' M')) return 2;
+      if (n.includes('"L"') || n.includes(' "L"') || n.endsWith(' L')) return 3;
+      if (n.includes('"XL"') || n.includes(' "XL"') || n.endsWith(' XL')) return 4;
+      return 10;
+    };
+
+    list.sort((a, b) => {
+      const catA = categoryOrder[a.categoria] || 99;
+      const catB = categoryOrder[b.categoria] || 99;
+      if (catA !== catB) return catA - catB;
+
+      const sizeA = getSizeOrder(a.nombre);
+      const sizeB = getSizeOrder(b.nombre);
+      if (sizeA !== sizeB) return sizeA - sizeB;
+
+      return Number(a.precio) - Number(b.precio);
+    });
+
+    return list;
   }
 
   /**
@@ -496,23 +620,37 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
       if (d.servicioId) {
         const { data: sData } = await supabase.from('servicios').select('*').eq('id', d.servicioId).single();
         if (sData) {
-          serviciosDetalleJSON = [{
+          serviciosDetalleJSON.push({
             id: sData.id,
             nombre: sData.nombre,
             categoria: sData.categoria,
             precio: Number(d.servicioPrecio)
-          }];
+          });
         }
       }
 
+      const extras = d.serviciosAdicionales || [];
+      extras.forEach(ext => {
+        serviciosDetalleJSON.push({
+          id: ext.id,
+          nombre: ext.nombre,
+          categoria: ext.categoria || 'Otros',
+          precio: Number(ext.precio)
+        });
+      });
+
+      const totalPrice = serviciosDetalleJSON.reduce((sum, s) => sum + Number(s.precio), 0);
+      const additionalNames = extras.length > 0 ? ` (Adicionales: ${extras.map(s => s.nombre).join(', ')})` : '';
+      const finalVehiculo = `${d.vehiculo}${additionalNames}`;
+
       const { data: insertData, error } = await supabase.from('reservas').insert([{
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
-        vehiculo: d.vehiculo,
+        vehiculo: finalVehiculo,
         ubicacion_gps: d.ubicacion,
         fecha_reserva: d.fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: d.servicioId,
-        precio_total: d.servicioPrecio,
+        precio_total: totalPrice,
         estado: 'Reservado',
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva,
@@ -525,14 +663,18 @@ Si el mensaje no parece un vehículo válido o no puedes identificarlo, responde
       }
 
       // Notificación
+      const extrasStr = extras.length > 0 ? ` (+ ${extras.length} extras)` : '';
       await supabase.from('notificaciones').insert([{
-        mensaje: `📱 Nueva reserva desde Chatbot: ${d.clienteNombre} - ${d.servicioNombre}`,
+        mensaje: `📱 Nueva reserva desde Chatbot: ${d.clienteNombre} - ${d.servicioNombre}${extrasStr}`,
         tipo: 'info'
       }]);
 
       return {
         success: true,
-        data: d,
+        data: {
+          ...d,
+          servicioPrecio: totalPrice
+        },
         reservaId: insertData?.[0]?.id,
         chatSessionId: newChatSessionId,
       };

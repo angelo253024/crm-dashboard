@@ -212,14 +212,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         'Otros': 5
       };
 
+      const getSizeOrder = (nombre) => {
+        if (!nombre) return 99;
+        const n = nombre.toUpperCase();
+        if (n.includes('"P"') || n.includes(' "P"') || n.endsWith(' P')) return 1;
+        if (n.includes('"M"') || n.includes(' "M"') || n.endsWith(' M')) return 2;
+        if (n.includes('"L"') || n.includes(' "L"') || n.endsWith(' L')) return 3;
+        if (n.includes('"XL"') || n.includes(' "XL"') || n.endsWith(' XL')) return 4;
+        return 10;
+      };
+
       sortedData.sort((a, b) => {
         const catA = categoryOrder[a.categoria] || 99;
         const catB = categoryOrder[b.categoria] || 99;
         if (catA !== catB) return catA - catB;
+
+        const sizeA = getSizeOrder(a.nombre);
+        const sizeB = getSizeOrder(b.nombre);
+        if (sizeA !== sizeB) return sizeA - sizeB;
         
         if (a.imagen_url && !b.imagen_url) return -1;
         if (!a.imagen_url && b.imagen_url) return 1;
-        return 0;
+        return Number(a.precio) - Number(b.precio);
       });
       
       setServicios(sortedData);
