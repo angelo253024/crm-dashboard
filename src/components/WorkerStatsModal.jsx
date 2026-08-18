@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Search, DollarSign, Wallet, FileText, CheckCircle, AlertTriangle, Settings } from 'lucide-react';
+import { X, Search, DollarSign, Wallet, FileText, CheckCircle, AlertTriangle, Settings, Trash2 } from 'lucide-react';
 import { supabase } from '../supabase';
 import EditPercentagesModal from './EditPercentagesModal';
 
@@ -46,12 +46,13 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
     
     if (reservasData) setReservas(reservasData);
 
-    // Fetch Comisiones Pendientes
+    // Fetch Comisiones Pendientes (solo pertenecientes a reservas no eliminadas)
     const { data: comisionesData } = await supabase
       .from('comisiones')
       .select('*')
       .eq('trabajador_id', worker.id)
       .eq('estado', 'pendiente')
+      .not('reserva_id', 'is', null)
       .order('created_at', { ascending: false });
     
     if (comisionesData) setComisiones(comisionesData);
@@ -153,6 +154,18 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
       setAnticipoObs('');
       setShowAnticipoModal(false);
       fetchData(); // Recargar datos
+    }
+  };
+
+  const handleDeleteAnticipo = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este registro de anticipo? Esto restaurará el saldo disponible del trabajador.")) return;
+    
+    const { error } = await supabase.from('anticipos').delete().eq('id', id);
+    if (error) {
+      alert("Error al eliminar el anticipo: " + error.message);
+      console.error(error);
+    } else {
+      setAnticipos(prev => prev.filter(a => a.id !== id));
     }
   };
 
@@ -336,12 +349,13 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>Anticipos Descontados (Aún no liquidados)</h3>
         <div className="table-responsive" style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: '500px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                 <tr>
                   <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Observación</th>
                   <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>Monto Descontado</th>
+                  <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', width: '100px' }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,6 +364,30 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                     <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{new Date(a.created_at).toLocaleDateString()}</td>
                     <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}>{a.observaciones}</td>
                     <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 'bold', textAlign: 'right', color: '#e74c3c' }}>- Bs {a.monto}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleDeleteAnticipo(a.id)}
+                        title="Eliminar anticipo de prueba"
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'; }}
+                        onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'; }}
+                      >
+                        <Trash2 size={13} /> Eliminar
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -249,12 +249,13 @@ export default function MotoDashboard({ user }) {
     if (!user?.id) return;
 
     try {
-      // 1. Obtener comisiones pendientes
+      // 1. Obtener comisiones pendientes (solo pertenecientes a reservas vigentes)
       const { data: comisionesData } = await supabase
         .from('comisiones')
         .select('*')
         .eq('trabajador_id', user.id)
         .eq('estado', 'pendiente')
+        .not('reserva_id', 'is', null)
         .order('created_at', { ascending: false });
 
       // 2. Obtener anticipos pendientes

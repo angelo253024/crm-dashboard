@@ -13,6 +13,17 @@ export default function Citas() {
 
   useEffect(() => {
     fetchReservas();
+
+    const channel = supabase
+      .channel('citas_reservas_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, () => {
+        fetchReservas();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchReservas = async () => {
