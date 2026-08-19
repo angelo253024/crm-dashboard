@@ -98,6 +98,7 @@ export default function MotoDashboard({ user }) {
   const [reservas, setReservas] = useState([]);
   const [todasReservas, setTodasReservas] = useState([]);
   const [pendientes, setPendientes] = useState([]);
+  const [hiddenPendientes, setHiddenPendientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
   const [showExtraService, setShowExtraService] = useState(null);
@@ -845,11 +846,11 @@ export default function MotoDashboard({ user }) {
           ))}
         </div>
       )}
-      {pendientes.length > 0 && (
+      {pendientes.filter(res => !hiddenPendientes.includes(res.id)).length > 0 && (
         <div style={{ marginTop: '32px' }}>
-          <h2 className="text-h2" style={{ marginBottom: '16px', color: '#f59e0b' }}>Servicios Pendientes por Asignar ({pendientes.length})</h2>
+          <h2 className="text-h2" style={{ marginBottom: '16px', color: '#f59e0b' }}>Servicios Pendientes por Asignar ({pendientes.filter(res => !hiddenPendientes.includes(res.id)).length})</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {pendientes.map(res => (
+            {pendientes.filter(res => !hiddenPendientes.includes(res.id)).map(res => (
               <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-soft)', border: '1px dashed #f59e0b' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                   <div>
@@ -891,9 +892,14 @@ export default function MotoDashboard({ user }) {
                   </div>
                 )}
                 
-                <button onClick={() => reclamarReserva(res.id)} style={{ width: '100%', padding: '12px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                  <Check size={18} /> Tomar Servicio
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => reclamarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <Check size={18} /> Tomar Servicio
+                  </button>
+                  <button onClick={() => setHiddenPendientes(prev => [...prev, res.id])} style={{ flex: 1, padding: '12px', backgroundColor: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                    <X size={18} /> Dejar para otro
+                  </button>
+                </div>
               </div>
             ))}
           </div>
