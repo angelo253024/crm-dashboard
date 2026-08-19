@@ -38,7 +38,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
   useEffect(() => {
     if (!audioRef.current) {
-      audioRef.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+      audioRef.current = new Audio('/aternos-notification.mp3');
     }
 
     let isUnlocked = false;
