@@ -45,23 +45,13 @@ export class ChatBotReservationService {
    * Inicia un nuevo flujo de reserva
    */
   static start() {
-    let savedProfile = null;
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const stored = localStorage.getItem('lavamovil_client_profile');
-        if (stored) savedProfile = JSON.parse(stored);
-      }
-    } catch(e) {}
-
-    const hasProfile = savedProfile && savedProfile.nombre && savedProfile.telefono;
-
     _reservationState = {
-      step: hasProfile ? STEPS.ASKING_USE_SAVED_PROFILE : STEPS.ASKING_NAME,
-      savedProfile: savedProfile,
+      step: STEPS.ASKING_PHONE, // Ahora pedimos el teléfono primero
+      savedProfile: null,
       data: {
-        clienteNombre: savedProfile?.nombre || '',
-        clienteTelefono: savedProfile?.telefono || '',
-        vehiculo: savedProfile?.vehiculo || '',
+        clienteNombre: '',
+        clienteTelefono: '',
+        vehiculo: '',
         tamanoServicio: '',
         clasificacionDetalle: null,
         paqueteSeleccionado: '',
@@ -75,20 +65,8 @@ export class ChatBotReservationService {
       }
     };
 
-    if (hasProfile) {
-      return {
-        text: `¡Hola de nuevo, **${savedProfile.nombre}**! 👋✨\n\nVeo que estás registrado con el WhatsApp **${savedProfile.telefono}**${savedProfile.vehiculo ? ` y vehículo **${savedProfile.vehiculo}**` : ''}.\n\n¿Deseas agendar usando tus datos registrados?`,
-        source: 'reservation',
-        buttons: [
-          { label: '✅ Usar mis datos registrados', value: 'PROFILE_USE_SAVED' },
-          { label: '✏️ Ingresar otros datos', value: 'PROFILE_NEW' }
-        ],
-        requestGPS: false,
-      };
-    }
-
     return {
-      text: '¡Perfecto! Vamos a agendar tu cita de lavado. 📅\n\n¿Cuál es tu **nombre completo**?',
+      text: '¡Perfecto! Vamos a agendar tu cita de lavado. 📅\n\nPara empezar, por favor indícame tu número de **WhatsApp**:',
       source: 'reservation',
       buttons: null,
       requestGPS: false,
@@ -149,7 +127,7 @@ export class ChatBotReservationService {
           }
         } else {
           _reservationState.data.clienteNombre = '';
-          _reservationState.data.clienteTelefono = '';
+          // No limpiamos el teléfono porque lo acaba de ingresar
           _reservationState.data.vehiculo = '';
           _reservationState.data.ubicacion = '';
           _reservationState.step = STEPS.ASKING_NAME;
@@ -161,28 +139,82 @@ export class ChatBotReservationService {
           };
         }
 
-      case STEPS.ASKING_NAME:
-        if (input.length < 2) {
-          return { text: 'Por favor, ingresa un nombre válido (mínimo 2 caracteres).', source: 'reservation', buttons: null, requestGPS: false };
-        }
-        _reservationState.data.clienteNombre = input;
-        _reservationState.step = STEPS.ASKING_PHONE;
-        return {
-          text: `Gracias, **${input}** 👋\n\n¿Cuál es tu número de **WhatsApp**?`,
-          source: 'reservation',
-          buttons: null,
-          requestGPS: false,
-        };
-
       case STEPS.ASKING_PHONE:
         const cleanPhone = input.replace(/\D/g, '');
         if (cleanPhone.length < 7) {
           return { text: 'Por favor, ingresa un número de teléfono válido (mínimo 7 dígitos).', source: 'reservation', buttons: null, requestGPS: false };
         }
         _reservationState.data.clienteTelefono = input;
+        
+        // 1. Intentar buscar perfil en Supabase usando el teléfono
+        let knownProfile = null;
+        try {
+          const { data: clientDB } = await supabase
+            .from('reservas')
+            .select('cliente_nombre, vehiculo')
+            .eq('cliente_telefono', cleanPhone)
+            .neq('cliente_nombre', '')
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (clientDB && clientDB.length > 0) {
+            knownProfile = {
+              nombre: clientDB[0].cliente_nombre,
+              telefono: input,
+              vehiculo: clientDB[0].vehiculo
+            };
+          }
+        } catch (e) { console.error(e); }
+
+        // 2. Fallback a localStorage
+        if (!knownProfile) {
+          try {
+            if (typeof localStorage !== 'undefined') {
+              const stored = localStorage.getItem('lavamovil_client_profile');
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed.telefono && parsed.telefono.replace(/\D/g, '') === cleanPhone) {
+                  knownProfile = parsed;
+                }
+              }
+            }
+          } catch(e) {}
+        }
+
+        if (knownProfile && knownProfile.nombre) {
+          _reservationState.savedProfile = knownProfile;
+          _reservationState.data.clienteNombre = knownProfile.nombre;
+          _reservationState.data.vehiculo = knownProfile.vehiculo || '';
+          _reservationState.step = STEPS.ASKING_USE_SAVED_PROFILE;
+
+          return {
+            text: `¡Hola de nuevo, **${knownProfile.nombre}**! 👋✨\n\nVeo que tienes registrado el vehículo **${knownProfile.vehiculo || 'sin especificar'}**.\n\n¿Deseas agendar usando tus datos registrados?`,
+            source: 'reservation',
+            buttons: [
+              { label: '✅ Usar mis datos registrados', value: 'PROFILE_USE_SAVED' },
+              { label: '✏️ Ingresar otros datos', value: 'PROFILE_NEW' }
+            ],
+            requestGPS: false,
+          };
+        }
+
+        // Si no se encontró perfil, pedimos el nombre
+        _reservationState.step = STEPS.ASKING_NAME;
+        return {
+          text: `Gracias. ¿Cuál es tu **nombre completo**?`,
+          source: 'reservation',
+          buttons: null,
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_NAME:
+        if (input.length < 2) {
+          return { text: 'Por favor, ingresa un nombre válido (mínimo 2 caracteres).', source: 'reservation', buttons: null, requestGPS: false };
+        }
+        _reservationState.data.clienteNombre = input;
         _reservationState.step = STEPS.ASKING_VEHICLE;
         return {
-          text: '🚗 ¿Cuál es la **marca y modelo** de tu vehículo?\n\n_Ejemplo: Toyota Corolla, Suzuki Alto, Ford Explorer_',
+          text: `Gracias, **${input}** 👋\n\n🚗 ¿Cuál es la **marca y modelo** de tu vehículo?\n\n_Ejemplo: Toyota Corolla, Suzuki Alto, Ford Explorer_`,
           source: 'reservation',
           buttons: null,
           requestGPS: false,
