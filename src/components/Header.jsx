@@ -86,7 +86,10 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           const notifDate = new Date(payload.new.created_at);
           if (notifDate >= today) {
             setNotificaciones(prev => [payload.new, ...prev]);
-            if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+            if (audioRef.current) {
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(e=>console.log('Audio error:', e));
+            }
             setIsNotifMenuOpen(true);
           }
         }
@@ -131,7 +134,10 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                  leida: false
                };
                setNotificaciones(prev => [notif, ...prev]);
-               if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+               if (audioRef.current) {
+                 audioRef.current.currentTime = 0;
+                 audioRef.current.play().catch(e=>console.log('Audio error:', e));
+               }
                setIsNotifMenuOpen(true);
              }
           }
@@ -187,7 +193,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                  leida: false
                };
                setNotificaciones(prev => [notif, ...prev]);
-               if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+               if (audioRef.current) {
+                 audioRef.current.currentTime = 0;
+                 audioRef.current.play().catch(e=>console.log('Audio error:', e));
+               }
+               setIsNotifMenuOpen(true);
              }
           }
         )
@@ -204,7 +214,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                leida: false
              };
              setNotificaciones(prev => [notif, ...prev]);
-             if (audioRef.current) audioRef.current.play().catch(e=>console.log(e));
+             if (audioRef.current) {
+               audioRef.current.currentTime = 0;
+               audioRef.current.play().catch(e=>console.log('Audio error:', e));
+             }
+             setIsNotifMenuOpen(true);
           }
         )
         .subscribe();
