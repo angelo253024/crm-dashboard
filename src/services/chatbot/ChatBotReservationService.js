@@ -28,6 +28,7 @@ const STEPS = {
   ASKING_LOCATION: 'ASKING_LOCATION',
   ASKING_DATE: 'ASKING_DATE',
   ASKING_TIME: 'ASKING_TIME',
+  CONFIRM_DELAY: 'CONFIRM_DELAY',
   CONFIRMING: 'CONFIRMING',
   DONE: 'DONE',
 };
@@ -665,11 +666,18 @@ export class ChatBotReservationService {
           });
 
           if (conflictReserva) {
-            const conflictTimeStr = String(conflictReserva.hora_reserva || conflictReserva.hora || '').substring(0, 5);
+            _reservationState.data.horaReserva = parsedTime;
+            _reservationState.data.hasDelay = true;
+            _reservationState.step = STEPS.CONFIRM_DELAY;
+            
             return {
-              text: `⚠️ El horario **${parsedTime}** se cruza con otra reserva ya existente (${conflictTimeStr}).\n\nDebe haber al menos **1 hora de margen** entre pedidos. Por favor selecciona o escribe otro horario.`,
+              text: `⚠️ **¡Atención!** En este horario nuestros funcionarios están realizando otros servicios.\n\nEl tiempo de demora será de **1 hora aproximadamente** en salir para su ubicación.\n\n¿Qué desea hacer?`,
               source: 'reservation',
-              buttons: null,
+              buttons: [
+                { label: '➡️ Continuar', value: 'DELAY_CONTINUE' },
+                { label: '🕘 Cambiar hora', value: 'DELAY_CHANGE_TIME' },
+                { label: '❌ Cancelar pedido', value: 'DELAY_CANCEL' }
+              ],
               requestGPS: false
             };
           }
@@ -678,6 +686,7 @@ export class ChatBotReservationService {
         }
 
         _reservationState.data.horaReserva = parsedTime;
+        _reservationState.data.hasDelay = false;
         _reservationState.step = STEPS.CONFIRMING;
 
         const d = _reservationState.data;
@@ -699,6 +708,55 @@ export class ChatBotReservationService {
           source: 'reservation',
           buttons: confirmButtons,
           requestGPS: false,
+        };
+
+      case STEPS.CONFIRM_DELAY:
+        if (input === 'DELAY_CANCEL' || input.toLowerCase().includes('cancel')) {
+          return this.cancel();
+        }
+        if (input === 'DELAY_CHANGE_TIME' || input.toLowerCase().includes('cambiar')) {
+          _reservationState.step = STEPS.ASKING_TIME;
+          return {
+            text: '🕐 ¿A qué **hora** prefieres?\n\nSelecciona o escribe la hora (formato HH:MM):',
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
+        }
+        
+        if (input === 'DELAY_CONTINUE' || input.toLowerCase().includes('continuar')) {
+          _reservationState.step = STEPS.CONFIRMING;
+          const d = _reservationState.data;
+          const extrasResumen = d.serviciosAdicionales || [];
+          const totalPriceResumen = d.servicioPrecio + extrasResumen.reduce((sum, s) => sum + Number(s.precio), 0);
+          
+          let extraListText = '';
+          if (extrasResumen.length > 0) {
+            extraListText = '\n✨ **Servicios Adicionales:**\n' + extrasResumen.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n') + '\n';
+          }
+
+          const confirmButtons = [
+            { label: '✅ Confirmar Reserva', value: 'CONFIRMAR_SI' },
+            { label: '❌ Cancelar', value: 'CONFIRMAR_NO' },
+          ];
+
+          return {
+            text: `📋 **Resumen de tu Reserva (Con Demora):**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Todo correcto?`,
+            source: 'reservation',
+            buttons: confirmButtons,
+            requestGPS: false,
+          };
+        }
+        
+        return {
+          text: 'Por favor selecciona una opción válida.',
+          source: 'reservation',
+          buttons: [
+            { label: '➡️ Continuar', value: 'DELAY_CONTINUE' },
+            { label: '🕘 Cambiar hora', value: 'DELAY_CHANGE_TIME' },
+            { label: '❌ Cancelar pedido', value: 'DELAY_CANCEL' }
+          ],
+          requestGPS: false
         };
 
       case STEPS.CONFIRMING:
@@ -725,9 +783,10 @@ export class ChatBotReservationService {
           
           if (result.success) {
             const reserva = result.data;
+            const demoraMsg = _reservationState.data.hasDelay ? "\n\n⚠️ *Nota: Aceptaste una demora de 1 hora por alta demanda.*" : "";
             _reservationState = null; // Limpiar estado
             return {
-              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio Total: Bs. ${reserva.servicioPrecio}\n\nPronto un trabajador se pondrá en contacto contigo. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
+              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio Total: Bs. ${reserva.servicioPrecio}${demoraMsg}\n\nPronto un trabajador se pondrá en contacto contigo. **El tiempo de espera aproximado será de 30 a 40 min** en llegar a su ubicación. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
