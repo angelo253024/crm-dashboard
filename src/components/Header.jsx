@@ -103,13 +103,24 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         .channel('worker-reservas-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'reservas', filter: `trabajador_id=eq.${user.id}` },
+          { event: '*', schema: 'public', table: 'reservas' },
           (payload) => {
+             const esMia = payload.new?.trabajador_id === user.id || payload.old?.trabajador_id === user.id;
+             const esPendiente = payload.eventType === 'INSERT' && payload.new?.estado_reserva === 'pendiente';
+             
+             if (!esMia && !esPendiente) return;
+             
              let msj = '';
              let tipo = 'info';
+             
              if (payload.eventType === 'INSERT') {
-               msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
+               if (esMia) {
+                 msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
+               } else if (esPendiente) {
+                 msj = `¡Nuevo lavado disponible! ${payload.new.cliente_nombre} - ${payload.new.vehiculo}`;
+               }
              } else if (payload.eventType === 'UPDATE') {
+               if (!esMia) return;
                if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'asignado') {
                  msj = `Se te ha reasignado un servicio: ${payload.new.cliente_nombre}`;
                } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
