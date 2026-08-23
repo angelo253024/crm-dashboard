@@ -60,15 +60,15 @@ function MotoChat({ sessionId, onClose }) {
 
   return (
     <div className="moto-chat-widget">
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-cyan)', color: '#000', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
+      <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--accent-green)', color: '#fff', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
         <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con Cliente</h4>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#000' }}><X size={18} /></button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}><X size={18} /></button>
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {messages.map((m, i) => (
-          <div key={m.id || i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'rgba(28, 169, 201, 0.2)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : 'none' }}>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? 'var(--text-muted)' : 'var(--accent-cyan)', display: 'block', marginBottom: '2px' }}>
+          <div key={m.id || i} style={{ alignSelf: m.rol === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.rol === 'user' ? 'var(--bg-color)' : 'var(--accent-green-light)', padding: '8px 12px', borderRadius: '8px', maxWidth: '80%', fontSize: '14px', border: m.rol === 'user' ? '1px solid var(--border-color)' : '1px solid var(--accent-green)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: m.rol === 'user' ? 'var(--text-muted)' : 'var(--accent-green)', display: 'block', marginBottom: '2px' }}>
               {m.rol === 'user' ? 'Cliente' : 'Tú'}
             </span>
             {m.contenido}
@@ -85,7 +85,7 @@ function MotoChat({ sessionId, onClose }) {
           placeholder="Escribe al cliente..." 
           style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', outline: 'none', fontSize: '16px' }} 
         />
-        <button type="submit" style={{ backgroundColor: 'var(--accent-cyan)', color: '#000', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        <button type="submit" style={{ backgroundColor: 'var(--accent-green)', color: '#fff', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
           <Send size={16} />
         </button>
       </form>

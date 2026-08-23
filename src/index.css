@@ -1144,6 +1144,8 @@ body:not(.dark) .btn-landing-large:hover {
     left: 0 !important;
     border-radius: 0 !important;
     border: none !important;
+    z-index: 99999 !important;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
