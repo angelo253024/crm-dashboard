@@ -880,16 +880,8 @@ export class ChatBotReservationService {
     try {
       const formattedHora = d.horaReserva.length === 5 ? `${d.horaReserva}:00` : d.horaReserva;
 
-      // Buscar trabajador disponible
-      const { data: trabajadores } = await supabase
-        .from('trabajadores')
-        .select('id')
-        .eq('estado_disponibilidad', 'disponible')
-        .eq('rol', 'Trabajador')
-        .limit(1);
-
-      const trabajadorId = trabajadores && trabajadores.length > 0 ? trabajadores[0].id : null;
-      const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
+      const trabajadorId = null;
+      const estadoReserva = 'pendiente';
       const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
       let serviciosDetalleJSON = [];

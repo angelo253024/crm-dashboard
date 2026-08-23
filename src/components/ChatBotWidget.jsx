@@ -43,7 +43,7 @@ export default function ChatBotWidget() {
         const savedData = {
           id: response.reservaExtra.reservaId,
           chat_session_id: response.reservaExtra.chatSessionId,
-          estado_reserva: 'asignado',
+          estado_reserva: 'pendiente',
           estado: 'Reservado'
         };
         

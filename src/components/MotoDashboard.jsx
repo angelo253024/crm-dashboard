@@ -422,25 +422,9 @@ export default function MotoDashboard({ user }) {
   };
 
   const rechazarReserva = async (id) => {
-    // Para rechazar, marcamos la reserva para que el Chatbot (o un Edge Function) la reasigne,
-    // o simplemente buscamos la siguiente moto aquí en el cliente y la asignamos.
-    
     try {
-      const { data: trabajadores } = await supabase
-        .from('trabajadores')
-        .select('id')
-        .eq('estado_disponibilidad', 'disponible')
-        .eq('rol', 'Trabajador')
-        .neq('id', user.id)
-        .limit(1);
-        
-      if (trabajadores && trabajadores.length > 0) {
-        // Asignar al siguiente
-        await supabase.from('reservas').update({ trabajador_id: trabajadores[0].id }).eq('id', id);
-      } else {
-        // No hay más motos, marcar como pendiente para admin
-        await supabase.from('reservas').update({ trabajador_id: null, estado_reserva: 'pendiente' }).eq('id', id);
-      }
+      // Marcar como pendiente para que otros puedan tomarlo
+      await supabase.from('reservas').update({ trabajador_id: null, estado_reserva: 'pendiente' }).eq('id', id);
     } catch(err) {
       console.error(err);
     }
