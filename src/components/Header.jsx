@@ -73,6 +73,24 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
     };
   }, []);
 
+  // --- NATIVE WEB NOTIFICATIONS ---
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(err => console.warn('Notification permission error:', err));
+    }
+  }, []);
+
+  const triggerNativeNotification = (title, body) => {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification(title, { body: body });
+      } catch (e) {
+        console.warn('Native notification failed:', e);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!user) return; // Esperar a que el usuario cargue
 
@@ -96,6 +114,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
               audioRef.current.play().catch(e=>console.warn('Audio error:', e));
             }
             setIsNotifMenuOpen(true);
+            triggerNativeNotification('LavaMóvil Norte', payload.new.mensaje || 'Nueva notificación del sistema');
           }
         }
       )
@@ -157,6 +176,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                  audioRef.current.play().catch(e=>console.warn('Audio error:', e));
                }
                setIsNotifMenuOpen(true);
+               triggerNativeNotification('Actualización de Servicio', msj);
              }
           }
         )
@@ -218,6 +238,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                  audioRef.current.play().catch(e=>console.warn('Audio error:', e));
                }
                setIsNotifMenuOpen(true);
+               triggerNativeNotification('Aviso Administrativo', msj);
              }
           }
         )
@@ -239,6 +260,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                audioRef.current.play().catch(e=>console.warn('Audio error:', e));
              }
              setIsNotifMenuOpen(true);
+             triggerNativeNotification('Inventario', msj);
           }
         )
         .subscribe();
