@@ -157,12 +157,14 @@ export default function MotoDashboard({ user }) {
           
           if (payload.eventType === 'INSERT') {
             if (payload.new.trabajador_id === user.id || payload.new.estado_reserva === 'pendiente') {
+              playMobileAlert();
               if(window.Notification && Notification.permission === "granted") {
                 new Notification("¡Nuevo Lavado Disponible!", { body: "Revisa tu panel de trabajos." });
               }
             }
           } else if (payload.eventType === 'UPDATE' && payload.new.estado_reserva === 'asignado' && payload.new.trabajador_id === user.id) {
             // Notificar al trabajador si se le reasigna un trabajo
+            playMobileAlert();
             if(window.Notification && Notification.permission === "granted") {
               new Notification("¡Nuevo Lavado Asignado!", { body: "Revisa tu panel de trabajos." });
             }
@@ -473,22 +475,37 @@ export default function MotoDashboard({ user }) {
     fetchReservasAsignadas();
   };
 
+  const playMobileAlert = () => {
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 400]); // Patrón de vibración doble
+      }
+      // Un tono de notificación elegante y claro
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 1.0;
+      audio.play().catch(e => console.log("Audio autoplay bloqueado por el navegador", e));
+    } catch (e) {
+      console.log("No se pudo emitir la alerta móvil", e);
+    }
+  };
+
   // Pedir permiso para notificaciones
   const requestNotifPermission = () => {
+    playMobileAlert(); // Probar sonido y vibración inmediatamente
     if (window.Notification) {
       if (Notification.permission !== "granted") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
             new Notification("¡Notificaciones activadas!", { body: "Ahora recibirás avisos de nuevos lavados." });
           } else {
-            alert("Permiso denegado. Revisa la configuración de tu navegador.");
+            alert("Permiso denegado por el navegador. Pero sí escucharás la campana y la vibración.");
           }
         });
       } else {
         new Notification("Las notificaciones ya están activas", { body: "Todo listo para recibir nuevos lavados." });
       }
     } else {
-      alert("Tu navegador no soporta notificaciones web.");
+      alert("Tu navegador no soporta notificaciones web. Pero sí escucharás la campana y la vibración.");
     }
   };
 
