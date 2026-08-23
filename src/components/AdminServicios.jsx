@@ -32,8 +32,15 @@ export default function AdminServicios() {
       window.history.replaceState({}, document.title);
     }
 
+    const channel = supabase.channel('servicios_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'servicios' }, () => {
+        fetchServicios();
+      })
+      .subscribe();
+
     return () => {
       window.removeEventListener('openNewServiceModal', handleOpenModal);
+      supabase.removeChannel(channel);
     };
   }, [location.state]);
 

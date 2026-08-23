@@ -22,6 +22,16 @@ export default function Trabajadores() {
 
   useEffect(() => {
     fetchTrabajadores();
+
+    const channel = supabase.channel('trabajadores_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trabajadores' }, () => {
+        fetchTrabajadores();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchTrabajadores = async () => {

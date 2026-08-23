@@ -23,6 +23,20 @@ export default function Dashboard() {
     fetchReservas();
     fetchServicios();
     fetchTrabajadores();
+
+    // Suscripción a cambios en tiempo real
+    const channel = supabase.channel('dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, (payload) => {
+        fetchReservas();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trabajadores' }, (payload) => {
+        fetchTrabajadores();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchPromos = async () => {
