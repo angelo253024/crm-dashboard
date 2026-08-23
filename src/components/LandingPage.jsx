@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun, MessageSquare, Shield, Clock, Zap, MapPin, CheckCircle } from 'lucide-react';
+import InstallAppButton from './InstallAppButton';
 
 export default function LandingPage({ isDarkMode, toggleTheme }) {
   
@@ -102,6 +103,8 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
             <MessageSquare size={20} style={{ marginRight: '8px', color: '#1CA9C9' }} />
             Asistente IA
           </button>
+          
+          <InstallAppButton />
         </div>
 
         {/* Trust Badges */}

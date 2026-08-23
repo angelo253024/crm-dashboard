@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Bell, Sun, Moon, Plus, MessageSquare, MapPin, ChevronDown, User, LogOut, Settings, X, Check, Users, Menu } from 'lucide-react';
 import { supabase } from '../supabase';
+import InstallAppButton from './InstallAppButton';
 
 export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogout, onToggleSidebar }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -402,6 +403,8 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
         >
           <Plus size={16} /> <span className="header-btn-text">{user?.rol === 'Trabajador' ? 'Agregar Extra' : 'Nuevo Servicio'}</span>
         </button>
+
+        <InstallAppButton />
 
         {/* Trabajadores Status Button */}
         <div style={{ position: 'relative' }}>
