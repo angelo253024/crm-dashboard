@@ -368,6 +368,24 @@ export default function MotoDashboard({ user }) {
   const changeEstado = async (nuevoEstado) => {
     setEstado(nuevoEstado);
     await supabase.from('trabajadores').update({ estado_disponibilidad: nuevoEstado }).eq('id', user.id);
+    
+    // Forzar petición de permisos de GPS activamente tras la interacción del usuario
+    if (nuevoEstado !== 'inactivo' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+           // Actualizamos de inmediato la base de datos con esta primera lectura
+           supabase.from('trabajadores').update({
+             latitud: position.coords.latitude,
+             longitud: position.coords.longitude,
+             ultima_actualizacion_gps: new Date().toISOString()
+           }).eq('id', user.id).then();
+        },
+        (err) => {
+           alert("GPS Bloqueado. Por favor, ve a la configuración de tu navegador y permite la ubicación para esta app.");
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }
   };
 
   const aceptarReserva = async (id) => {
@@ -539,9 +557,19 @@ export default function MotoDashboard({ user }) {
           <h1 className="text-h1">Mi Panel de Trabajo</h1>
           <p className="text-muted" style={{ marginTop: '4px' }}>Hola, {user?.nombre}. Gestiona tus lavados.</p>
         </div>
-        <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
-          <Bell size={16} /> Activar Notificaciones
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={() => {
+              if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(()=>alert("¡GPS Activado!"), ()=>alert("GPS Denegado"), {enableHighAccuracy: true});
+              }
+            }} 
+            style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
+            <MapPin size={16} /> Activar GPS
+          </button>
+          <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
+            <Bell size={16} /> Activar Notificaciones
+          </button>
+        </div>
       </div>
 
       <div>
