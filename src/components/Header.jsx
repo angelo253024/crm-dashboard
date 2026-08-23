@@ -32,6 +32,11 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
   const userId = user?.id ? user.id.substring(0, 8) : 'Invitado';
   const userPhoto = user?.foto_url;
 
+  const getNombreCorto = (nombreCompuesto) => {
+    if (!nombreCompuesto) return 'Cliente';
+    return nombreCompuesto.split(' - Tel: ')[0];
+  };
+
   const navigate = useNavigate();
   const audioRef = React.useRef(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
@@ -113,18 +118,20 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
              let msj = '';
              let tipo = 'info';
              
-             if (payload.eventType === 'INSERT') {
+              if (payload.eventType === 'INSERT') {
+               const nombre = getNombreCorto(payload.new.cliente_nombre);
                if (esMia) {
-                 msj = `Nuevo servicio asignado: ${payload.new.cliente_nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
+                 msj = `Nuevo servicio asignado: ${nombre} - ${payload.new.vehiculo} - ${payload.new.servicio}`;
                } else if (esPendiente) {
-                 msj = `¡Nuevo lavado disponible! ${payload.new.cliente_nombre} - ${payload.new.vehiculo}`;
+                 msj = `¡Nuevo lavado disponible! ${nombre} - ${payload.new.vehiculo}`;
                }
              } else if (payload.eventType === 'UPDATE') {
                if (!esMia) return;
+               const nombre = getNombreCorto(payload.new.cliente_nombre);
                if (payload.old.estado_reserva !== payload.new.estado_reserva && payload.new.estado_reserva === 'asignado') {
-                 msj = `Se te ha reasignado un servicio: ${payload.new.cliente_nombre}`;
+                 msj = `Se te ha reasignado un servicio: ${nombre}`;
                } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
-                 msj = `El cliente canceló el servicio: ${payload.new.cliente_nombre}`;
+                 msj = `El cliente canceló el servicio: ${nombre}`;
                  tipo = 'warning';
                } else if (payload.old.servicio !== payload.new.servicio) {
                  msj = `Se agregaron o modificaron extras del servicio: ${payload.new.servicio}`;
@@ -183,16 +190,18 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
              let msj = '';
              let tipo = 'info';
              if (payload.eventType === 'INSERT') {
-               msj = `Nueva reserva creada: ${payload.new.cliente_nombre} - ${payload.new.servicio}`;
+               const nombre = getNombreCorto(payload.new.cliente_nombre);
+               msj = `Nueva reserva creada: ${nombre} - ${payload.new.servicio}`;
              } else if (payload.eventType === 'UPDATE') {
+               const nombre = getNombreCorto(payload.new.cliente_nombre);
                if (payload.old.estado_reserva !== payload.new.estado_reserva) {
-                 msj = `Reserva de ${payload.new.cliente_nombre} cambió a: ${payload.new.estado_reserva?.replace('_', ' ')}`;
+                 msj = `Reserva de ${nombre} cambió a: ${payload.new.estado_reserva?.replace('_', ' ')}`;
                  if (payload.new.estado_reserva === 'completado') tipo = 'success';
                } else if (payload.old.estado !== payload.new.estado && payload.new.estado === 'Cancelado') {
-                 msj = `Cancelación de reserva: ${payload.new.cliente_nombre}`;
+                 msj = `Cancelación de reserva: ${nombre}`;
                  tipo = 'warning';
                } else if (payload.old.servicio !== payload.new.servicio) {
-                 msj = `Extras o servicios modificados para: ${payload.new.cliente_nombre}`;
+                 msj = `Extras o servicios modificados para: ${nombre}`;
                }
              }
              if (msj) {
