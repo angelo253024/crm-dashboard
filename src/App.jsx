@@ -1,7 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-import OneSignal from 'react-onesignal'
 
 // Layout y Componentes Globales Críticos (no diferidos)
 import Layout from './components/Layout'
@@ -72,58 +71,6 @@ function App() {
     return false; // Default to light mode as requested
   });
 
-  // Inicializar OneSignal
-  useEffect(() => {
-    const initOneSignal = async () => {
-      try {
-        await OneSignal.init({
-          appId: "a3f26ad5-6743-4eae-b720-6e7b2b3a36c6",
-          allowLocalhostAsSecureOrigin: true,
-          notifyButton: {
-            enable: true, // Muestra una campanita para suscribirse
-          },
-        });
-      } catch (error) {
-        console.error("Error al inicializar OneSignal:", error);
-      }
-    };
-    initOneSignal();
-  }, []);
-
-  // Sincronizar usuario con OneSignal
-  useEffect(() => {
-    if (user && user.id && user.id !== 'local-demo') {
-      try {
-        // Enlazar el dispositivo actual con el ID del trabajador
-        if (OneSignal.User) {
-          OneSignal.login(user.id);
-          
-          // Opcional: Obtener el push subscription ID para guardarlo en BD si se requiere
-          const handlePushSubscription = async () => {
-             if (OneSignal.User.PushSubscription.id) {
-                 const { supabase } = await import('./supabase');
-                 await supabase
-                     .from('trabajadores')
-                     .update({ onesignal_id: OneSignal.User.PushSubscription.id })
-                     .eq('id', user.id);
-             }
-          };
-          
-          // Escuchar cambios de suscripción
-          OneSignal.User.PushSubscription.addEventListener('change', handlePushSubscription);
-          // Ejecutar por si ya estaba suscrito
-          handlePushSubscription();
-        }
-      } catch (e) {
-        console.error("Error logging to OneSignal", e);
-      }
-    } else {
-       if (OneSignal.User) {
-          OneSignal.logout();
-       }
-    }
-  }, [user]);
-
   useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add('dark');
@@ -164,9 +111,9 @@ function App() {
           {/* Rutas Públicas */}
           <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
           <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />} 
+          <Route
+            path="/login"
+            element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />}
           />
 
           {/* Rutas Protegidas (CRM Interno) */}
@@ -180,7 +127,7 @@ function App() {
           <Route path="/metodos-pago" element={<ProtectedRoute><AdminMetodosPago /></ProtectedRoute>} />
           <Route path="/admin-bot" element={<ProtectedRoute><AdminBot /></ProtectedRoute>} />
           <Route path="/horarios" element={<ProtectedRoute><AdminHorarios user={user} /></ProtectedRoute>} />
-          
+
           {/* Cualquier ruta que no exista redirige a la Landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
