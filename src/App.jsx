@@ -168,6 +168,8 @@ function App() {
             path="/admin"
             element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />}
           />
+          {/* Mantener compatibilidad con la antigua ruta /login */}
+          <Route path="/login" element={<Navigate to="/admin" replace />} />
 
           {/* Rutas Protegidas (CRM Interno) */}
           <Route path="/dashboard" element={<ProtectedRoute>{user?.rol === 'Trabajador' ? <MotoDashboard user={user} /> : <Dashboard />}</ProtectedRoute>} />
