@@ -458,6 +458,7 @@ export default function MotoDashboard({ user }) {
     
     await supabase.from('reservas').update({
       servicio: nuevoServicioStr,
+      precio: nuevoPrecio,
       precio_total: nuevoPrecio
     }).eq('id', resId);
     
@@ -726,7 +727,9 @@ export default function MotoDashboard({ user }) {
             <div key={res.id} style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-soft)', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+                    {res.servicio} <span style={{ color: '#10b981', marginLeft: '6px' }}>(Bs {res.precio_total || res.precio || 0})</span>
+                  </h3>
                   <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}</p>
                   <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Fecha:</strong> {res.fecha_reserva || 'No especificada'} | <strong>Hora:</strong> {res.hora_reserva || 'No especificada'}</p>
                 </div>
