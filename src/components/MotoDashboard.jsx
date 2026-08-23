@@ -453,14 +453,19 @@ export default function MotoDashboard({ user }) {
     const reserva = reservas.find(r => r.id === resId);
     if(!reserva) return;
     
-    const nuevoServicioStr = `${reserva.servicio || ''} + ${extraServicioDesc}`;
-    const nuevoPrecio = (reserva.precio_total || reserva.precio || 0) + Number(extraServicioMonto);
+    const nuevoServicioStr = reserva.servicio ? `${reserva.servicio} + ${extraServicioDesc}` : extraServicioDesc;
+    const nuevoPrecio = Number(reserva.precio_total || reserva.precio || 0) + Number(extraServicioMonto);
     
-    await supabase.from('reservas').update({
+    const { error } = await supabase.from('reservas').update({
       servicio: nuevoServicioStr,
-      precio: nuevoPrecio,
       precio_total: nuevoPrecio
     }).eq('id', resId);
+    
+    if (error) {
+      console.error("Error updating reserva:", error);
+      alert("Hubo un error al guardar el extra. Intenta de nuevo.");
+      return;
+    }
     
     setShowExtraService(null);
     setExtraServicioDesc('');
@@ -728,7 +733,7 @@ export default function MotoDashboard({ user }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-                    {res.servicio} <span style={{ color: '#10b981', marginLeft: '6px' }}>(Bs {res.precio_total || res.precio || 0})</span>
+                    {res.servicio || 'Servicio Personalizado'} <span style={{ color: '#10b981', marginLeft: '6px' }}>(Bs {res.precio_total || res.precio || 0})</span>
                   </h3>
                   <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}</p>
                   <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Fecha:</strong> {res.fecha_reserva || 'No especificada'} | <strong>Hora:</strong> {res.hora_reserva || 'No especificada'}</p>
