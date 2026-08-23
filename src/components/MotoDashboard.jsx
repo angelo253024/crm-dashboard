@@ -475,8 +475,20 @@ export default function MotoDashboard({ user }) {
 
   // Pedir permiso para notificaciones
   const requestNotifPermission = () => {
-    if (window.Notification && Notification.permission !== "granted") {
-      Notification.requestPermission();
+    if (window.Notification) {
+      if (Notification.permission !== "granted") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification("¡Notificaciones activadas!", { body: "Ahora recibirás avisos de nuevos lavados." });
+          } else {
+            alert("Permiso denegado. Revisa la configuración de tu navegador.");
+          }
+        });
+      } else {
+        new Notification("Las notificaciones ya están activas", { body: "Todo listo para recibir nuevos lavados." });
+      }
+    } else {
+      alert("Tu navegador no soporta notificaciones web.");
     }
   };
 
