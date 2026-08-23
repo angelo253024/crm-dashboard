@@ -85,7 +85,18 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
       try {
-        new Notification(title, { body: body });
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(registration => {
+            registration.showNotification(title, { 
+              body: body, 
+              icon: '/logo.png',
+              badge: '/logo.png',
+              vibrate: [200, 100, 200]
+            });
+          });
+        } else {
+          new Notification(title, { body: body, icon: '/logo.png' });
+        }
       } catch (e) {
         console.warn('Native notification failed:', e);
       }
