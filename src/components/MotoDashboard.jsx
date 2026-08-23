@@ -720,6 +720,7 @@ export default function MotoDashboard({ user }) {
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
                   <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}</p>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Fecha:</strong> {res.fecha_reserva || 'No especificada'} | <strong>Hora:</strong> {res.hora_reserva || 'No especificada'}</p>
                 </div>
                 <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: res.estado_reserva === 'asignado' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: res.estado_reserva === 'asignado' ? '#3b82f6' : '#10b981' }}>
                   {res.estado_reserva === 'asignado' ? 'NUEVO ASIGNADO' : 'EN CAMINO'}
@@ -840,7 +841,7 @@ export default function MotoDashboard({ user }) {
                   <div>
                     <h3 style={{ fontSize: '16px', fontWeight: 'bold', margin: '0 0 4px 0' }}>{res.servicio}</h3>
                     <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}><strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}</p>
-                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Hora:</strong> {res.hora_reserva || res.hora}</p>
+                    <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}><strong>Fecha:</strong> {res.fecha_reserva || 'No especificada'} | <strong>Hora:</strong> {res.hora_reserva || res.hora || 'No especificada'}</p>
                   </div>
                   <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
                     PENDIENTE
