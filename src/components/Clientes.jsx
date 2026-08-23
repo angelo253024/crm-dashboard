@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Phone, Car, MapPin, Search, Plus, MessageCircle, Calendar, ShieldCheck, Trash2, X } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -39,7 +39,7 @@ export default function Clientes() {
         });
       }
     } catch (err) {
-      console.log('Tabla clientes no disponible, extrayendo de reservas...');
+      console.warn('Tabla clientes no disponible, extrayendo de reservas...');
     }
 
     // 2. Extraer o complementar clientes desde la tabla 'reservas' (fallback inteligente)
@@ -171,7 +171,7 @@ export default function Clientes() {
         try {
           await supabase.from('reservas').delete().ilike('cliente_nombre', `%${cleanPhone}%`);
         } catch (e) {
-          console.log('No se pudo borrar reservas por RLS/FK, ignorando...');
+          console.warn('No se pudo borrar reservas por RLS/FK, ignorando...');
         }
       }
 
@@ -208,11 +208,20 @@ export default function Clientes() {
     }
   };
 
-  const filteredClientes = clientes.filter(c => 
-    c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.telefono?.includes(searchTerm) ||
-    c.vehiculo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClientes = useMemo(() => {
+    return clientes.filter(c => 
+      c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.telefono?.includes(searchTerm) ||
+      c.vehiculo?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [clientes, searchTerm]);
+
+  const kpiStats = useMemo(() => {
+    return {
+      total: clientes.length,
+      vehiculos: clientes.filter(c => c.vehiculo && c.vehiculo !== 'No especificado').length
+    };
+  }, [clientes]);
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -248,7 +257,7 @@ export default function Clientes() {
           </div>
           <div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Clientes Registrados</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>{clientes.length}</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>{kpiStats.total}</div>
           </div>
         </div>
 
@@ -258,7 +267,7 @@ export default function Clientes() {
           </div>
           <div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Vehículos en la Plataforma</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>{clientes.filter(c => c.vehiculo && c.vehiculo !== 'No especificado').length}</div>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)' }}>{kpiStats.vehiculos}</div>
           </div>
         </div>
 

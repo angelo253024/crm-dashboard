@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase';
 
@@ -140,11 +140,14 @@ export default function Citas() {
   const totalSlots = [...blanks, ...daysArray];
 
   // Agrupar eventos por fecha para mostrarlos en el calendario
-  const eventsByDate = {};
-  events.forEach(ev => {
-    if (!eventsByDate[ev.dateStr]) eventsByDate[ev.dateStr] = [];
-    eventsByDate[ev.dateStr].push(ev);
-  });
+  const eventsByDate = useMemo(() => {
+    const grouped = {};
+    events.forEach(ev => {
+      if (!grouped[ev.dateStr]) grouped[ev.dateStr] = [];
+      grouped[ev.dateStr].push(ev);
+    });
+    return grouped;
+  }, [events]);
 
   const handleDayClick = (day) => {
     if (!day) return;

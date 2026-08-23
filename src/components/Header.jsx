@@ -49,7 +49,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           audioRef.current.currentTime = 0;
           isUnlocked = true;
           setAudioUnlocked(true);
-        }).catch(err => console.log('Audio unlock fallback:', err));
+        }).catch(err => console.warn('Audio unlock fallback:', err));
         
         document.removeEventListener('click', unlockAudio);
         document.removeEventListener('touchstart', unlockAudio);
@@ -88,7 +88,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
             setNotificaciones(prev => [payload.new, ...prev]);
             if (audioRef.current) {
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(e=>console.log('Audio error:', e));
+              audioRef.current.play().catch(e=>console.warn('Audio error:', e));
             }
             setIsNotifMenuOpen(true);
           }
@@ -147,7 +147,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                setNotificaciones(prev => [notif, ...prev]);
                if (audioRef.current) {
                  audioRef.current.currentTime = 0;
-                 audioRef.current.play().catch(e=>console.log('Audio error:', e));
+                 audioRef.current.play().catch(e=>console.warn('Audio error:', e));
                }
                setIsNotifMenuOpen(true);
              }
@@ -206,7 +206,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
                setNotificaciones(prev => [notif, ...prev]);
                if (audioRef.current) {
                  audioRef.current.currentTime = 0;
-                 audioRef.current.play().catch(e=>console.log('Audio error:', e));
+                 audioRef.current.play().catch(e=>console.warn('Audio error:', e));
                }
                setIsNotifMenuOpen(true);
              }
@@ -227,7 +227,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
              setNotificaciones(prev => [notif, ...prev]);
              if (audioRef.current) {
                audioRef.current.currentTime = 0;
-               audioRef.current.play().catch(e=>console.log('Audio error:', e));
+               audioRef.current.play().catch(e=>console.warn('Audio error:', e));
              }
              setIsNotifMenuOpen(true);
           }

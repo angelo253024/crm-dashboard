@@ -736,7 +736,7 @@ export default function MotoDashboard({ user }) {
                       <a 
                         href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
                         target="_blank" 
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
                         <Map size={14} /> Maps
@@ -744,7 +744,7 @@ export default function MotoDashboard({ user }) {
                       <a 
                         href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps)}&navigate=yes`} 
                         target="_blank" 
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.1)', fontSize: '12px', color: '#10b981', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
                         Waze
