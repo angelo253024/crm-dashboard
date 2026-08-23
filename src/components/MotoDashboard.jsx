@@ -550,6 +550,41 @@ export default function MotoDashboard({ user }) {
     }
   };
 
+  const requestGpsPermission = () => {
+    if (!navigator.geolocation) {
+      alert("Tu navegador no soporta GPS.");
+      return;
+    }
+    
+    try {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          alert("¡GPS Activado correctamente!");
+          supabase.from('trabajadores').update({
+            latitud: position.coords.latitude,
+            longitud: position.coords.longitude,
+            ultima_actualizacion_gps: new Date().toISOString()
+          }).eq('id', user.id).then();
+        },
+        (error) => {
+          console.error("Error pidiendo GPS:", error);
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("Permiso de GPS DENEGADO. Debes ir a la configuración de tu navegador, borrar los permisos y permitir la ubicación para esta app.");
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            alert("La ubicación no está disponible en este momento. Intenta al aire libre.");
+          } else if (error.code === error.TIMEOUT) {
+            alert("Se agotó el tiempo esperando el GPS. Intenta de nuevo.");
+          } else {
+            alert("Error desconocido al intentar obtener el GPS: " + error.message);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    } catch(err) {
+      alert("Ocurrió un error al solicitar el GPS: " + err.message);
+    }
+  };
+
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -558,12 +593,7 @@ export default function MotoDashboard({ user }) {
           <p className="text-muted" style={{ marginTop: '4px' }}>Hola, {user?.nombre}. Gestiona tus lavados.</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(()=>alert("¡GPS Activado!"), ()=>alert("GPS Denegado"), {enableHighAccuracy: true});
-              }
-            }} 
-            style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
+          <button onClick={requestGpsPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
             <MapPin size={16} /> Activar GPS
           </button>
           <button onClick={requestNotifPermission} style={{ background: 'none', border: '1px solid var(--border-color)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontSize: '13px' }}>
