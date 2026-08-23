@@ -17,7 +17,8 @@
     "leaflet": "^1.9.4",
     "react-leaflet": "^4.2.1",
     "uuid": "^9.0.1",
-    "@supabase/supabase-js": "^2.39.7"
+    "@supabase/supabase-js": "^2.39.7",
+    "react-onesignal": "^3.0.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
