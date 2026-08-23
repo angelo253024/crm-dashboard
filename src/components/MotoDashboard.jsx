@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import OneSignal from 'react-onesignal';
 import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye } from 'lucide-react';
 import KpiCards from './KpiCards';
 
@@ -211,9 +212,10 @@ export default function MotoDashboard({ user }) {
           } catch(e) {}
         },
         (error) => {
-          console.error("Error GPS:", error);
+          console.warn("Error GPS (intentando recuperar):", error.message);
+          // Si el usuario denegó, podríamos lanzar una alerta, de lo contrario el navegador seguirá intentando
         },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
       );
     }
 
@@ -489,20 +491,41 @@ export default function MotoDashboard({ user }) {
     }
   };
 
-  // Pedir permiso para notificaciones
   const requestNotifPermission = () => {
     playMobileAlert(); // Probar sonido y vibración inmediatamente
+    
+    // Primero, solicitar permiso a través de OneSignal para asegurar la recepción Push
+    if (OneSignal.Notifications) {
+      OneSignal.Notifications.requestPermission().then(permission => {
+         if(permission) {
+             console.log("OneSignal Permission Granted");
+         }
+      });
+    }
+
     if (window.Notification) {
       if (Notification.permission !== "granted") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            new Notification("¡Notificaciones activadas!", { body: "Ahora recibirás avisos de nuevos lavados." });
+             if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                  registration.showNotification("¡Notificaciones activadas!", { body: "Ahora recibirás avisos de nuevos lavados.", icon: '/logo.png' });
+                });
+             } else {
+                new Notification("¡Notificaciones activadas!", { body: "Ahora recibirás avisos de nuevos lavados.", icon: '/logo.png' });
+             }
           } else {
             alert("Permiso denegado por el navegador. Pero sí escucharás la campana y la vibración.");
           }
         });
       } else {
-        new Notification("Las notificaciones ya están activas", { body: "Todo listo para recibir nuevos lavados." });
+         if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+              registration.showNotification("Las notificaciones ya están activas", { body: "Todo listo para recibir nuevos lavados.", icon: '/logo.png' });
+            });
+         } else {
+            new Notification("Las notificaciones ya están activas", { body: "Todo listo para recibir nuevos lavados.", icon: '/logo.png' });
+         }
       }
     } else {
       alert("Tu navegador no soporta notificaciones web. Pero sí escucharás la campana y la vibración.");
