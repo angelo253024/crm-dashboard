@@ -104,6 +104,7 @@ export default function MotoDashboard({ user }) {
   const [showExtraService, setShowExtraService] = useState(null);
   const [extraServicioDesc, setExtraServicioDesc] = useState('');
   const [extraServicioMonto, setExtraServicioMonto] = useState('');
+  const [serviciosCatalogo, setServiciosCatalogo] = useState([]);
   
   // Historial State
   const [historialSearch, setHistorialSearch] = useState('');
@@ -145,6 +146,7 @@ export default function MotoDashboard({ user }) {
       fetchTrabajadorEstado();
       fetchReservasAsignadas();
       fetchLiquidacionData();
+      fetchServiciosCatalogo();
       
       // Suscribirse a cambios en reservas para esta moto
       const channel = supabase
@@ -249,7 +251,13 @@ export default function MotoDashboard({ user }) {
       setPendientes(pendingData);
     }
     
+    
     setLoading(false);
+  };
+
+  const fetchServiciosCatalogo = async () => {
+    const { data } = await supabase.from('servicios').select('*').eq('disponible', true).order('precio', { ascending: true });
+    if (data) setServiciosCatalogo(data);
   };
 
   const fetchLiquidacionData = async () => {
@@ -802,6 +810,22 @@ export default function MotoDashboard({ user }) {
                     <PlusCircle size={16} /> Agregar Servicio o Cobro Extra
                   </h4>
                   <form onSubmit={(e) => handleAddExtra(e, res.id)} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    
+                    {serviciosCatalogo.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                        {serviciosCatalogo.map(s => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => { setExtraServicioDesc(s.nombre); setExtraServicioMonto(s.precio); }}
+                            style={{ padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', borderRadius: '16px', border: '1px solid #8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', cursor: 'pointer', transition: 'all 0.2s' }}
+                          >
+                            + {s.nombre} (Bs {s.precio})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <input
                       type="text"
                       placeholder="Descripción (ej. Encerado extra)"
