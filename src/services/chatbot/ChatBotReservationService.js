@@ -151,16 +151,15 @@ export class ChatBotReservationService {
         let knownProfile = null;
         try {
           const { data: clientDB } = await supabase
-            .from('reservas')
-            .select('cliente_nombre, vehiculo')
-            .eq('cliente_telefono', cleanPhone)
-            .neq('cliente_nombre', '')
+            .from('clientes')
+            .select('nombre, vehiculo')
+            .eq('telefono', cleanPhone)
             .order('created_at', { ascending: false })
             .limit(1);
 
           if (clientDB && clientDB.length > 0) {
             knownProfile = {
-              nombre: clientDB[0].cliente_nombre,
+              nombre: clientDB[0].nombre,
               telefono: input,
               vehiculo: clientDB[0].vehiculo
             };
