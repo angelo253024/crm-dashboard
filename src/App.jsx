@@ -139,7 +139,7 @@ function App() {
   // Componente envoltorio para proteger las rutas internas
   const ProtectedRoute = ({ children }) => {
     if (!user) {
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/admin" replace />;
     }
     return (
       <Layout isDarkMode={isDarkMode} toggleTheme={toggleTheme} user={user} setUser={setUser} onLogout={handleLogout}>
@@ -165,7 +165,7 @@ function App() {
           <Route path="/" element={<LandingPage isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
           <Route path="/reservar" element={<ServiciosCatalog isDarkMode={isDarkMode} toggleTheme={toggleTheme} />} />
           <Route
-            path="/login"
+            path="/admin"
             element={user ? <Navigate to="/dashboard" replace /> : <Login onLogin={(loggedInUser) => setUser(loggedInUser)} />}
           />
 
