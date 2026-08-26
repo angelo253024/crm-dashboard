@@ -27,70 +27,9 @@ export class SupabaseQueryService {
 
     // 2. Si no hay respuesta rápida estática, intentar consultar las tablas de negocio dinámicas
     try {
-      if (intent === 'horario') {
-        const { data: horarios } = await supabase.from('horarios_atencion').select('*').order('orden', { ascending: true });
-        if (horarios && horarios.length > 0) {
-          const listado = horarios.map(h => {
-            if (h.cerrado) return `- ${h.dia_semana}: Cerrado`;
-            const apertura = h.hora_apertura ? h.hora_apertura.substring(0, 5) : '08:00';
-            const cierre = h.hora_cierre ? h.hora_cierre.substring(0, 5) : '19:00';
-            return `- ${h.dia_semana}: ${apertura} a ${cierre}`;
-          }).join('\n');
-          return `Nuestros horarios de atención son:\n${listado}`;
-        }
-      }
-
-      if (intent === 'precios' || intent === 'servicios') {
-        const { data: servicios } = await supabase.from('servicios').select('nombre, precio, categoria').eq('disponible', true);
-        if (servicios && servicios.length > 0) {
-          const categoryOrder = {
-            'Lavado Clásico': 1,
-            'Lavado Premium': 2,
-            'Lavado Bicis y Motos': 3,
-            'Personaliza tu lavado': 4,
-            'Otros': 5
-          };
-
-          const getSizeOrder = (nombre) => {
-            if (!nombre) return 99;
-            const n = nombre.toUpperCase();
-            if (n.includes('"P"') || n.includes(' "P"') || n.endsWith(' P')) return 1;
-            if (n.includes('"M"') || n.includes(' "M"') || n.endsWith(' M')) return 2;
-            if (n.includes('"L"') || n.includes(' "L"') || n.endsWith(' L')) return 3;
-            if (n.includes('"XL"') || n.includes(' "XL"') || n.endsWith(' XL')) return 4;
-            return 10;
-          };
-
-          const sorted = [...servicios].sort((a, b) => {
-            const catA = categoryOrder[a.categoria] || 99;
-            const catB = categoryOrder[b.categoria] || 99;
-            if (catA !== catB) return catA - catB;
-
-            const sizeA = getSizeOrder(a.nombre);
-            const sizeB = getSizeOrder(b.nombre);
-            if (sizeA !== sizeB) return sizeA - sizeB;
-
-            return Number(a.precio) - Number(b.precio);
-          });
-
-          const grouped = {};
-          sorted.forEach(s => {
-            const cat = s.categoria || 'Otros';
-            if (!grouped[cat]) grouped[cat] = [];
-            grouped[cat].push(s);
-          });
-
-          let resultText = "🚗 **Nuestros Servicios y Tarifas**\n\n";
-          for (const cat of Object.keys(grouped)) {
-            resultText += `🔹 **${cat}**\n`;
-            grouped[cat].forEach(s => {
-              resultText += `• ${s.nombre} — Bs. ${s.precio}\n`;
-            });
-            resultText += "\n";
-          }
-          resultText += "¡Puedes agendar la reserva de cualquiera de estos servicios conmigo! 📅";
-          return resultText.trim();
-        }
+      // Precios y horarios son manejados ahora por Gemini para tener contexto inteligente del vehículo.
+      if (intent === 'horario' || intent === 'precios' || intent === 'servicios') {
+        return null;
       }
 
       if (intent === 'reservar') {
@@ -145,5 +84,54 @@ export class SupabaseQueryService {
     }
 
     return null;
+  }
+
+  static businessContextCache = null;
+  static lastContextFetch = 0;
+
+  /**
+   * Obtiene el contexto del negocio (horarios, servicios, precios) para pasarlo a la IA
+   */
+  static async getBusinessContext() {
+    const now = Date.now();
+    if (this.businessContextCache && (now - this.lastContextFetch < 300000)) { // 5 minutos de caché
+      return this.businessContextCache;
+    }
+
+    let context = "";
+    try {
+      // 1. Cargar Horarios
+      const { data: horarios } = await supabase.from('horarios_atencion').select('*').order('orden', { ascending: true });
+      if (horarios && horarios.length > 0) {
+        context += "HORARIOS DE ATENCIÓN:\n";
+        horarios.forEach(h => {
+          if (h.cerrado) {
+            context += `- ${h.dia_semana}: Cerrado\n`;
+          } else {
+            const apertura = h.hora_apertura ? h.hora_apertura.substring(0, 5) : '08:00';
+            const cierre = h.hora_cierre ? h.hora_cierre.substring(0, 5) : '19:00';
+            context += `- ${h.dia_semana}: ${apertura} a ${cierre}\n`;
+          }
+        });
+        context += "\n";
+      }
+
+      // 2. Cargar Servicios
+      const { data: servicios } = await supabase.from('servicios').select('nombre, precio, categoria').eq('disponible', true);
+      if (servicios && servicios.length > 0) {
+        context += "SERVICIOS Y PRECIOS:\n(Las terminaciones P, M, L, XL indican el tamaño del vehículo. P=Pequeño, M=Mediano, L=Grande, XL=Extra Grande)\n";
+        servicios.forEach(s => {
+          context += `- ${s.nombre} (Categoría: ${s.categoria}): Bs. ${s.precio}\n`;
+        });
+        context += "\n";
+      }
+
+      this.businessContextCache = context;
+      this.lastContextFetch = now;
+    } catch (error) {
+      console.error("Error consultando contexto de negocio:", error);
+    }
+
+    return this.businessContextCache || "";
   }
 }

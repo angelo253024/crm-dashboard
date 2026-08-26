@@ -75,7 +75,7 @@ async function detectBestModel(apiKey) {
 }
 
 export class GeminiService {
-  static async getCompletion(prompt) {
+  static async getCompletion(prompt, context = "") {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -94,7 +94,14 @@ export class GeminiService {
     const systemMessage = `Eres el asistente virtual experto del CRM "Lavamóvil Norte".
 Respondes preguntas de los clientes y dueños de manera amable, profesional y precisa.
 Tus respuestas deben ser concisas y en español. Estás diseñado para ayudar en un Car Wash/Lavadero de vehículos.
-Nunca inventes precios o servicios si no estás seguro.`;
+Nunca inventes precios o servicios si no estás seguro.
+
+INFORMACIÓN DEL NEGOCIO (Utiliza esto para responder):
+${context}
+
+REGLAS IMPORTANTES:
+1. Si el cliente menciona su vehículo (ej. Toyota Tundra, Suzuki Swift, Kia Picanto), detecta inteligentemente su categoría de tamaño (P=Pequeño, M=Mediano, L=Grande, XL=Extra Grande) y ofrécele ÚNICAMENTE los servicios y precios que correspondan a esa categoría (ej. Toyota Tundra es XL, un auto compacto es P).
+2. Si el cliente pregunta por horarios, responde con los horarios disponibles de manera clara y amigable.`;
 
     try {
       const response = await fetch(

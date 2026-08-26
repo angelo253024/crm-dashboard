@@ -75,7 +75,8 @@ export class HybridAIService {
             } else {
               // 3. Si no hay caché, usar Gemini
               onStatusUpdate("Pensando (IA)...");
-              const aiResponse = await GeminiService.getCompletion(userMessage);
+              const context = await SupabaseQueryService.getBusinessContext();
+              const aiResponse = await GeminiService.getCompletion(userMessage, context);
               
               if (aiResponse === GEMINI_ERROR_MARKER) {
                 finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
