@@ -82,9 +82,18 @@ export class HybridAIService {
                 finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
                 source = 'error-gemini';
               } else {
-                finalResponse = aiResponse;
-                source = 'gemini';
-                CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+                if (aiResponse.includes('[INICIAR_RESERVA]')) {
+                  onStatusUpdate("Iniciando reserva...");
+                  const result = ChatBotReservationService.start();
+                  finalResponse = aiResponse.replace('[INICIAR_RESERVA]', '').trim() + '\n\n' + result.text;
+                  source = result.source;
+                  buttons = result.buttons || null;
+                  requestGPS = result.requestGPS || false;
+                } else {
+                  finalResponse = aiResponse;
+                  source = 'gemini';
+                  CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
+                }
               }
             }
           }
