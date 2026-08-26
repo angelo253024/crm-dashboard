@@ -1,15 +1,21 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
 
 export default function InstallAppButton() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIosDevice, setIsIosDevice] = useState(false);
 
   useEffect(() => {
+    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+    setIsIosDevice(isIos);
+
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
       setIsInstalled(true);
+    } else if (isIos) {
+      setIsInstallable(true);
     }
 
     const handleBeforeInstallPrompt = (e) => {
@@ -35,7 +41,15 @@ export default function InstallAppButton() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (isIosDevice) {
+      alert("📲 Para instalar en iPhone / iPad:\n\n1. Asegúrate de estar usando el navegador Safari.\n2. Toca el ícono de 'Compartir' (el cuadrado con la flecha hacia arriba) en la barra inferior.\n3. Selecciona 'Agregar a inicio' o 'Add to Home Screen'.");
+      return;
+    }
+
+    if (!deferredPrompt) {
+      alert("Para instalar la aplicación, busca la opción 'Instalar aplicación' o 'Agregar a inicio' en el menú de tu navegador.");
+      return;
+    }
     
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -63,13 +77,13 @@ export default function InstallAppButton() {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        opacity: isInstallable ? 1 : 0.6,
-        cursor: isInstallable ? 'pointer' : 'not-allowed'
+        opacity: 1,
+        cursor: 'pointer'
       }}
       title={isInstallable ? "Descargar Lavamóvil App" : "Instalación nativa no disponible en este navegador o dispositivo"}
     >
       <Download size={20} />
-      {isInstallable ? 'Descargar App' : 'App Disponible'}
+      Descargar App
     </button>
   );
 }
