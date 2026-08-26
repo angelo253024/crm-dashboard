@@ -9,6 +9,7 @@ function MotoChat({ sessionId, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const audioRef = useRef(new Audio('/aternos-notification.mp3'));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,6 +27,11 @@ function MotoChat({ sessionId, onClose }) {
         setMessages(prev => {
           // Single source of truth: evitar duplicados por ID real de base de datos
           if (prev.some(m => m.id === payload.new.id)) return prev;
+          
+          if (payload.new.rol === 'user') {
+            audioRef.current.play().catch(e => console.log('Audio autoplay blocked:', e));
+          }
+          
           return [...prev, payload.new];
         });
       })
