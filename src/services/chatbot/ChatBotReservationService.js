@@ -607,6 +607,16 @@ export class ChatBotReservationService {
             .eq('fecha_reserva', parsedDate)
             .neq('estado', 'Cancelado');
 
+          if (existingReservasDate && existingReservasDate.length >= 10) {
+            _reservationState.step = STEPS.ASKING_DATE;
+            return {
+              text: '⚠️ Por hoy alcanzamos nuestro límite de reservas. Solo se puede agendar cita manualmente contactando al administrador.\n\nPor favor, selecciona o escribe **otra fecha**:',
+              source: 'reservation',
+              buttons: this._getNextDates(),
+              requestGPS: false
+            };
+          }
+
           const parseMin = (tStr) => {
             if (!tStr) return -1;
             const parts = String(tStr).split(':');

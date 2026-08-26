@@ -468,6 +468,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           .eq('fecha_reserva', fechaReserva)
           .neq('estado', 'Cancelado');
 
+        if (!isEditing && existingReservasCheck && existingReservasCheck.length >= 10) {
+          alert('Por hoy alcanzamos nuestro límite de reservas. Solo se puede agendar cita manualmente contactando al administrador.');
+          setIsSubmitting(false);
+          return;
+        }
+
         const conflictReserva = (existingReservasCheck || []).find(r => {
           if (isEditing && r.id === selectedReservaId) return false;
           const rMin = timeToMin(r.hora_reserva || r.hora);
