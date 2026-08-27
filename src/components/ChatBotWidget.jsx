@@ -87,6 +87,10 @@ export default function ChatBotWidget() {
   };
 
   const handleButtonClick = async (btn) => {
+    if (btn.isLink) {
+      window.open(btn.url, '_blank');
+      return;
+    }
     setMessages(prev => [...prev, { id: Date.now(), text: btn.label, sender: 'user', source: null }]);
     await sendMessageToService(btn.value || btn.label);
   };

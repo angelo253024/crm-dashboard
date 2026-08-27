@@ -82,15 +82,24 @@ export class HybridAIService {
                 finalResponse = "En este momento no puedo conectarme a mi motor de IA. Por favor verifica la configuración de Gemini o intenta más tarde.";
                 source = 'error-gemini';
               } else {
-                if (aiResponse.includes('[INICIAR_RESERVA]')) {
+                let finalAiResponse = aiResponse;
+                
+                if (finalAiResponse.includes('[BOTON_WHATSAPP]')) {
+                  finalAiResponse = finalAiResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
+                  buttons = [
+                    { label: '💬 Hablar con Asesor en WhatsApp', isLink: true, url: 'https://wa.me/59167750005' }
+                  ];
+                }
+
+                if (finalAiResponse.includes('[INICIAR_RESERVA]')) {
                   onStatusUpdate("Iniciando reserva...");
                   const result = ChatBotReservationService.start();
-                  finalResponse = aiResponse.replace('[INICIAR_RESERVA]', '').trim() + '\n\n' + result.text;
+                  finalResponse = finalAiResponse.replace(/\[INICIAR_RESERVA\]/g, '').trim() + '\n\n' + result.text;
                   source = result.source;
-                  buttons = result.buttons || null;
+                  buttons = result.buttons || buttons;
                   requestGPS = result.requestGPS || false;
                 } else {
-                  finalResponse = aiResponse;
+                  finalResponse = finalAiResponse;
                   source = 'gemini';
                   CacheService.saveToCache(userMessage, aiResponse).catch(e => console.error("Cache save error", e));
                 }
