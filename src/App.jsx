@@ -80,7 +80,7 @@ function App() {
           appId: "a3f26ad5-6743-4eae-b720-6e7b2b3a36c6",
           allowLocalhostAsSecureOrigin: true,
           notifyButton: {
-            enable: true, // Muestra una campanita para suscribirse
+            enable: false, // Deshabilitado para no molestar a los clientes con la campanita
           },
         });
       } catch (error) {
