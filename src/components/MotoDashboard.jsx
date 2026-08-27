@@ -940,15 +940,15 @@ export default function MotoDashboard({ user }) {
                 </div>
               </div>
               
-              {res.ubicacion_gps && (
+              {(res.ubicacion_gps || res.ubicacion) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <MapPin size={18} color="#ef4444" />
                     <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Ubicación</span>
-                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{res.ubicacion_gps}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' }}>{res.ubicacion_gps || res.ubicacion}</span>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
                       <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps || res.ubicacion)}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -956,7 +956,7 @@ export default function MotoDashboard({ user }) {
                         <Map size={14} /> Maps
                       </a>
                       <a 
-                        href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps)}&navigate=yes`} 
+                        href={`https://waze.com/ul?q=${encodeURIComponent(res.ubicacion_gps || res.ubicacion)}&navigate=yes`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(16, 185, 129, 0.1)', fontSize: '12px', color: '#10b981', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -972,7 +972,7 @@ export default function MotoDashboard({ user }) {
                       height="100%" 
                       frameBorder="0" 
                       style={{ border: 0 }}
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps)}&hl=es&z=15&output=embed`}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps || res.ubicacion)}&hl=es&z=15&output=embed`}
                       allowFullScreen>
                     </iframe>
                   </div>
@@ -1104,14 +1104,14 @@ export default function MotoDashboard({ user }) {
                   </div>
                 </div>
 
-                {res.ubicacion_gps && (
+                {(res.ubicacion_gps || res.ubicacion) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <MapPin size={18} color="#ef4444" />
                       <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Ubicación</span>
                       <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
                         <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps)}`} 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(res.ubicacion_gps || res.ubicacion)}`} 
                           target="_blank" 
                           rel="noreferrer"
                           style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: 'rgba(59, 130, 246, 0.1)', fontSize: '12px', color: '#3b82f6', textDecoration: 'none', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -1126,7 +1126,7 @@ export default function MotoDashboard({ user }) {
                         height="100%" 
                         frameBorder="0" 
                         style={{ border: 0 }}
-                        src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps)}&hl=es&z=15&output=embed`}
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(res.ubicacion_gps || res.ubicacion)}&hl=es&z=15&output=embed`}
                         allowFullScreen>
                       </iframe>
                     </div>
