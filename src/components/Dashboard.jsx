@@ -17,6 +17,43 @@ export default function Dashboard() {
   const [servicios, setServicios] = useState([]);
   const [trabajadores, setTrabajadores] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  
+  const handleOptimizeSystem = async () => {
+    if (!window.confirm('¿Estás seguro de optimizar el sistema? Esto limpiará la caché local y eliminará registros basura antiguos de la base de datos (Ej. Anti-Spam viejo).')) return;
+    setIsOptimizing(true);
+    try {
+      // 1. Mantener keys importantes (sesión, tema)
+      const keysToKeep = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key === 'theme')) {
+          keysToKeep.push({ key, value: localStorage.getItem(key) });
+        }
+      }
+      
+      // Limpiar todo y restaurar importantes
+      localStorage.clear();
+      keysToKeep.forEach(k => {
+        localStorage.setItem(k.key, k.value);
+      });
+
+      // 2. Ejecutar RPC en Supabase
+      const { error } = await supabase.rpc('limpiar_cache_sistema');
+      if (error) {
+        console.error('Error al optimizar BD:', error);
+        alert('Caché local limpiada, pero hubo un error optimizando la BD: ' + error.message);
+      } else {
+        alert('✅ ¡Sistema optimizado con éxito! Caché local y base de datos limpias.');
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error('Error en optimización:', e);
+      alert('Error general: ' + e.message);
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
   
   useEffect(() => {
     fetchPromos();
@@ -187,8 +224,17 @@ export default function Dashboard() {
       </div>
 
       <div className="card">
-        <div className="chart-header">
+        <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <h2 className="text-h2">Visión General del Rendimiento</h2>
+          <button 
+            onClick={handleOptimizeSystem} 
+            disabled={isOptimizing} 
+            style={{ padding: '8px 16px', backgroundColor: 'var(--accent-blue)', color: '#fff', border: 'none', borderRadius: '8px', cursor: isOptimizing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', opacity: isOptimizing ? 0.7 : 1 }}
+            title="Limpia el caché del navegador y registros basura de la BD"
+          >
+            <Trash2 size={16} />
+            {isOptimizing ? 'Optimizando...' : 'Optimizar Sistema'}
+          </button>
         </div>
         <KpiCards kpis={kpis} onCardClick={(type) => { setFiltroActivo(type); setShowFinanzasModal(true); }} />
       </div>
