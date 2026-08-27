@@ -187,32 +187,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const loadSavedClientProfiles = async () => {
     const clientMap = new Map();
 
-    // 1. Cargar desde localStorage
-    try {
-      const saved = localStorage.getItem('lavamovil_client_profile');
-      if (saved) {
-        const p = JSON.parse(saved);
-        if (p.nombre && p.telefono) {
-          const key = p.telefono.replace(/\D/g, '');
-          clientMap.set(key, { nombre: p.nombre, telefono: p.telefono, vehiculo: p.vehiculo || '' });
-        }
-      }
-
-      const savedArray = localStorage.getItem('lavamovil_saved_clients_v2');
-      if (savedArray) {
-        const arr = JSON.parse(savedArray);
-        arr.forEach(p => {
-          if (p.nombre && p.telefono) {
-            const key = p.telefono.replace(/\D/g, '');
-            if (!clientMap.has(key)) {
-              clientMap.set(key, { nombre: p.nombre, telefono: p.telefono, vehiculo: p.vehiculo || '' });
-            }
-          }
-        });
-      }
-    } catch (e) {}
-
-    // 2. Cargar desde Supabase tabla 'clientes'
+    // Cargar EXCLUSIVAMENTE desde Supabase tabla 'clientes'
     try {
       const { data: dbClientes } = await supabase.from('clientes').select('nombre, telefono, vehiculo');
       if (dbClientes && dbClientes.length > 0) {
@@ -225,27 +200,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           }
         });
       }
-    } catch(e) {}
-
-    // 3. Extraer clientes previos desde Supabase tabla 'reservas' (para tener todos los usuarios previos)
-    try {
-      const { data: dbReservas } = await supabase.from('reservas').select('cliente_nombre, vehiculo').order('created_at', { ascending: false });
-      if (dbReservas && dbReservas.length > 0) {
-        dbReservas.forEach(r => {
-          if (!r.cliente_nombre) return;
-          const parts = r.cliente_nombre.split(' - Tel: ');
-          const nombre = parts[0] ? parts[0].trim() : '';
-          const telefono = parts[1] ? parts[1].trim() : '';
-          if (nombre && telefono) {
-            const key = telefono.replace(/\D/g, '');
-            if (!clientMap.has(key) && key.length >= 7) {
-              const vehiculoClean = r.vehiculo ? r.vehiculo.split(' (Adicionales:')[0].trim() : '';
-              clientMap.set(key, { nombre, telefono, vehiculo: vehiculoClean });
-            }
-          }
-        });
-      }
-    } catch(e) {}
+    } catch(e) {
+      console.error("Error fetching clients:", e);
+    }
 
     const clients = Array.from(clientMap.values());
     setSavedClientsList(clients);
