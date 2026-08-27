@@ -471,6 +471,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     const mainService = validServices[0];
     const totalPrice = validServices.reduce((sum, s) => sum + Number(s.precio), 0);
+    
+    if (totalPrice < 100) {
+      alert(`⚠️ Monto Mínimo No Alcanzado\n\nEl pedido mínimo para servicio a domicilio es de 100 Bs. Tu total actual es de Bs. ${totalPrice}.\n\nPor favor, añade un servicio extra para continuar.`);
+      setIsSubmitting(false);
+      return;
+    }
+    
     const additionalNames = validServices.length > 1 ? ` (Adicionales: ${validServices.slice(1).map(s => s.nombre).join(', ')})` : '';
 
     const serviciosDetalleJSON = validServices.map(s => ({
@@ -1010,6 +1017,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                     </div>
                   </div>
                 )}
+
+                <div style={{ padding: '10px 14px', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid #ef4444', fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>
+                  ⚠️ <strong>Aviso:</strong> El monto mínimo para poder agendar un servicio a domicilio es de <strong>100 Bs</strong>.
+                </div>
 
                 {isAutofilled && (
                   <div style={{ padding: '10px 14px', backgroundColor: 'rgba(28, 169, 201, 0.12)', borderRadius: '8px', border: '1px solid var(--accent-green)', fontSize: '13px', color: 'var(--accent-green)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

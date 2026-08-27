@@ -100,6 +100,14 @@ export class SupabaseQueryService {
 
     let context = "";
     try {
+      // 0. Injectar Fecha y Hora Actual para contexto de reservas
+      const fechaActual = new Date();
+      const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/La_Paz' };
+      const fechaStr = fechaActual.toLocaleDateString('es-ES', opcionesFecha);
+      const horaStr = fechaActual.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' });
+      
+      context += `FECHA Y HORA ACTUAL: Hoy es ${fechaStr}, hora actual: ${horaStr}.\n\n`;
+
       // 1. Cargar Horarios
       const { data: horarios } = await supabase.from('horarios_atencion').select('*').order('orden', { ascending: true });
       if (horarios && horarios.length > 0) {

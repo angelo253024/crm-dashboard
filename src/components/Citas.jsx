@@ -132,6 +132,13 @@ export default function Citas() {
     setIsSubmitting(true);
     try {
       const selectedService = serviciosList.find(s => s.id === manualForm.servicio_id);
+      const totalPrice = selectedService ? (selectedService.precio || 0) : 0;
+
+      if (totalPrice < 100) {
+        alert(`⚠️ El monto mínimo para agendar una reserva es de 100 Bs. El servicio seleccionado cuesta Bs. ${totalPrice}.`);
+        setIsSubmitting(false);
+        return;
+      }
       
       const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
 
@@ -145,7 +152,7 @@ export default function Citas() {
         ubicacion_gps: manualForm.ubicacion_gps,
         estado: 'Reservado',
         estado_reserva: 'confirmada',
-        precio_total: selectedService ? (selectedService.precio || 0) : 0,
+        precio_total: totalPrice,
       };
       
       const { error } = await supabase.from('reservas').insert([newReserva]);

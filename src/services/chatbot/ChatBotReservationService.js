@@ -494,6 +494,19 @@ export class ChatBotReservationService {
         }
 
         if (isNo) {
+          const totalAcumulado = _reservationState.data.servicioPrecio + (_reservationState.data.serviciosAdicionales || []).reduce((sum, s) => sum + Number(s.precio), 0);
+          if (totalAcumulado < 100) {
+            _reservationState.step = STEPS.ASKING_ADDITIONAL_PROMPT;
+            return {
+              text: `⚠️ **Monto Mínimo No Alcanzado**\n\nEl pedido mínimo para servicio a domicilio es de **100 Bs**.\nTu total actual es de **Bs. ${totalAcumulado}**.\n\nPor favor, selecciona un servicio adicional para completar el monto mínimo:`,
+              source: 'reservation',
+              buttons: [
+                { label: '➕ Sí, agregar servicio extra', value: 'EXTRA_SI' }
+              ],
+              requestGPS: false,
+            };
+          }
+
           _reservationState.step = STEPS.ASKING_LOCATION;
           return {
             text: `📍 ¿Dónde te recogemos? Puedes:\n- Presionar el botón **"Enviar ubicación"**\n- O escribir tu dirección manualmente`,
@@ -515,6 +528,19 @@ export class ChatBotReservationService {
 
       case STEPS.ASKING_ADDITIONAL_SERVICE:
         if (input === 'EXTRA_DONE' || ['no', 'continuar', 'listo', 'ninguno', 'pasar', 'siguiente'].includes(input.toLowerCase())) {
+          const totalAcumulado = _reservationState.data.servicioPrecio + (_reservationState.data.serviciosAdicionales || []).reduce((sum, s) => sum + Number(s.precio), 0);
+          if (totalAcumulado < 100) {
+            _reservationState.step = STEPS.ASKING_ADDITIONAL_PROMPT;
+            return {
+              text: `⚠️ **Monto Mínimo No Alcanzado**\n\nEl pedido mínimo para servicio a domicilio es de **100 Bs**.\nTu total actual es de **Bs. ${totalAcumulado}**.\n\nPor favor, selecciona un servicio adicional para completar el monto mínimo:`,
+              source: 'reservation',
+              buttons: [
+                { label: '➕ Sí, agregar servicio extra', value: 'EXTRA_SI' }
+              ],
+              requestGPS: false,
+            };
+          }
+
           _reservationState.step = STEPS.ASKING_LOCATION;
           return {
             text: `📍 ¿Dónde te recogemos? Puedes:\n- Presionar el botón **"Enviar ubicación"**\n- O escribir tu dirección manualmente`,
