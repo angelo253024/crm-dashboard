@@ -392,11 +392,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
   const isSecondaryService = (s) => {
     const isOtros = s.categoria === 'Otros' || s.categoria === 'Lavado Bicis y Motos';
-    const isMenorA100 = Number(s.precio) < 100;
+    const isMenorA40 = Number(s.precio) < 40;
     const isMotoP = s.nombre?.toLowerCase().includes('moto');
     const isBici = s.nombre?.toLowerCase().includes('bici');
     const isLustrado = s.nombre?.toLowerCase().includes('lustrado');
-    return isOtros || isMenorA100 || isMotoP || isBici || isLustrado;
+    return isOtros || isMenorA40 || isMotoP || isBici || isLustrado;
   };
 
   const fetchServicios = async () => {
