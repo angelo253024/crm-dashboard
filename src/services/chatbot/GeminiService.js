@@ -1,3 +1,5 @@
+import { supabase } from '../../supabase';
+
 // GeminiService — Auto-detecta el mejor modelo disponible para tu clave de API
 export const GEMINI_ERROR_MARKER = '__GEMINI_ERROR__';
 
@@ -77,6 +79,52 @@ async function detectBestModel(apiKey) {
 export class GeminiService {
   static async getCompletion(prompt, context = "") {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    // --- ANTI-SPAM LOGIC ---
+    let deviceId = localStorage.getItem('chatbot_device_id');
+    if (!deviceId) {
+      deviceId = 'device_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('chatbot_device_id', deviceId);
+    }
+    
+    // Obtener fecha actual en formato YYYY-MM-DD (hora local)
+    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    
+    try {
+      const { data: usageData, error: readError } = await supabase
+        .from('chatbot_usage')
+        .select('*')
+        .eq('device_id', deviceId)
+        .eq('fecha', todayStr)
+        .maybeSingle();
+
+      if (usageData && usageData.mensajes_enviados >= 30) {
+        console.warn('Límite de mensajes alcanzado para el dispositivo:', deviceId);
+        return "⚠️ Has alcanzado tu límite de mensajes gratuitos por hoy. Por favor contáctanos por llamada o WhatsApp si necesitas más ayuda, o vuelve a intentarlo mañana.";
+      }
+
+      // Incrementar contador
+      const newCount = usageData ? usageData.mensajes_enviados + 1 : 1;
+      
+      const payload = {
+        device_id: deviceId,
+        fecha: todayStr,
+        mensajes_enviados: newCount
+      };
+      
+      if (usageData && usageData.id) {
+        payload.id = usageData.id;
+      }
+      
+      await supabase
+        .from('chatbot_usage')
+        .upsert(payload, { onConflict: 'device_id, fecha' });
+
+    } catch (err) {
+      console.error('Error en validación anti-spam:', err);
+      // Si falla la validación por error de red, permitimos el mensaje para no degradar el servicio
+    }
+    // --- END ANTI-SPAM LOGIC ---
 
     if (!apiKey) {
       console.error('❌ VITE_GEMINI_API_KEY no encontrada.');
