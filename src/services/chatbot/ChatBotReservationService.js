@@ -113,7 +113,6 @@ export class ChatBotReservationService {
               buttons: [
                 { label: '🟦 Lavado Clásico', value: 'CLASICO' },
                 { label: '⭐ Lavado Premium (Recomendado)', value: 'PREMIUM' },
-                { label: '🛵 Bicis y Motos', value: 'BICIS_MOTOS' },
                 { label: '🎨 Personaliza tu lavado', value: 'PERSONALIZA' }
               ],
               requestGPS: false,
@@ -251,14 +250,10 @@ export class ChatBotReservationService {
 
         // Si es MOTO
         if (clasificacion.tamanoServicio === 'MOTO') {
-          _reservationState.step = STEPS.ASKING_PACKAGE;
           return {
-            text: `🛵 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\nPor sus características, corresponde al servicio de **Lavado Moto**.\n\n¿Deseas continuar?`,
+            text: `🛵 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\n⚠️ Actualmente, el monto mínimo para reservas a domicilio es de **100 Bs.**, por lo que no estamos agendando servicios para motos o bicicletas.\n\nPor favor, ingresa la marca y modelo de un **automóvil** para continuar:`,
             source: 'reservation',
-            buttons: [
-              { label: '🛵 Lavado Moto', value: 'BICIS_MOTOS' },
-              { label: '✏️ Cambiar Vehículo', value: 'CHANGE_VEHICLE' }
-            ],
+            buttons: null,
             requestGPS: false,
           };
         }
