@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3 } from 'lucide-react';
 import KpiCards from './KpiCards';
 
 // --- Inline Chat Component for Worker ---
@@ -109,6 +109,7 @@ export default function MotoDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
   const [showExtraService, setShowExtraService] = useState(null);
+  const [showEditMainService, setShowEditMainService] = useState(null);
   const [extraServicioDesc, setExtraServicioDesc] = useState('');
   const [extraServicioMonto, setExtraServicioMonto] = useState('');
   const [serviciosCatalogo, setServiciosCatalogo] = useState([]);
@@ -498,6 +499,68 @@ export default function MotoDashboard({ user }) {
     setShowExtraService(null);
     setExtraServicioDesc('');
     setExtraServicioMonto('');
+    fetchReservasAsignadas();
+  };
+
+  const handleUpdateMainService = async (resId, newService) => {
+    const reserva = reservas.find(r => r.id === resId);
+    if (!reserva) return;
+
+    let oldServiceName = "";
+    let precioAnterior = 0;
+
+    if (reserva.servicio_id) {
+      const oldS = serviciosCatalogo.find(s => s.id === reserva.servicio_id);
+      if (oldS) {
+        oldServiceName = oldS.nombre;
+        precioAnterior = Number(oldS.precio);
+      }
+    }
+
+    if (!oldServiceName && Array.isArray(reserva.servicios_detalle) && reserva.servicios_detalle.length > 0) {
+      oldServiceName = reserva.servicios_detalle[0].nombre;
+      precioAnterior = Number(reserva.servicios_detalle[0].precio);
+    }
+
+    let nuevoServicioStr = newService.nombre;
+    if (oldServiceName && reserva.servicio && reserva.servicio.includes(oldServiceName)) {
+      nuevoServicioStr = reserva.servicio.replace(oldServiceName, newService.nombre);
+    } else {
+      nuevoServicioStr = newService.nombre; 
+    }
+
+    let nuevoPrecio = Number(newService.precio);
+    let updatedDetalles = reserva.servicios_detalle;
+
+    if (Array.isArray(updatedDetalles) && updatedDetalles.length > 0) {
+      updatedDetalles = [
+        { id: newService.id, nombre: newService.nombre, categoria: newService.categoria, precio: Number(newService.precio) },
+        ...updatedDetalles.slice(1)
+      ];
+      nuevoPrecio = updatedDetalles.reduce((sum, item) => sum + Number(item.precio), 0);
+    } else {
+      const montoExtras = Math.max(0, Number(reserva.precio_total || reserva.precio || 0) - precioAnterior);
+      nuevoPrecio = Number(newService.precio) + montoExtras;
+    }
+
+    const updates = {
+      servicio: nuevoServicioStr,
+      servicio_id: newService.id,
+      precio_total: nuevoPrecio
+    };
+    if (Array.isArray(updatedDetalles)) {
+      updates.servicios_detalle = updatedDetalles;
+    }
+
+    const { error } = await supabase.from('reservas').update(updates).eq('id', resId);
+
+    if (error) {
+      console.error("Error updating main service:", error);
+      alert("Hubo un error al cambiar el servicio. Intenta de nuevo.");
+      return;
+    }
+
+    setShowEditMainService(null);
     fetchReservasAsignadas();
   };
 
@@ -923,10 +986,37 @@ export default function MotoDashboard({ user }) {
                   <MessageSquare size={18} /> Chat (Web)
                 </button>
                 
-                <button onClick={() => setShowExtraService(showExtraService === res.id ? null : res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                <button onClick={() => { setShowExtraService(showExtraService === res.id ? null : res.id); setShowEditMainService(null); }} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: 'transparent', color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                   <PlusCircle size={18} /> Agregar Extra
                 </button>
+
+                <button onClick={() => { setShowEditMainService(showEditMainService === res.id ? null : res.id); setShowExtraService(null); }} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: 'transparent', color: '#f59e0b', border: '1px solid #f59e0b', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                  <Edit3 size={18} /> Editar Servicio
+                </button>
               </div>
+
+              {showEditMainService === res.id && (
+                <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px dashed #f59e0b' }}>
+                  <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Edit3 size={16} /> Cambiar Servicio Principal
+                  </h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', marginTop: 0 }}>
+                    Selecciona el servicio correcto según el vehículo. Los extras se mantendrán.
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {serviciosCatalogo.length > 0 && serviciosCatalogo.map(s => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => handleUpdateMainService(res.id, s)}
+                        style={{ padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', borderRadius: '16px', border: '1px solid #f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', cursor: 'pointer', transition: 'all 0.2s' }}
+                      >
+                        {s.nombre} (Bs {s.precio})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {showExtraService === res.id && (
                 <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px dashed #8b5cf6' }}>
