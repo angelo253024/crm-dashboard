@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot } from 'lucide-react';
+import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot, MapPin } from 'lucide-react';
 import { HybridAIService } from '../services/chatbot/HybridAIService';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default Leaflet icon not showing in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 export default function ChatBotWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +22,19 @@ export default function ChatBotWidget() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 });
   const navigate = useNavigate();
+
+  // Helper para actualizar la posición en el mapa
+  const MapClickHandler = () => {
+    useMapEvents({
+      click(e) {
+        setMapPosition(e.latlng);
+      },
+    });
+    return null;
+  };
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -159,27 +182,46 @@ export default function ChatBotWidget() {
 
         {/* Botón de GPS si la respuesta lo solicita */}
         {msg.requestGPS && (
-          <button
-            onClick={handleGetGPS}
-            disabled={isTyping}
-            style={{
-              backgroundColor: '#10b981',
-              color: '#fff',
-              border: 'none',
-              padding: '10px 16px',
-              borderRadius: '12px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              marginTop: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              alignSelf: 'flex-start',
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-            }}
-          >
-            📍 Usar mi ubicación GPS actual
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', alignSelf: 'flex-start' }}>
+            <button
+              onClick={handleGetGPS}
+              disabled={isTyping}
+              style={{
+                backgroundColor: '#10b981',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              📍 Usar mi ubicación GPS actual
+            </button>
+            <button
+              onClick={() => setShowMapModal(true)}
+              disabled={isTyping}
+              style={{
+                backgroundColor: '#3b82f6',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+              }}
+            >
+              🗺️ Elegir en el mapa
+            </button>
+          </div>
         )}
 
         {/* Botones Interactivos (Servicios, Fechas, Confirmación) */}
@@ -556,6 +598,44 @@ export default function ChatBotWidget() {
             display: window.innerWidth < 768 ? 'block' : 'none'
           }}
         />
+      )}
+
+      {/* Modal del Mapa Interactivo */}
+      {showMapModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 10000, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: '16px', width: '100%', maxWidth: '600px', overflow: 'hidden', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
+                <MapPin size={20} color="var(--accent-blue)" />
+                Selecciona tu ubicación
+              </h3>
+              <button onClick={() => setShowMapModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <div style={{ flex: 1, minHeight: '300px', height: '50vh', position: 'relative' }}>
+              <MapContainer center={[mapPosition.lat, mapPosition.lng]} zoom={13} style={{ height: '100%', width: '100%', zIndex: 1 }}>
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                />
+                <MapClickHandler />
+                <Marker position={[mapPosition.lat, mapPosition.lng]} />
+              </MapContainer>
+            </div>
+            <div style={{ padding: '16px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button onClick={() => setShowMapModal(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold' }}>
+                Cancelar
+              </button>
+              <button onClick={async () => {
+                setShowMapModal(false);
+                const gpsStr = `${mapPosition.lat.toFixed(6)}, ${mapPosition.lng.toFixed(6)}`;
+                setMessages(prev => [...prev, { id: Date.now(), text: `📍 Mi ubicación seleccionada en mapa: ${gpsStr}`, sender: 'user', source: null }]);
+                await sendMessageToService(gpsStr);
+              }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: 'var(--accent-blue)', color: 'white', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={16} /> Confirmar Ubicación
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
