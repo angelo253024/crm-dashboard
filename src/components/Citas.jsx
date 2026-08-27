@@ -338,6 +338,7 @@ export default function Citas() {
                 {totalSlots.map((day, index) => {
                   const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
                   const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
+                  const dispoDay = dateStr ? disponibilidadFechas.find(d => d.fecha === dateStr) : null;
                   
                   return (
                     <div 
@@ -352,6 +353,8 @@ export default function Citas() {
                         cursor: day ? 'pointer' : 'default',
                         opacity: day ? 1 : 0.5,
                         transition: 'border-color 0.2s',
+                        display: 'flex',
+                        flexDirection: 'column'
                       }}
                       onMouseEnter={(e) => {
                         if (day) e.currentTarget.style.borderColor = 'var(--accent-green)';
@@ -362,8 +365,23 @@ export default function Citas() {
                     >
                       {day && (
                         <>
-                          <div style={{ fontWeight: '600', marginBottom: '8px', textAlign: 'right', color: 'var(--text-muted)' }}>
-                            {day}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div>
+                              {dispoDay && (
+                                <div style={{ fontSize: '10px' }}>
+                                  {dispoDay.cerrado ? (
+                                    <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Cerrado</span>
+                                  ) : dispoDay.tipo === 'slots' ? (
+                                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0})</span>
+                                  ) : (
+                                    <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ fontWeight: '600', color: 'var(--text-muted)' }}>
+                              {day}
+                            </div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {dayEvents.slice(0, 3).map(ev => (
