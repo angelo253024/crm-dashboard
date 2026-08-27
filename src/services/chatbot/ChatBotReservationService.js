@@ -1030,7 +1030,8 @@ export class ChatBotReservationService {
         return { success: false, error: error.message };
       }
 
-      // Guardar perfil de cliente registrado
+      // (Eliminado) No guardar perfil de cliente automáticamente sin permiso
+      /*
       try {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('lavamovil_client_profile', JSON.stringify({
@@ -1050,6 +1051,7 @@ export class ChatBotReservationService {
       } catch(err) {
         // Ignorar si la tabla de clientes aún no está creada
       }
+      */
 
       // Notificación
       const extrasStr = extras.length > 0 ? ` (+ ${extras.length} extras)` : '';

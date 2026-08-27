@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot, MapPin } from 'lucide-react';
 import { HybridAIService } from '../services/chatbot/HybridAIService';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -25,6 +25,18 @@ export default function ChatBotWidget() {
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 });
   const navigate = useNavigate();
+
+  // Helper para arreglar el renderizado gris del mapa
+  const RecenterMap = () => {
+    const map = useMap();
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+  };
 
   // Helper para actualizar la posición en el mapa
   const MapClickHandler = () => {
@@ -617,6 +629,7 @@ export default function ChatBotWidget() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
+                <RecenterMap />
                 <MapClickHandler />
                 <Marker position={[mapPosition.lat, mapPosition.lng]} />
               </MapContainer>
