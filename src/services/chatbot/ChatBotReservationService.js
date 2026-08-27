@@ -621,17 +621,7 @@ export class ChatBotReservationService {
         _reservationState.data.fechaReserva = parsedDate;
         _reservationState.step = STEPS.ASKING_TIME;
 
-        // Consultar reservas existentes en la fecha seleccionada para evitar choques (rango de 1 hora)
-        let availableTimeButtons = [
-          { label: '🕘 08:00', value: '08:00' },
-          { label: '🕙 09:00', value: '09:00' },
-          { label: '🕥 10:00', value: '10:00' },
-          { label: '🕦 11:00', value: '11:00' },
-          { label: '🕐 14:00', value: '14:00' },
-          { label: '🕑 15:00', value: '15:00' },
-          { label: '🕓 16:00', value: '16:00' },
-          { label: '🕔 17:00', value: '17:00' },
-        ];
+        let availableTimeButtons = [];
 
         try {
           const parseMin = (tStr) => {
@@ -647,6 +637,8 @@ export class ChatBotReservationService {
             .select('*')
             .eq('fecha', parsedDate);
 
+          let allowedSlots = [];
+
           if (dispoData && dispoData.length > 0) {
             const d = dispoData[0];
             if (d.cerrado) {
@@ -658,12 +650,19 @@ export class ChatBotReservationService {
                 requestGPS: false
               };
             }
-            const startMin = parseMin(d.hora_inicio);
-            const endMin = parseMin(d.hora_fin);
-            availableTimeButtons = availableTimeButtons.filter(btn => {
-              const btnMin = parseMin(btn.value);
-              return btnMin >= startMin && btnMin <= endMin;
-            });
+            if (d.tipo === 'slots' && d.slots && d.slots.length > 0) {
+              allowedSlots = d.slots;
+            } else {
+              const startMin = parseMin(d.hora_inicio);
+              const endMin = parseMin(d.hora_fin);
+              const defaultSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+              allowedSlots = defaultSlots.filter(s => {
+                const sMin = parseMin(s);
+                return sMin >= startMin && sMin <= endMin;
+              });
+            }
+          } else {
+             allowedSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
           }
 
           const { data: existingReservasDate } = await supabase
@@ -684,10 +683,21 @@ export class ChatBotReservationService {
 
           const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
 
-          availableTimeButtons = availableTimeButtons.filter(btn => {
-            const btnMin = parseMin(btn.value);
+          const validSlots = allowedSlots.filter(slot => {
+            const btnMin = parseMin(slot);
             return !bookedMins.some(bMin => Math.abs(btnMin - bMin) < 60);
           });
+
+          const clockEmojis = {
+            '08:00': '🕘', '08:30': '🕤', '09:00': '🕙', '09:30': '🕥', '10:00': '🕥', '10:30': '🕦', '11:00': '🕦', '11:30': '🕛',
+            '12:00': '🕛', '12:30': '🕧', '13:00': '🕐', '13:30': '🕜', '14:00': '🕑', '14:30': '🕝', '15:00': '🕒', '15:30': '🕞',
+            '16:00': '🕓', '16:30': '🕟', '17:00': '🕔', '17:30': '🕠', '18:00': '🕕', '18:30': '🕡'
+          };
+
+          availableTimeButtons = validSlots.map(slot => ({
+            label: `${clockEmojis[slot] || '🕒'} ${slot}`,
+            value: slot
+          }));
         } catch (e) {
           console.error("Error al verificar disponibilidad de horarios:", e);
         }

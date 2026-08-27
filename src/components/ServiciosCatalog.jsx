@@ -168,6 +168,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [ubicacion, setUbicacion] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
+  const [availableSlots, setAvailableSlots] = useState(null);
+  const [isFetchingSlots, setIsFetchingSlots] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -272,6 +274,61 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   // Active reservations loaded from local storage
   const [activeReservas, setActiveReservas] = useState([]);
   const [selectedReservaId, setSelectedReservaId] = useState(null);
+
+  useEffect(() => {
+    const fetchSlotsForDate = async () => {
+      if (!fechaReserva) {
+        setAvailableSlots(null);
+        return;
+      }
+      
+      setIsFetchingSlots(true);
+      try {
+        const { data: dispoData } = await supabase
+          .from('disponibilidad_fechas')
+          .select('*')
+          .eq('fecha', fechaReserva);
+          
+        if (dispoData && dispoData.length > 0) {
+          const d = dispoData[0];
+          if (d.tipo === 'slots' && d.slots && d.slots.length > 0) {
+            // Check for taken slots
+            const { data: reservas } = await supabase
+              .from('reservas')
+              .select('hora_reserva')
+              .eq('fecha_reserva', fechaReserva)
+              .neq('estado', 'Cancelado');
+              
+            const bookedHours = (reservas || []).map(r => r.hora_reserva.substring(0, 5));
+            const parseMin = (t) => parseInt(t.split(':')[0]) * 60 + parseInt(t.split(':')[1]);
+            const bookedMins = bookedHours.map(parseMin);
+            
+            const validSlots = d.slots.filter(slot => {
+              const sMin = parseMin(slot);
+              return !bookedMins.some(bMin => Math.abs(sMin - bMin) < 60);
+            });
+            
+            setAvailableSlots(validSlots);
+            // If the currently selected time is not in validSlots, clear it
+            if (horaReserva && !validSlots.includes(horaReserva)) {
+              setHoraReserva('');
+            }
+          } else {
+            setAvailableSlots(null);
+          }
+        } else {
+          setAvailableSlots(null);
+        }
+      } catch (error) {
+        console.error("Error fetching slots:", error);
+        setAvailableSlots(null);
+      } finally {
+        setIsFetchingSlots(false);
+      }
+    };
+    
+    fetchSlotsForDate();
+  }, [fechaReserva]);
 
   useEffect(() => {
     fetchServicios();
@@ -1212,7 +1269,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Hora</label>
-                    <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                    {isFetchingSlots ? (
+                      <div style={{ padding: '12px', color: 'var(--text-muted)' }}>Cargando horarios...</div>
+                    ) : availableSlots ? (
+                      <select 
+                        value={horaReserva} 
+                        onChange={(e) => setHoraReserva(e.target.value)} 
+                        required 
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', appearance: 'auto' }}
+                      >
+                        <option value="" disabled>Selecciona un horario</option>
+                        {availableSlots.length > 0 ? (
+                          availableSlots.map(slot => (
+                            <option key={slot} value={slot}>{slot}</option>
+                          ))
+                        ) : (
+                          <option value="" disabled>No hay horarios disponibles</option>
+                        )}
+                      </select>
+                    ) : (
+                      <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                    )}
                   </div>
                 </div>
 

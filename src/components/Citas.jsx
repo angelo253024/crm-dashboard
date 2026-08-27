@@ -23,6 +23,8 @@ export default function Citas() {
   const [disponibilidadFechas, setDisponibilidadFechas] = useState([]);
   const [showDispoModal, setShowDispoModal] = useState(false);
   const [dispoForm, setDispoForm] = useState({
+    tipo: 'rango',
+    slots: [],
     hora_inicio: '08:00',
     hora_fin: '18:00',
     cerrado: false
@@ -140,12 +142,16 @@ export default function Citas() {
     const existing = disponibilidadFechas.find(d => d.fecha === dateStr);
     if (existing) {
       setDispoForm({
+        tipo: existing.tipo || 'rango',
+        slots: existing.slots || [],
         hora_inicio: existing.hora_inicio ? existing.hora_inicio.substring(0, 5) : '08:00',
         hora_fin: existing.hora_fin ? existing.hora_fin.substring(0, 5) : '18:00',
         cerrado: existing.cerrado
       });
     } else {
       setDispoForm({
+        tipo: 'rango',
+        slots: [],
         hora_inicio: '08:00',
         hora_fin: '18:00',
         cerrado: false
@@ -160,6 +166,8 @@ export default function Citas() {
     try {
       const payload = {
         fecha: selectedDateStr,
+        tipo: dispoForm.tipo,
+        slots: dispoForm.slots,
         hora_inicio: dispoForm.hora_inicio + ':00',
         hora_fin: dispoForm.hora_fin + ':00',
         cerrado: dispoForm.cerrado
@@ -558,16 +566,54 @@ export default function Citas() {
               </div>
               
               {!dispoForm.cerrado && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Inicio</label>
-                    <input type="time" required className="form-input" value={dispoForm.hora_inicio} onChange={e => setDispoForm({...dispoForm, hora_inicio: e.target.value})} style={{ width: '100%' }} />
+                <>
+                  <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="radio" name="tipoHorario" checked={dispoForm.tipo === 'rango'} onChange={() => setDispoForm({...dispoForm, tipo: 'rango'})} />
+                      Rango de Horas
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <input type="radio" name="tipoHorario" checked={dispoForm.tipo === 'slots'} onChange={() => setDispoForm({...dispoForm, tipo: 'slots'})} />
+                      Horarios Específicos (Slots)
+                    </label>
                   </div>
-                  <div>
-                    <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Fin</label>
-                    <input type="time" required className="form-input" value={dispoForm.hora_fin} onChange={e => setDispoForm({...dispoForm, hora_fin: e.target.value})} style={{ width: '100%' }} />
-                  </div>
-                </div>
+
+                  {dispoForm.tipo === 'rango' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Inicio</label>
+                        <input type="time" required className="form-input" value={dispoForm.hora_inicio} onChange={e => setDispoForm({...dispoForm, hora_inicio: e.target.value})} style={{ width: '100%' }} />
+                      </div>
+                      <div>
+                        <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Fin</label>
+                        <input type="time" required className="form-input" value={dispoForm.hora_fin} onChange={e => setDispoForm({...dispoForm, hora_fin: e.target.value})} style={{ width: '100%' }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="text-body" style={{ display: 'block', marginBottom: '8px' }}>Horarios Disponibles (Ej: 08:30)</label>
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                        <input type="time" id="newSlotInput" className="form-input" style={{ flex: 1 }} />
+                        <button type="button" className="btn btn-outline" onClick={() => {
+                          const val = document.getElementById('newSlotInput').value;
+                          if (val && !dispoForm.slots.includes(val)) {
+                            setDispoForm({...dispoForm, slots: [...dispoForm.slots, val].sort()});
+                            document.getElementById('newSlotInput').value = '';
+                          }
+                        }}>Agregar</button>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {dispoForm.slots.map(slot => (
+                          <div key={slot} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '4px 12px', borderRadius: '16px', fontSize: '14px' }}>
+                            {slot}
+                            <button type="button" onClick={() => setDispoForm({...dispoForm, slots: dispoForm.slots.filter(s => s !== slot)})} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0, display: 'flex' }}><X size={14} /></button>
+                          </div>
+                        ))}
+                        {dispoForm.slots.length === 0 && <span className="text-muted" style={{ fontSize: '13px' }}>No hay horarios agregados.</span>}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               
               <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
