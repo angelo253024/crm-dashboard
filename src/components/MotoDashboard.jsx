@@ -651,6 +651,7 @@ export default function MotoDashboard({ user }) {
       );
     } catch(err) {
       alert("Ocurrió un error al solicitar el GPS: " + err.message);
+    }
   };
 
   const sortedServicios = [...serviciosCatalogo].sort((a, b) => {
