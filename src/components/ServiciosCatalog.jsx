@@ -32,6 +32,7 @@ function ClientChat({ sessionId, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
+  const audioRef = useRef(new Audio('/aternos-notification.mp3'));
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -49,6 +50,11 @@ function ClientChat({ sessionId, onClose }) {
         setMessages(prev => {
           // Single source of truth: evitar duplicados por ID real de base de datos
           if (prev.some(m => m.id === payload.new.id)) return prev;
+          
+          if (payload.new.rol === 'bot') {
+            audioRef.current?.play().catch(e => console.log('Audio autoplay blocked:', e));
+          }
+          
           return [...prev, payload.new];
         });
       })
@@ -69,16 +75,22 @@ function ClientChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    const { error } = await supabase.from('mensajes').insert([{
+    const { data, error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
       rol: 'user'
-    }]);
+    }]).select().single();
 
     if (error) {
       console.error("Error de Supabase al enviar chat:", error);
       alert(`Error al enviar mensaje: ${error.message}. Verifica que la tabla 'mensajes' exista y tenga permisos (RLS).`);
       setInput(msg); // Devolvemos el texto al input en caso de error
+    } else if (data) {
+      // Agregar a la UI inmediatamente para que el usuario no espere al canal realtime
+      setMessages(prev => {
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
     }
   };
 

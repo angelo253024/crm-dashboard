@@ -52,16 +52,21 @@ function MotoChat({ sessionId, onClose }) {
     const msg = input.trim();
     setInput('');
     
-    const { error } = await supabase.from('mensajes').insert([{
+    const { data, error } = await supabase.from('mensajes').insert([{
       session_id: sessionId,
       contenido: msg,
       rol: 'bot' // Enviamos como bot para que le llegue al cliente
-    }]);
+    }]).select().single();
 
     if (error) {
       console.error("Error de Supabase al enviar chat:", error);
       alert(`Error al enviar mensaje: ${error.message}`);
       setInput(msg);
+    } else if (data) {
+      setMessages(prev => {
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data];
+      });
     }
   };
 
