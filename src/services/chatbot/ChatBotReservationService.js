@@ -860,9 +860,12 @@ export class ChatBotReservationService {
           // Fase 6: Validación de Geofencing
           const isAllowed = await geofencingService.isLocationAllowed(_reservationState.data.ubicacion);
           if (!isAllowed) {
+            const hasGPS = String(_reservationState?.data?.ubicacion || '').match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
             _reservationState = null;
             return {
-              text: "⚠️ Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas.\n\nPor políticas de la empresa, no podemos agendar tu servicio.",
+              text: hasGPS 
+                ? "⚠️ Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas.\n\nPor políticas de la empresa, no podemos agendar tu servicio." 
+                : "⚠️ Para validar si llegamos a tu zona, necesitas enviarnos tu Ubicación GPS exacta presionando el botón '+', 'Adjuntar' o el clip 📎, y seleccionando 'Ubicación'. No podemos agendar solo con la dirección escrita.\n\nPor favor, intenta iniciar tu reserva nuevamente compartiendo tu ubicación real.",
               source: 'reservation',
               buttons: null,
               requestGPS: false,

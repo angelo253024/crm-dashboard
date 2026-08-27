@@ -451,7 +451,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     // Fase 6: Validación de Geofencing
     const isAllowed = await geofencingService.isLocationAllowed(ubicacion);
     if (!isAllowed) {
-      alert("Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas.");
+      if (!ubicacion.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/)) {
+        alert("📍 Por favor presiona el botón 'Usar mi ubicación actual' para que el sistema valide si estás dentro de nuestra área de cobertura. No podemos agendar solo con la dirección escrita.");
+      } else {
+        alert("Lo sentimos. Actualmente nuestra cobertura llega únicamente hasta las zonas habilitadas en el mapa.");
+      }
       setIsSubmitting(false);
       return;
     }

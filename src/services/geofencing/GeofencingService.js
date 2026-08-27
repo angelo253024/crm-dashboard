@@ -108,7 +108,7 @@ class GeofencingService {
 
       const match = String(ubicacion).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
       if (!match) {
-        return true;
+        return false;
       }
 
       const lat = parseFloat(match[1]);
