@@ -651,8 +651,25 @@ export default function MotoDashboard({ user }) {
       );
     } catch(err) {
       alert("Ocurrió un error al solicitar el GPS: " + err.message);
-    }
   };
+
+  const sortedServicios = [...serviciosCatalogo].sort((a, b) => {
+    const catA = String(a.categoria || a.nombre).toLowerCase();
+    const catB = String(b.categoria || b.nombre).toLowerCase();
+    
+    const isAClasico = catA.includes('clásico') || catA.includes('clasico');
+    const isBClasico = catB.includes('clásico') || catB.includes('clasico');
+    const isAPremium = catA.includes('premium');
+    const isBPremium = catB.includes('premium');
+    
+    if (isAClasico && !isBClasico) return -1;
+    if (!isAClasico && isBClasico) return 1;
+    
+    if (isAPremium && !isBPremium) return -1;
+    if (!isAPremium && isBPremium) return 1;
+    
+    return Number(a.precio) - Number(b.precio);
+  });
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1004,7 +1021,7 @@ export default function MotoDashboard({ user }) {
                     Selecciona el servicio correcto según el vehículo. Los extras se mantendrán.
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {serviciosCatalogo.length > 0 && serviciosCatalogo.map(s => (
+                    {sortedServicios.length > 0 && sortedServicios.map(s => (
                       <button
                         key={s.id}
                         type="button"
@@ -1025,9 +1042,9 @@ export default function MotoDashboard({ user }) {
                   </h4>
                   <form onSubmit={(e) => handleAddExtra(e, res.id)} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     
-                    {serviciosCatalogo.length > 0 && (
+                    {sortedServicios.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-                        {serviciosCatalogo.map(s => (
+                        {sortedServicios.map(s => (
                           <button
                             key={s.id}
                             type="button"
