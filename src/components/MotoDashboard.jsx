@@ -21,28 +21,44 @@ function MotoChat({ sessionId, onClose }) {
 
   useEffect(() => {
     fetchMessages();
+    
+    // Fallback Polling (Garantiza entrega si Realtime de Supabase está fallando o mal configurado)
+    const interval = setInterval(fetchMessages, 3000);
+
     const channel = supabase
       .channel(`chat_${sessionId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes', filter: `session_id=eq.${sessionId}` }, payload => {
         setMessages(prev => {
-          // Single source of truth: evitar duplicados por ID real de base de datos
           if (prev.some(m => m.id === payload.new.id)) return prev;
-          
           if (payload.new.rol === 'user') {
-            audioRef.current.play().catch(e => console.log('Audio autoplay blocked:', e));
+            audioRef.current?.play().catch(e => console.log('Audio autoplay blocked:', e));
           }
-          
           return [...prev, payload.new];
         });
       })
       .subscribe();
       
-    return () => supabase.removeChannel(channel);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [sessionId]);
 
   const fetchMessages = async () => {
     const { data } = await supabase.from('mensajes').select('*').eq('session_id', sessionId).order('created_at', { ascending: true });
-    if (data) setMessages(data);
+    if (data) {
+      setMessages(prev => {
+        // Si hay mensajes nuevos que no teníamos
+        if (data.length > prev.length) {
+          const newMessages = data.filter(d => !prev.some(p => p.id === d.id));
+          if (newMessages.some(m => m.rol === 'user')) {
+             audioRef.current?.play().catch(e => console.log('Audio autoplay blocked:', e));
+          }
+          return data;
+        }
+        return prev;
+      });
+    }
   };
 
   const sendMessage = async (e) => {
