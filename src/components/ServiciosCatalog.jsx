@@ -5,6 +5,27 @@ import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
 import { geofencingService } from '../services/geofencing/GeofencingService';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+function LocationMarker({ position, setPosition }) {
+  useMapEvents({
+    click(e) {
+      setPosition(e.latlng);
+    },
+  });
+  return position === null ? null : (
+    <Marker position={position}></Marker>
+  );
+}
 
 // --- Inline Chat Component for Client ---
 function ClientChat({ sessionId, onClose }) {
@@ -152,6 +173,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [success, setSuccess] = useState(false);
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 }); // Centro de Santa Cruz
 
   // Client Profile Registration State
   const [recordarCliente, setRecordarCliente] = useState(true);
@@ -1150,16 +1173,32 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Dirección / Ubicación GPS</label>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                     <button 
                       type="button" 
                       onClick={getGPSLocation}
                       disabled={isGettingLocation}
-                      style={{ background: 'none', border: 'none', color: 'var(--accent-green)', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      style={{ flex: 1, padding: '10px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', color: '#10b981', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}
                     >
-                      {isGettingLocation ? 'Obteniendo...' : '📍 Usar mi ubicación actual'}
+                      {isGettingLocation ? '...' : '📍 Usar GPS actual'}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                         // Tratar de centrar el mapa si ya hay coordenadas
+                         const match = String(ubicacion).match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+                         if (match) {
+                           setMapPosition({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+                         }
+                         setShowMapModal(true);
+                      }}
+                      style={{ flex: 1, padding: '10px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', color: '#3b82f6', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px' }}
+                    >
+                      🗺️ Elegir en Mapa
                     </button>
                   </div>
-                  <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer o presiona el botón" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer o presiona un botón" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
                 <div style={{ fontSize: '13px', color: 'var(--accent-cyan)', marginBottom: '12px', textAlign: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', padding: '8px', borderRadius: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
@@ -1350,6 +1389,35 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           </div>
         );
       })()}
+
+      {/* Map Picker Modal */}
+      {showMapModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '500px', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>📍 Mueve el pin a tu ubicación</h3>
+              <button onClick={() => setShowMapModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <div style={{ height: '350px', width: '100%' }}>
+              <MapContainer center={[mapPosition.lat, mapPosition.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
+                <LocationMarker position={mapPosition} setPosition={setMapPosition} />
+              </MapContainer>
+            </div>
+            <div style={{ padding: '16px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)' }}>
+              <button onClick={() => setShowMapModal(false)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 'bold' }}>
+                Cancelar
+              </button>
+              <button onClick={() => {
+                setUbicacion(`${mapPosition.lat}, ${mapPosition.lng}`);
+                setShowMapModal(false);
+              }} style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: 'var(--accent-cyan)', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}>
+                Confirmar Ubicación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Chat For Client */}
       {showClientChat && (confirmedReserva || activeReservas.length > 0) && (() => {
