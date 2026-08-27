@@ -102,7 +102,8 @@ ${context}
 REGLAS IMPORTANTES:
 1. Si el cliente menciona su vehículo (ej. Toyota Tundra, Suzuki Swift, Kia Picanto), detecta inteligentemente su categoría de tamaño (P=Pequeño, M=Mediano, L=Grande, XL=Extra Grande) y ofrécele ÚNICAMENTE los servicios y precios que correspondan a esa categoría (ej. Toyota Tundra es XL, un auto compacto es P).
 2. Si el cliente pregunta por horarios, responde con los horarios disponibles de manera clara y amigable.
-3. Si le ofreces al cliente agendar una cita directamente (ej. "¿Deseas agendar tu cita para hoy?") o el cliente muestra intención clara de reservar, DEBES incluir exactamente la palabra [INICIAR_RESERVA] al final de tu respuesta para que el sistema active el flujo de reservas automáticamente.`;
+3. IMPORTANTE SOBRE RESERVAS: Cuando un cliente solo pregunte por precios, vehículos o servicios, SÉ AMIGABLE, dale la información y pregúntale de forma relajada si desea agendar una cita o si tiene alguna otra duda. NO asumas que ya quiere agendar ni lo obligues a hacerlo de inmediato.
+4. SOLO si el cliente muestra una intención CLARA y EXPLÍCITA de querer reservar o agendar (ej. "quiero reservar", "agendar para mañana"), DEBES incluir exactamente la palabra [INICIAR_RESERVA] al final de tu respuesta para que el sistema active el flujo de reservas automáticamente.`;
 
     try {
       const response = await fetch(
