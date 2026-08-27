@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin } from 'lucide-react';
+import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin, Bell } from 'lucide-react';
 import { supabase } from '../supabase';
+import OneSignal from 'react-onesignal';
 import { geofencingService } from '../services/geofencing/GeofencingService';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
 
@@ -60,11 +61,38 @@ function ClientChat({ sessionId, onClose }) {
     }
   };
 
+  const requestNotifPermission = async () => {
+    try {
+      if (OneSignal.Notifications) {
+        await OneSignal.Notifications.requestPermission();
+        if (OneSignal.Notifications.permission) {
+          const onesignalId = OneSignal.User.PushSubscription.id;
+          if (onesignalId) {
+            const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
+            let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
+            if (reservaId) query = query.eq('id', reservaId);
+            else query = query.eq('chat_session_id', sessionId);
+            
+            await query;
+            alert("¡Notificaciones activadas! Te avisaremos cuando el trabajador responda.");
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error con OneSignal:", e);
+    }
+  };
+
   return (
     <div className="client-chat-widget">
       <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
-        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff' }}><X size={18} /></button>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
+          <button type="button" onClick={requestNotifPermission} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', marginTop: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content' }}>
+            <Bell size={12} /> Activar Notificaciones
+          </button>
+        </div>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', alignSelf: 'flex-start' }}><X size={18} /></button>
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
