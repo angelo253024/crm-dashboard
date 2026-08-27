@@ -2,6 +2,7 @@ import { supabase } from '../../supabase';
 import { GeminiService } from './GeminiService';
 import { geofencingService } from '../geofencing/GeofencingService';
 import { VehicleClassifier } from './VehicleClassifier';
+import { autoAssignWorker } from '../../utils/autoAssignWorker';
 
 /**
  * ChatBotReservationService — Máquina de estados para reservas guiadas desde el chatbot.
@@ -889,7 +890,7 @@ export class ChatBotReservationService {
     try {
       const formattedHora = d.horaReserva.length === 5 ? `${d.horaReserva}:00` : d.horaReserva;
 
-      const trabajadorId = null;
+      const trabajadorId = await autoAssignWorker(supabase);
       const estadoReserva = 'pendiente';
       const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 

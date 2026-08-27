@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin } from 'lucide-react';
 import { supabase } from '../supabase';
 import { geofencingService } from '../services/geofencing/GeofencingService';
+import { autoAssignWorker } from '../utils/autoAssignWorker';
 
 // --- Inline Chat Component for Client ---
 function ClientChat({ sessionId, onClose }) {
@@ -436,7 +437,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
-    const trabajadorId = null;
+    const trabajadorId = await autoAssignWorker(supabase);
     const estadoReserva = 'pendiente';
     const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random()*1000)}`;
 

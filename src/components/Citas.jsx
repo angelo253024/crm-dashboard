@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '../supabase';
+import { autoAssignWorker } from '../utils/autoAssignWorker';
 
 export default function Citas() {
   const [events, setEvents] = useState([]);
@@ -132,13 +133,15 @@ export default function Citas() {
     try {
       const selectedService = serviciosList.find(s => s.id === manualForm.servicio_id);
       
+      const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
+
       const newReserva = {
         cliente_nombre: manualForm.cliente_nombre,
         vehiculo: manualForm.vehiculo,
         fecha_reserva: manualForm.fecha_reserva,
         hora_reserva: manualForm.hora_reserva + ':00',
         servicio_id: manualForm.servicio_id,
-        trabajador_id: manualForm.trabajador_id || null,
+        trabajador_id: finalTrabajadorId,
         ubicacion_gps: manualForm.ubicacion_gps,
         estado: 'Reservado',
         estado_reserva: 'confirmada',
