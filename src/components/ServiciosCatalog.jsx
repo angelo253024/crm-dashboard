@@ -5,7 +5,7 @@ import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
 import { geofencingService } from '../services/geofencing/GeofencingService';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -205,6 +205,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [showClientChat, setShowClientChat] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 }); // Centro de Santa Cruz
+  const [zonasCobertura, setZonasCobertura] = useState([]);
+
+  useEffect(() => {
+    const loadZonas = async () => {
+      try {
+        const zonas = await geofencingService.getZonas(true);
+        setZonasCobertura(zonas);
+      } catch (err) {
+        console.error('Error fetching zonas for map:', err);
+      }
+    };
+    loadZonas();
+  }, []);
 
   // Client Profile Registration State
   const [recordarCliente, setRecordarCliente] = useState(true);
@@ -1463,6 +1476,22 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             <div style={{ height: '350px', width: '100%' }}>
               <MapContainer center={[mapPosition.lat, mapPosition.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
+                {zonasCobertura.map(zona => {
+                  if (!zona.coordenadas || !Array.isArray(zona.coordenadas) || zona.coordenadas.length === 0) return null;
+                  const positions = zona.coordenadas.map(c => [c.lat, c.lng]);
+                  return (
+                    <Polygon 
+                      key={zona.id} 
+                      positions={positions} 
+                      pathOptions={{ 
+                        color: zona.color || '#1ca9c9', 
+                        fillColor: zona.color || '#1ca9c9', 
+                        fillOpacity: 0.2, 
+                        weight: 2 
+                      }} 
+                    />
+                  );
+                })}
                 <LocationMarker position={mapPosition} setPosition={setMapPosition} />
               </MapContainer>
             </div>
