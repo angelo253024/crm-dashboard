@@ -20,6 +20,13 @@ export default function Citas() {
     hora_reserva: '',
     ubicacion_gps: ''
   });
+  const [disponibilidadFechas, setDisponibilidadFechas] = useState([]);
+  const [showDispoModal, setShowDispoModal] = useState(false);
+  const [dispoForm, setDispoForm] = useState({
+    hora_inicio: '08:00',
+    hora_fin: '18:00',
+    cerrado: false
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -41,10 +48,11 @@ export default function Citas() {
 
   const fetchReservas = async () => {
     setLoading(true);
-    const [resReservas, resTrabajadores, resServicios] = await Promise.all([
+    const [resReservas, resTrabajadores, resServicios, resDispo] = await Promise.all([
       supabase.from('reservas').select('*').order('fecha_reserva', { ascending: true }),
       supabase.from('trabajadores').select('id, nombre'),
-      supabase.from('servicios').select('id, nombre, precio')
+      supabase.from('servicios').select('id, nombre, precio'),
+      supabase.from('disponibilidad_fechas').select('*')
     ]);
       
     if (resReservas.error) {
@@ -54,6 +62,7 @@ export default function Citas() {
       const sList = resServicios.data || [];
       setTrabajadoresList(tList);
       setServiciosList(sList);
+      setDisponibilidadFechas(resDispo.data || []);
       
       const formattedEvents = resReservas.data.map(res => {
         let workerName = 'Sin asignar';
@@ -124,6 +133,52 @@ export default function Citas() {
     } else {
       alert('Reservas iniciales agregadas');
       fetchReservas();
+    }
+  };
+
+  const openDispoModal = (dateStr) => {
+    const existing = disponibilidadFechas.find(d => d.fecha === dateStr);
+    if (existing) {
+      setDispoForm({
+        hora_inicio: existing.hora_inicio ? existing.hora_inicio.substring(0, 5) : '08:00',
+        hora_fin: existing.hora_fin ? existing.hora_fin.substring(0, 5) : '18:00',
+        cerrado: existing.cerrado
+      });
+    } else {
+      setDispoForm({
+        hora_inicio: '08:00',
+        hora_fin: '18:00',
+        cerrado: false
+      });
+    }
+    setShowDispoModal(true);
+  };
+
+  const handleSaveDispo = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        fecha: selectedDateStr,
+        hora_inicio: dispoForm.hora_inicio + ':00',
+        hora_fin: dispoForm.hora_fin + ':00',
+        cerrado: dispoForm.cerrado
+      };
+      
+      const { error } = await supabase
+        .from('disponibilidad_fechas')
+        .upsert(payload, { onConflict: 'fecha' });
+        
+      if (error) throw error;
+      
+      alert('Horario configurado exitosamente');
+      setShowDispoModal(false);
+      const { data } = await supabase.from('disponibilidad_fechas').select('*');
+      setDisponibilidadFechas(data || []);
+    } catch (err) {
+      alert('Error guardando horario: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -340,9 +395,19 @@ export default function Citas() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
               <div>
                 <h2 className="text-h2">Agenda del Día</h2>
-                <p className="text-muted" style={{ marginTop: '4px' }}>
-                  {new Date(`${selectedDateStr}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '4px' }}>
+                  <p className="text-muted">
+                    {new Date(`${selectedDateStr}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </p>
+                  <button 
+                    onClick={() => openDispoModal(selectedDateStr)}
+                    className="btn btn-outline"
+                    style={{ fontSize: '12px', padding: '4px 8px' }}
+                  >
+                    <Clock size={14} style={{ marginRight: '4px' }} />
+                    Configurar Horario
+                  </button>
+                </div>
               </div>
               <button onClick={() => setSelectedDateStr(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '8px', borderRadius: '50%', backgroundColor: 'var(--bg-color)' }}><X size={20} /></button>
             </div>
@@ -466,6 +531,49 @@ export default function Citas() {
                 <button type="button" className="btn-secondary" onClick={() => setShowManualModal(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting}>
                   {isSubmitting ? 'Guardando...' : 'Guardar Cita'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showDispoModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, padding: '24px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '400px', boxShadow: 'var(--shadow-soft)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 className="text-h2">Horario Especial</h2>
+              <button onClick={() => setShowDispoModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
+            </div>
+            
+            <form onSubmit={handleSaveDispo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px' }}>
+                <input 
+                  type="checkbox" 
+                  id="cerradoCheck"
+                  checked={dispoForm.cerrado} 
+                  onChange={e => setDispoForm({...dispoForm, cerrado: e.target.checked})} 
+                />
+                <label htmlFor="cerradoCheck" className="text-body" style={{ fontWeight: 'bold' }}>Marcar este día como CERRADO</label>
+              </div>
+              
+              {!dispoForm.cerrado && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Inicio</label>
+                    <input type="time" required className="form-input" value={dispoForm.hora_inicio} onChange={e => setDispoForm({...dispoForm, hora_inicio: e.target.value})} style={{ width: '100%' }} />
+                  </div>
+                  <div>
+                    <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora Fin</label>
+                    <input type="time" required className="form-input" value={dispoForm.hora_fin} onChange={e => setDispoForm({...dispoForm, hora_fin: e.target.value})} style={{ width: '100%' }} />
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowDispoModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? 'Guardando...' : 'Guardar Horario'}
                 </button>
               </div>
             </form>

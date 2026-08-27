@@ -634,6 +634,38 @@ export class ChatBotReservationService {
         ];
 
         try {
+          const parseMin = (tStr) => {
+            if (!tStr) return -1;
+            const parts = String(tStr).split(':');
+            if (parts.length < 2) return -1;
+            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+          };
+
+          // Validar disponibilidad de fecha
+          const { data: dispoData } = await supabase
+            .from('disponibilidad_fechas')
+            .select('*')
+            .eq('fecha', parsedDate);
+
+          if (dispoData && dispoData.length > 0) {
+            const d = dispoData[0];
+            if (d.cerrado) {
+              _reservationState.step = STEPS.ASKING_DATE;
+              return {
+                text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona o escribe **otra fecha**:',
+                source: 'reservation',
+                buttons: this._getNextDates(),
+                requestGPS: false
+              };
+            }
+            const startMin = parseMin(d.hora_inicio);
+            const endMin = parseMin(d.hora_fin);
+            availableTimeButtons = availableTimeButtons.filter(btn => {
+              const btnMin = parseMin(btn.value);
+              return btnMin >= startMin && btnMin <= endMin;
+            });
+          }
+
           const { data: existingReservasDate } = await supabase
             .from('reservas')
             .select('hora_reserva, hora, estado')
@@ -649,13 +681,6 @@ export class ChatBotReservationService {
               requestGPS: false
             };
           }
-
-          const parseMin = (tStr) => {
-            if (!tStr) return -1;
-            const parts = String(tStr).split(':');
-            if (parts.length < 2) return -1;
-            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-          };
 
           const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
 
@@ -702,6 +727,31 @@ export class ChatBotReservationService {
           };
 
           const reqMin = parseMin(parsedTime);
+          
+          // Validar contra disponibilidad_fechas
+          const { data: dispoData } = await supabase
+            .from('disponibilidad_fechas')
+            .select('*')
+            .eq('fecha', targetDateStr);
+            
+          if (dispoData && dispoData.length > 0) {
+            const d = dispoData[0];
+            if (d.cerrado) {
+              _reservationState.step = STEPS.ASKING_DATE;
+              return { text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
+            }
+            const startMin = parseMin(d.hora_inicio);
+            const endMin = parseMin(d.hora_fin);
+            if (reqMin < startMin || reqMin > endMin) {
+              return { text: `⚠️ El horario de atención para esta fecha es de ${d.hora_inicio.substring(0,5)} a ${d.hora_fin.substring(0,5)}. Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
+            }
+          } else {
+            const startMin = parseMin('08:00');
+            const endMin = parseMin('18:00');
+            if (reqMin < startMin || reqMin > endMin) {
+              return { text: `⚠️ El horario de atención general es de 08:00 a 18:00. Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
+            }
+          }
           const conflictReserva = (existingReservasCheck || []).find(r => {
             const rMin = parseMin(r.hora_reserva || r.hora);
             return rMin !== -1 && Math.abs(reqMin - rMin) < 60;

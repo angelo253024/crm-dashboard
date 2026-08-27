@@ -498,6 +498,36 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const reqMin = timeToMin(formattedHora);
     if (reqMin !== -1 && fechaReserva) {
       try {
+        // Validar contra disponibilidad_fechas
+        const { data: dispoList } = await supabase
+          .from('disponibilidad_fechas')
+          .select('*')
+          .eq('fecha', fechaReserva);
+          
+        if (dispoList && dispoList.length > 0) {
+          const d = dispoList[0];
+          if (d.cerrado) {
+             alert('Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.');
+             setIsSubmitting(false);
+             return;
+          }
+          const startMin = timeToMin(d.hora_inicio);
+          const endMin = timeToMin(d.hora_fin);
+          if (reqMin < startMin || reqMin > endMin) {
+             alert(`⚠️ El horario de atención para la fecha seleccionada es de ${d.hora_inicio.substring(0,5)} a ${d.hora_fin.substring(0,5)}. Por favor seleccione una hora dentro de este rango.`);
+             setIsSubmitting(false);
+             return;
+          }
+        } else {
+          // Fallback
+          const startMin = timeToMin('08:00');
+          const endMin = timeToMin('18:00');
+          if (reqMin < startMin || reqMin > endMin) {
+             alert(`⚠️ El horario de atención es de 08:00 a 18:00. Por favor seleccione una hora dentro de este rango.`);
+             setIsSubmitting(false);
+             return;
+          }
+        }
         const { data: existingReservasCheck } = await supabase
           .from('reservas')
           .select('id, hora_reserva, hora, estado')
