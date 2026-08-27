@@ -586,6 +586,12 @@ export class ChatBotReservationService {
         if (!parsedDate) {
           return { text: 'Formato de fecha no válido. Selecciona uno de los botones o escribe en formato **DD/MM/YYYY**.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
         }
+        
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        if (parsedDate < todayStr) {
+          return { text: 'No puedes reservar en una fecha pasada. Por favor selecciona una fecha válida o uno de los botones.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
+        }
+        
         _reservationState.data.fechaReserva = parsedDate;
         _reservationState.step = STEPS.ASKING_TIME;
 

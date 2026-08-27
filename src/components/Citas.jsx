@@ -442,7 +442,7 @@ export default function Citas() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Fecha</label>
-                  <input type="date" required className="form-input" value={manualForm.fecha_reserva} onChange={e => setManualForm({...manualForm, fecha_reserva: e.target.value})} style={{ width: '100%' }} />
+                  <input type="date" min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]} required className="form-input" value={manualForm.fecha_reserva} onChange={e => setManualForm({...manualForm, fecha_reserva: e.target.value})} style={{ width: '100%' }} />
                 </div>
                 <div>
                   <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Hora</label>
