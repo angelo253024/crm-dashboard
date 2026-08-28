@@ -25,9 +25,9 @@ export class HybridAIService {
     let buttons = null;
     let requestGPS = false;
     let reservaExtra = null;
+    let wasReservationCancelled = false;
 
     try {
-      let wasReservationCancelled = false;
 
       // ========== PRIORIDAD 0: ¿Hay una reserva en curso? ==========
       if (ChatBotReservationService.isActive()) {
