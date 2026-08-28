@@ -27,23 +27,36 @@ export class HybridAIService {
     let reservaExtra = null;
 
     try {
+      let wasReservationCancelled = false;
+
       // ========== PRIORIDAD 0: ¿Hay una reserva en curso? ==========
       if (ChatBotReservationService.isActive()) {
-        onStatusUpdate("Procesando reserva...");
-        const result = await ChatBotReservationService.processStep(userMessage);
-        if (result) {
-          finalResponse = result.text;
-          source = result.source;
-          buttons = result.buttons || null;
-          requestGPS = result.requestGPS || false;
-          if (result.chatSessionId) {
-            reservaExtra = { chatSessionId: result.chatSessionId, reservaId: result.reservaId };
-          }
+        const intentPreCheck = await IntentClassifier.classify(userMessage);
+        
+        // Si el usuario cambia de tema y hace otra consulta conocida, cancelamos la reserva
+        if (intentPreCheck !== 'UNKNOWN' && intentPreCheck !== 'reservar') {
+          ChatBotReservationService.cancel();
+          wasReservationCancelled = true;
         } else {
-          finalResponse = "Algo salió mal con la reserva. Intenta de nuevo.";
-          source = 'error';
+          onStatusUpdate("Procesando reserva...");
+          const result = await ChatBotReservationService.processStep(userMessage);
+          if (result) {
+            finalResponse = result.text;
+            source = result.source;
+            buttons = result.buttons || null;
+            requestGPS = result.requestGPS || false;
+            if (result.chatSessionId) {
+              reservaExtra = { chatSessionId: result.chatSessionId, reservaId: result.reservaId };
+            }
+          } else {
+            finalResponse = "Algo salió mal con la reserva. Intenta de nuevo.";
+            source = 'error';
+          }
         }
-      } else {
+      }
+
+      // Si no hay reserva (o fue cancelada arriba) y aún no hay respuesta
+      if (!ChatBotReservationService.isActive() && finalResponse === "") {
         // ========== FLUJO NORMAL ==========
         onStatusUpdate("Analizando intención...");
         const intent = await IntentClassifier.classify(userMessage);
@@ -113,6 +126,10 @@ export class HybridAIService {
       console.error("Error en HybridAIService:", error);
       finalResponse = "Ocurrió un error inesperado al procesar tu mensaje.";
       source = 'error';
+    }
+
+    if (wasReservationCancelled) {
+      finalResponse = "❌ Entendido, pausaremos la reserva por ahora.\n\n" + finalResponse;
     }
 
     const durationMs = Date.now() - startTime;
