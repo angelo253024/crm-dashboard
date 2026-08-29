@@ -21,6 +21,8 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           src="/logo.png" 
           alt="Lavamóvil Norte" 
           className="landing-logo-img"
+          loading="eager"
+          decoding="async"
           style={{ cursor: 'pointer' }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           onError={(e) => {
@@ -61,6 +63,8 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           src="/logo.png" 
           alt="Lavamóvil Norte" 
           className="landing-logo-hero"
+          loading="eager"
+          decoding="async"
           onError={(e) => {
             e.target.style.display = 'none';
             e.target.nextSibling.style.display = 'block';

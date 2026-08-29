@@ -87,7 +87,13 @@ export default function AdminMetodosPago() {
             <div style={{ flex: 1, minWidth: '250px' }}>
               <div style={{ width: '100%', maxWidth: '300px', aspectRatio: '1/1', backgroundColor: 'var(--bg-color)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
                 {preview ? (
-                  <img src={preview} alt="QR Code" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <img 
+                    src={preview} 
+                    alt="QR Code" 
+                    loading="lazy" 
+                    decoding="async" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+                  />
                 ) : (
                   <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                     <ImageIcon size={48} style={{ opacity: 0.3, margin: '0 auto 8px auto' }} />

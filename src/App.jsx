@@ -6,9 +6,9 @@ import OneSignal from 'react-onesignal'
 // Layout y Componentes Globales Críticos (no diferidos)
 import Layout from './components/Layout'
 import BackgroundEffects from './components/BackgroundEffects'
-import ChatBotWidget from './components/ChatBotWidget'
 
-// Lazy Loading para Vistas (Code Splitting)
+// Lazy Loading para Vistas y Widgets (Code Splitting)
+const ChatBotWidget = lazy(() => import('./components/ChatBotWidget'))
 const LandingPage = lazy(() => import('./components/LandingPage'))
 const ServiciosCatalog = lazy(() => import('./components/ServiciosCatalog'))
 const Login = lazy(() => import('./components/Login'))
@@ -186,8 +186,9 @@ function App() {
           {/* Cualquier ruta que no exista redirige a la Landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      <Suspense fallback={null}>
+        <ChatBotWidget />
       </Suspense>
-      <ChatBotWidget />
     </>
   )
 }

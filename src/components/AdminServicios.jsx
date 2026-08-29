@@ -188,7 +188,13 @@ export default function AdminServicios() {
               }}>
                 <div style={{ height: '160px', backgroundColor: 'var(--card-bg)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                   {s.imagen_url ? (
-                    <img src={s.imagen_url} alt={s.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img 
+                      src={s.imagen_url} 
+                      alt={s.nombre} 
+                      loading="lazy" 
+                      decoding="async" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                   ) : (
                     <ImageIcon size={48} className="text-muted" opacity={0.5} />
                   )}
