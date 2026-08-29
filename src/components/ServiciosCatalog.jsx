@@ -273,53 +273,120 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [activeReservas, setActiveReservas] = useState([]);
   const [selectedReservaId, setSelectedReservaId] = useState(null);
 
+  // Generador de slots en intervalos de 30 min para el horario comercial (08:30 a 18:00)
+  const generateBusinessTimeSlots = (startStr = '08:30', endStr = '18:00') => {
+    const slots = [];
+    const parseMin = (t) => {
+      if (!t) return 0;
+      const parts = t.split(':');
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+    const formatMin = (m) => {
+      const h = Math.floor(m / 60);
+      const min = m % 60;
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    };
+
+    const startMin = parseMin(startStr);
+    const endMin = parseMin(endStr);
+
+    for (let m = startMin; m <= endMin; m += 30) {
+      slots.push(formatMin(m));
+    }
+    return slots;
+  };
+
   useEffect(() => {
     const fetchSlotsForDate = async () => {
       if (!fechaReserva) {
-        setAvailableSlots(null);
+        setAvailableSlots([]);
         return;
       }
       
       setIsFetchingSlots(true);
       try {
+        // 1. Validar si la fecha seleccionada cae en Domingo
+        const dateParts = fechaReserva.split('-');
+        if (dateParts.length === 3) {
+          const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+          if (dateObj.getDay() === 0) {
+            setAvailableSlots([]);
+            setHoraReserva('');
+            setIsFetchingSlots(false);
+            return;
+          }
+        }
+
+        // 2. Obtener reservas existentes para esta fecha
+        const { data: reservas } = await supabase
+          .from('reservas')
+          .select('id, hora_reserva, hora, estado')
+          .eq('fecha_reserva', fechaReserva)
+          .neq('estado', 'Cancelado');
+
+        const parseMin = (t) => {
+          if (!t) return -1;
+          const parts = t.split(':');
+          return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        };
+
+        const bookedMins = (reservas || [])
+          .map(r => parseMin(r.hora_reserva || r.hora))
+          .filter(m => m !== -1);
+
+        // 3. Revisar si hay excepciones en disponibilidad_fechas
         const { data: dispoData } = await supabase
           .from('disponibilidad_fechas')
           .select('*')
           .eq('fecha', fechaReserva);
-          
+
+        let baseSlots = [];
         if (dispoData && dispoData.length > 0) {
           const d = dispoData[0];
+          if (d.cerrado) {
+            setAvailableSlots([]);
+            setHoraReserva('');
+            setIsFetchingSlots(false);
+            return;
+          }
           if (d.tipo === 'slots' && d.slots && d.slots.length > 0) {
-            // Check for taken slots
-            const { data: reservas } = await supabase
-              .from('reservas')
-              .select('hora_reserva')
-              .eq('fecha_reserva', fechaReserva)
-              .neq('estado', 'Cancelado');
-              
-            const bookedHours = (reservas || []).map(r => r.hora_reserva.substring(0, 5));
-            const parseMin = (t) => parseInt(t.split(':')[0]) * 60 + parseInt(t.split(':')[1]);
-            const bookedMins = bookedHours.map(parseMin);
-            
-            const validSlots = d.slots.filter(slot => {
-              const sMin = parseMin(slot);
-              return !bookedMins.some(bMin => Math.abs(sMin - bMin) < 60);
-            });
-            
-            setAvailableSlots(validSlots);
-            // If the currently selected time is not in validSlots, clear it
-            if (horaReserva && !validSlots.includes(horaReserva)) {
-              setHoraReserva('');
-            }
+            baseSlots = d.slots;
+          } else if (d.tipo === 'rango' && d.hora_inicio && d.hora_fin) {
+            baseSlots = generateBusinessTimeSlots(d.hora_inicio.substring(0, 5), d.hora_fin.substring(0, 5));
           } else {
-            setAvailableSlots(null);
+            baseSlots = generateBusinessTimeSlots('08:30', '18:00');
           }
         } else {
-          setAvailableSlots(null);
+          // Horario oficial estándar: 08:30 a 18:00
+          baseSlots = generateBusinessTimeSlots('08:30', '18:00');
+        }
+
+        // 4. Si la fecha seleccionada es HOY, no mostrar horas que ya pasaron
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const now = new Date();
+        const currentMins = now.getHours() * 60 + now.getMinutes() + 20; // 20 minutos de preparación
+
+        const validSlots = baseSlots.filter(slot => {
+          const sMin = parseMin(slot);
+          if (sMin === -1) return false;
+
+          // Si es hoy, filtrar horarios pasados
+          if (fechaReserva === todayStr && sMin <= currentMins) {
+            return false;
+          }
+
+          // Filtrar choques con otras reservas (mínimo 60 min de separación)
+          const hasConflict = bookedMins.some(bMin => Math.abs(sMin - bMin) < 60);
+          return !hasConflict;
+        });
+
+        setAvailableSlots(validSlots);
+        if (horaReserva && !validSlots.includes(horaReserva)) {
+          setHoraReserva('');
         }
       } catch (error) {
         console.error("Error fetching slots:", error);
-        setAvailableSlots(null);
+        setAvailableSlots(generateBusinessTimeSlots('08:30', '18:00'));
       } finally {
         setIsFetchingSlots(false);
       }
@@ -1279,27 +1346,33 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                     <input type="date" min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]} value={fechaReserva} onChange={(e) => setFechaReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Hora</label>
+                    <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Hora de Atención</label>
                     {isFetchingSlots ? (
-                      <div style={{ padding: '12px', color: 'var(--text-muted)' }}>Cargando horarios...</div>
-                    ) : availableSlots ? (
+                      <div style={{ padding: '12px', color: 'var(--text-muted)', fontSize: '13px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        ⏳ Consultando horarios...
+                      </div>
+                    ) : (
                       <select 
                         value={horaReserva} 
                         onChange={(e) => setHoraReserva(e.target.value)} 
                         required 
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', appearance: 'auto' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', appearance: 'auto', fontSize: '14px' }}
                       >
-                        <option value="" disabled>Selecciona un horario</option>
-                        {availableSlots.length > 0 ? (
-                          availableSlots.map(slot => (
-                            <option key={slot} value={slot}>{slot}</option>
-                          ))
+                        <option value="" disabled>Selecciona un horario (08:30 - 18:00)</option>
+                        {availableSlots && availableSlots.length > 0 ? (
+                          availableSlots.map(slot => {
+                            const hourNum = parseInt(slot.split(':')[0], 10);
+                            const period = hourNum < 12 ? 'AM' : 'PM';
+                            return (
+                              <option key={slot} value={slot}>🕒 {slot} {period}</option>
+                            );
+                          })
                         ) : (
-                          <option value="" disabled>No hay horarios disponibles</option>
+                          <option value="" disabled>
+                            {fechaReserva && new Date(fechaReserva + 'T00:00:00').getDay() === 0 ? '❌ Cerrado los Domingos' : '⚠️ No hay horarios disponibles para esta fecha'}
+                          </option>
                         )}
                       </select>
-                    ) : (
-                      <input type="time" value={horaReserva} onChange={(e) => setHoraReserva(e.target.value)} required style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                     )}
                   </div>
                 </div>

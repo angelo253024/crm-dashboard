@@ -650,14 +650,14 @@ export class ChatBotReservationService {
             } else {
               const startMin = parseMin(d.hora_inicio);
               const endMin = parseMin(d.hora_fin);
-              const defaultSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+              const defaultSlots = ['08:30', '09:30', '10:30', '11:30', '14:00', '15:00', '16:00', '17:00', '18:00'];
               allowedSlots = defaultSlots.filter(s => {
                 const sMin = parseMin(s);
                 return sMin >= startMin && sMin <= endMin;
               });
             }
           } else {
-             allowedSlots = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+             allowedSlots = ['08:30', '09:30', '10:30', '11:30', '14:00', '15:00', '16:00', '17:00', '18:00'];
           }
 
           const { data: existingReservasDate } = await supabase
