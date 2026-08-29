@@ -186,6 +186,7 @@ function App() {
           {/* Cualquier ruta que no exista redirige a la Landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </Suspense>
       <Suspense fallback={null}>
         <ChatBotWidget />
       </Suspense>
