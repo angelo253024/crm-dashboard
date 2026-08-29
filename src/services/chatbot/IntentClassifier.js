@@ -10,16 +10,21 @@ export class IntentClassifier {
 
   // Fallback estático de intenciones para garantizar funcionamiento 100% offline o sin DB configurada
   static staticRules = [
+    { intent: 'saludo', keywords: ['hola', 'buenos dias', 'buenas tardes', 'buenas noches', 'buen dia', 'que tal', 'hola buenas', 'hola que tal'] },
+    { intent: 'autonomia', keywords: ['llevan agua', 'traen agua', 'necesitan agua', 'necesitan luz', 'generador', 'enchufe', 'tienen agua', 'traen todo', 'necesitan corriente', 'tienen luz', 'autonomos'] },
+    { intent: 'insumos', keywords: ['que productos usan', 'shampoo', 'cera', 'biodegradable', 'quimicos', 'dañan la pintura', 'rayar', 'productos'] },
+    { intent: 'tapiceria', keywords: ['lavado de asientos', 'tapiz', 'tapiceria', 'asientos sucios', 'manchas en asientos', 'lavar asientos', 'limpieza de tapiz'] },
+    { intent: 'motor', keywords: ['lavan motor', 'lavado de motor', 'limpieza de motor', 'lavar motor'] },
     { intent: 'precios', keywords: ['precio', 'precios', 'cuanto cuesta', 'valor', 'costo', 'costos', 'servicios', 'lavado premium', 'lavado exterior'] },
-    { intent: 'reservar', keywords: ['reservar', 'reserva', 'cita', 'agenda', 'agendar'] },
-    { intent: 'ubicacion', keywords: ['ubicación', 'ubicacion', 'dirección', 'direccion', 'dónde están', 'donde estan', 'mapa'] },
-    { intent: 'horario', keywords: ['horario', 'horarios', 'a que hora', 'dias', 'domingo', 'feriado'] },
-    { intent: 'contacto', keywords: ['contacto', 'teléfono', 'telefono', 'whatsapp', 'correo', 'llamar'] },
-    { intent: 'cobertura', keywords: ['cobertura', 'zonas', 'llegan a', 'domicilio'] },
-    { intent: 'metodos_pago', keywords: ['pago', 'pagar', 'métodos', 'metodos', 'qr', 'efectivo', 'tarjeta', 'transferencia'] },
-    { intent: 'promociones', keywords: ['promoción', 'promocion', 'promociones', 'promo', 'descuento', 'oferta'] },
-    { intent: 'faq_demora', keywords: ['cuanto demora', 'cuánto demora', 'tiempo'] },
-    { intent: 'faq_empresas', keywords: ['empresas', 'flota', 'corporativo'] }
+    { intent: 'reservar', keywords: ['reservar', 'reserva', 'cita', 'agenda', 'agendar', 'quiero agendar', 'quiero reservar'] },
+    { intent: 'ubicacion', keywords: ['ubicación', 'ubicacion', 'dirección', 'direccion', 'dónde están', 'donde estan', 'mapa', 'donde atienden'] },
+    { intent: 'horario', keywords: ['horario', 'horarios', 'a que hora', 'dias', 'domingo', 'feriado', 'abierto'] },
+    { intent: 'contacto', keywords: ['contacto', 'teléfono', 'telefono', 'whatsapp', 'correo', 'llamar', 'numero', 'asesor'] },
+    { intent: 'cobertura', keywords: ['cobertura', 'zonas', 'llegan a', 'domicilio', 'anillo', 'condominio', 'donde van'] },
+    { intent: 'metodos_pago', keywords: ['pago', 'pagar', 'métodos', 'metodos', 'qr', 'efectivo', 'tarjeta', 'transferencia', 'cobran'] },
+    { intent: 'promociones', keywords: ['promoción', 'promocion', 'promociones', 'promo', 'descuento', 'oferta', 'descuentos'] },
+    { intent: 'faq_demora', keywords: ['cuanto demora', 'cuánto demora', 'tiempo', 'cuanto tardan', 'duracion'] },
+    { intent: 'faq_empresas', keywords: ['empresas', 'flota', 'corporativo', 'empresa', 'flotas', 'convenio'] }
   ];
 
   static async loadRules() {

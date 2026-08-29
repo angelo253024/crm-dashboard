@@ -32,53 +32,70 @@ export class SupabaseQueryService {
         return null;
       }
 
+      if (intent === 'saludo') {
+        return "¡Hola! 👋 ¡Qué gusto saludarte! Bienvenido a **Lavamóvil Norte** ✨🚗\n\nSomos tu servicio premium de lavado y detallado automotriz a domicilio en Santa Cruz de la Sierra.\n\n💧 Llevamos nuestro propio tanque de agua y generador eléctrico (100% autónomos).\n\n¿En qué podemos consentir a tu vehículo hoy?";
+      }
+
+      if (intent === 'autonomia') {
+        return "💧 **¡Somos 100% Autónomos!**\n\nNuestras unidades móviles llegan a tu ubicación totalmente equipadas con:\n\n• **Tanque propio de agua tratada**\n• **Generador eléctrico independiente**\n• **Hidrolavadoras e insumos profesionales**\n\nNo te preocupes por facilitarnos agua ni luz, ¡nosotros nos encargamos de todo!";
+      }
+
+      if (intent === 'insumos') {
+        return "✨ **Insumos y Cuidado de tu Vehículo**\n\nUtilizamos exclusivamente productos automotrices de grado profesional:\n\n• **Shampoo con pH neutro** y cera biodegradable que no desgasta la pintura.\n• **Microfibras ultra suaves** de alto gramaje para evitar microrayones (swirls).\n• **Cera protectora de alta duración** para un brillo profundo efecto espejo.\n• **Hidratantes sin silicona grasosa** para tableros y neumáticos.";
+      }
+
+      if (intent === 'tapiceria') {
+        return "🧼 **Limpieza Profunda de Tapicería**\n\nRealizamos lavado detallado de asientos, alfombras y techo utilizando sistema de inyección-extracción a vapor. Eliminamos suciedad profunda, manchas y malos olores dejando tus interiores frescos y desinfectados. ¿Te gustaría agendar una cita?";
+      }
+
+      if (intent === 'motor') {
+        return "⚙️ **Limpieza Detallada de Motor**\n\nRealizamos limpieza y detallado de vano motor con técnica en seco/vapor controlado y productos dieléctricos que protegen componentes electrónicos y dejan las mangueras y plásticos hidratados y protegidos.";
+      }
+
       if (intent === 'reservar') {
-        return "Con gusto te ayudaremos a reservar tu servicio. **[RESERVAR_CITA]**";
+        return "¡Excelente! Con gusto agendaremos tu cita para dejar tu vehículo impecable. **[RESERVAR_CITA]**";
       }
 
       if (intent === 'ubicacion') {
-        return "📍 **Ubicación**\n\nActualmente operamos como servicio a domicilio en **Santa Cruz de la Sierra**. \n\nNo necesitas venir a nosotros, ¡nosotros vamos a ti con todo nuestro equipo móvil!";
+        return "📍 **Servicio 100% a Domicilio**\n\nOperamos en toda la ciudad de **Santa Cruz de la Sierra**.\n\nNo necesitas moverte ni perder tiempo en filas: ¡vamos hasta tu casa, condominio u oficina!";
       }
 
       if (intent === 'cobertura') {
-        return "🚙 **Zonas de Cobertura**\n\nCubrimos **toda la zona urbana de Santa Cruz de la Sierra** (hasta el 8vo anillo).\n\nSi te encuentras fuera de esta zona, consúltanos para verificar la disponibilidad.";
+        return "🚙 **Zonas de Cobertura**\n\nCubrimos **toda la zona urbana de Santa Cruz de la Sierra** (desde el centro hasta el 8vo anillo, zonas residenciales y condominios).\n\nSi te encuentras un poco más lejos, ¡consúltanos y coordinamos la disponibilidad!";
       }
 
       if (intent === 'contacto') {
-        return "📞 **Contacto**\n\nPuedes comunicarte con nosotros por los siguientes medios:\n\n• **WhatsApp**: +591 70000000\n• **Llamadas**: +591 70000000\n• **Correo**: contacto@lavamovil.com";
+        return "📞 **Canales de Atención**\n\nEstamos siempre a tu disposición:\n\n• **WhatsApp directo**: [+591 67750005](https://wa.me/59167750005)\n• **Llamadas**: +591 67750005\n• **Horario**: Lunes a Domingo de 08:00 a 19:00\n\n¿En qué podemos colaborarte hoy?";
       }
 
       if (intent === 'metodos_pago') {
         const { data: config } = await supabase.from('configuraciones_pago').select('*').limit(1).single();
-        let metodos = "• Efectivo\n";
-        if (config && config.qr_image_url) {
-          metodos += "• Transferencia QR\n";
-        }
-        return `💳 **Métodos de pago aceptados**\n\nActualmente aceptamos:\n\n${metodos}`;
+        let metodos = "• **Transferencia bancaria o QR simple** 📲\n• **Efectivo al culminar el servicio** 💵\n";
+        return `💳 **Métodos de Pago Cómodos y Seguros**\n\nAceptamos:\n\n${metodos}\n_Pagas únicamente al finalizar el servicio tras revisar que todo haya quedado impecable._`;
       }
 
       if (intent === 'promociones') {
         const { data: promociones } = await supabase.from('promociones').select('*').eq('activa', true);
         if (promociones && promociones.length > 0) {
           const listado = promociones.map(p => {
-            if (p.tipo === 'descuento') return `• **${p.titulo}**: ${p.descuento_porcentaje}% de descuento.`;
-            return `• **${p.titulo}**: Combo a Bs ${p.precio_combo}.`;
+            if (p.tipo === 'descuento') return `• ⭐ **${p.titulo}**: ${p.descuento_porcentaje}% de descuento especial.`;
+            return `• ⭐ **${p.titulo}**: Paquete especial a Bs ${p.precio_combo}.`;
           }).join('\n\n');
-          return `⭐ **Promociones Activas**\n\n${listado}`;
+          return `🎉 **Promociones Activas para Ti**\n\n${listado}\n\n¿Te gustaría aprovechar alguna de estas promociones hoy?`;
         } else {
-          return 'No tenemos promociones activas en este momento. ¡Mantente atento a nuestras redes sociales!';
+          return '✨ Actualmente tenemos nuestras tarifas promocionales habituales en Lavados Premium y Clásicos. Si gustas indícame tu vehículo y te paso los precios exactos.';
         }
       }
 
       if (intent === 'faq_demora') {
-        return "⏱️ **¿Cuánto demora el servicio?**\n\nEl tiempo aproximado varía según el tamaño del vehículo y el tipo de lavado, pero por lo general un lavado estándar toma **entre 45 minutos y 1 hora**.";
+        return "⏱️ **¿Cuánto demora el servicio?**\n\n• **Lavado Clásico**: 40 a 50 minutos aprox.\n• **Lavado Premium**: 1 hora a 1 hora y 15 minutos aprox.\n• **Limpieza profunda de Tapicería / Detallado**: 1.5 a 2 horas.\n\nTodo con la máxima minuciosidad y cuidado.";
       }
 
       if (intent === 'faq_empresas') {
-        return "🏢 **¿Trabajan con empresas?**\n\n¡Sí! Ofrecemos planes corporativos para flotas de vehículos con tarifas preferenciales. Selecciona la opción de **Contacto** para comunicarte con un asesor de ventas.";
+        return "🏢 **Atención Corporativa y Flotas**\n\n¡Sí! Brindamos convenios especiales y tarifas preferenciales para empresas, flotas corporativas y condominios. Contáctanos por WhatsApp para enviarte una propuesta personalizada.";
       }
 
-      // TODO: Implementar otras tablas dinámicas (inventario, estado_vehiculo) según necesidad.
+      // TODO: Implementar otras tablas dinámicas según necesidad.
     } catch (error) {
       console.error("Error consultando datos locales:", error);
     }
@@ -106,7 +123,7 @@ export class SupabaseQueryService {
       const fechaStr = fechaActual.toLocaleDateString('es-ES', opcionesFecha);
       const horaStr = fechaActual.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/La_Paz' });
       
-      context += `FECHA Y HORA ACTUAL: Hoy es ${fechaStr}, hora actual: ${horaStr}.\n\n`;
+      context += `FECHA Y HORA ACTUAL: Hoy es ${fechaStr}, hora actual en Santa Cruz: ${horaStr}.\n\n`;
 
       // 1. Cargar Horarios
       const { data: horarios } = await supabase.from('horarios_atencion').select('*').order('orden', { ascending: true });
@@ -125,11 +142,25 @@ export class SupabaseQueryService {
       }
 
       // 2. Cargar Servicios
-      const { data: servicios } = await supabase.from('servicios').select('nombre, precio, categoria').eq('disponible', true);
+      const { data: servicios } = await supabase.from('servicios').select('nombre, precio, categoria, disponible').eq('disponible', true);
       if (servicios && servicios.length > 0) {
-        context += "SERVICIOS Y PRECIOS:\n(Las terminaciones P, M, L, XL indican el tamaño del vehículo. P=Pequeño, M=Mediano, L=Grande, XL=Extra Grande)\n";
+        context += "SERVICIOS Y PRECIOS ACTIVOS EN SISTEMA:\n(Guía de tamaños: P=Pequeño, M=Mediano, L=Grande, XL=Extra Grande/Camioneta/3 Filas, MOTO=Motocicletas)\n";
         servicios.forEach(s => {
-          context += `- ${s.nombre} (Categoría: ${s.categoria}): Bs. ${s.precio}\n`;
+          context += `- ${s.nombre} [Cat: ${s.categoria}]: Bs. ${s.precio}\n`;
+        });
+        context += "\n";
+      }
+
+      // 3. Cargar Promociones
+      const { data: promociones } = await supabase.from('promociones').select('*').eq('activa', true);
+      if (promociones && promociones.length > 0) {
+        context += "PROMOCIONES VIGENTES:\n";
+        promociones.forEach(p => {
+          if (p.tipo === 'descuento') {
+            context += `- ${p.titulo}: ${p.descuento_porcentaje}% de descuento.\n`;
+          } else {
+            context += `- ${p.titulo}: Combo a Bs. ${p.precio_combo}.\n`;
+          }
         });
         context += "\n";
       }

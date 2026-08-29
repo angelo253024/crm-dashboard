@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 export default function ChatBotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: '¡Hola! Soy tu asistente inteligente. ¿En qué te puedo ayudar hoy?', sender: 'bot', source: null }
+    { id: 1, text: '¡Hola! 👋✨ Soy tu asesor virtual de **Lavamóvil Norte**.\n\nVamos hasta tu ubicación con nuestro propio equipo autónomo (tanque de agua y generador). ¿En qué podemos consentir a tu vehículo hoy?', sender: 'bot', source: null }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -52,16 +52,16 @@ export default function ChatBotWidget() {
   const inputRef = useRef(null);
 
   const quickReplies = [
-    { label: '💲 Ver precios', intent: 'precios' },
-    { label: '🚗 Ver servicios', intent: 'servicios' },
-    { label: '📅 Reservar cita', intent: 'reservar' },
-    { label: '📍 Ubicación', intent: 'ubicacion' },
-    { label: '🕒 Horarios', intent: 'horario' },
-    { label: '📞 Contacto', intent: 'contacto' },
-    { label: '🚙 Cobertura', intent: 'cobertura' },
-    { label: '💳 Métodos de pago', intent: 'metodos_pago' },
-    { label: '⭐ Promociones', intent: 'promociones' },
-    { label: '❓ Preguntas frecuentes', intent: 'cuanto demora' }
+    { label: '✨ Paquetes y Precios', intent: 'precios' },
+    { label: '📅 Reservar Cita', intent: 'reservar' },
+    { label: '💧 ¿Cómo funciona?', intent: 'autonomia' },
+    { label: '🧼 Tapicería y Asientos', intent: 'tapiceria' },
+    { label: '⚙️ Lavado de Motor', intent: 'motor' },
+    { label: '🚙 Zonas de Cobertura', intent: 'cobertura' },
+    { label: '💳 Métodos de Pago', intent: 'metodos_pago' },
+    { label: '⭐ Promociones Activas', intent: 'promociones' },
+    { label: '🕒 Horarios de Atención', intent: 'horario' },
+    { label: '📞 Hablar con un Asesor', intent: 'contacto' }
   ];
 
   const sendMessageToService = async (textToSend) => {

@@ -44,7 +44,7 @@ export class VehicleClassifier {
     const lowerInput = cleanInput.toLowerCase();
 
     // 1. Detección rápida de Motos
-    if (['moto', 'motocicleta', 'pasola', 'scooter', 'bici', 'bicicleta'].some(k => lowerInput.includes(k))) {
+    if (['moto', 'motocicleta', 'pasola', 'scooter', 'bici', 'bicicleta', 'cuadratrack', 'cuatrimoto'].some(k => lowerInput.includes(k))) {
       return {
         marca: 'Moto / Bici',
         modelo: cleanInput,
@@ -56,7 +56,7 @@ export class VehicleClassifier {
     }
 
     // 2. Comprobar si el texto es ambiguo o genérico (ej: "una camioneta", "mi auto")
-    const isGenericAmbiguous = ['camioneta', 'auto', 'carro', 'coche', 'suv', 'vehiculo', 'camion'].includes(lowerInput.trim());
+    const isGenericAmbiguous = ['camioneta', 'auto', 'carro', 'coche', 'suv', 'vehiculo', 'camion', 'movil'].includes(lowerInput.trim());
     if (isGenericAmbiguous) {
       return {
         marca: '',
@@ -68,7 +68,13 @@ export class VehicleClassifier {
       };
     }
 
-    // 3. Consulta a Gemini IA para clasificación analítica
+    // 3. FAST-PATH: Clasificación determinista local instantánea (< 1ms)
+    const localMatch = this.classifyLocal(cleanInput);
+    if (localMatch && localMatch.confianza >= 90) {
+      return localMatch;
+    }
+
+    // 4. Consulta a Gemini IA para clasificación analítica de modelos no catalogados
     try {
       const prompt = `Analiza este vehículo especificado por un cliente: "${cleanInput}".
 Clasifícalo según sus dimensiones físicas reales en una de estas categorías de servicio exactas:
@@ -106,8 +112,8 @@ Devuelve ÚNICAMENTE un objeto JSON válido con este formato exacto, sin markdow
       console.warn("Gemini no pudo clasificar el vehículo, usando motor determinista local...", e);
     }
 
-    // 4. Fallback determinista local (Base de Conocimientos)
-    return this.classifyLocal(cleanInput);
+    // 5. Fallback determinista local final
+    return localMatch || this.classifyLocal(cleanInput);
   }
 
   /**
