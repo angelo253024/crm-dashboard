@@ -23,17 +23,18 @@ export default function Dashboard() {
     if (!window.confirm('¿Estás seguro de optimizar el sistema? Esto limpiará la caché local y eliminará registros basura antiguos de la base de datos (Ej. Anti-Spam viejo).')) return;
     setIsOptimizing(true);
     try {
-      // 1. Mantener keys importantes (sesión, tema)
+      // 1. Mantener keys importantes (sesión, tema, usuario activo)
       const keysToKeep = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('sb-') || key === 'theme')) {
+        if (key && (key.startsWith('sb-') || key === 'theme' || key === 'crm_user' || key === 'saved_clients')) {
           keysToKeep.push({ key, value: localStorage.getItem(key) });
         }
       }
       
-      // Limpiar todo y restaurar importantes
+      // Limpiar caché local y session storage, restaurando datos de sesión
       localStorage.clear();
+      sessionStorage.clear();
       keysToKeep.forEach(k => {
         localStorage.setItem(k.key, k.value);
       });
