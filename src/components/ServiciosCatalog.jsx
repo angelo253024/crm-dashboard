@@ -592,7 +592,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           if (dateParts.length === 3) {
             const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
             if (dateObj.getDay() === 0) {
-              alert('⚠️ Lo sentimos, los domingos no atendemos. Nuestro horario de atención es de Lunes a Sábado de 07:30 AM a 06:00 PM. Por favor selecciona otra fecha.');
+              alert('⚠️ Lo sentimos, los domingos no atendemos. Nuestro horario de atención es de Lunes a Sábado de 08:30 AM a 06:00 PM. Por favor selecciona otra fecha.');
               setIsSubmitting(false);
               return;
             }
@@ -615,10 +615,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           }
         } else {
           // Fallback horario general oficial
-          const startMin = timeToMin('07:30');
+          const startMin = timeToMin('08:30');
           const endMin = timeToMin('18:00');
           if (reqMin < startMin || reqMin > endMin) {
-             alert(`⚠️ El horario de atención general es de 07:30 a 18:00 (Lunes a Sábado). Por favor seleccione una hora dentro de este rango.`);
+             alert(`⚠️ El horario de atención general es de 08:30 a 18:00 (Lunes a Sábado). Por favor seleccione una hora dentro de este rango.`);
              setIsSubmitting(false);
              return;
           }

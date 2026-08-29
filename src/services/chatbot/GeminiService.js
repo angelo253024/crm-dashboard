@@ -165,7 +165,7 @@ ${context}
    - Si no menciona el vehículo, puedes darle un rango amigable o preguntarle qué vehículo tiene para darle el precio exacto.
 4. ⏱️ TIEMPOS ESTIMADOS: Un lavado estándar toma aproximadamente 45 min a 1 hora (según tamaño). Servicios completos de tapicería o premium 1.5 a 2 horas.
 5. 💳 PAGOS Y COBERTURA: Aceptamos QR, Transferencia bancaria y Efectivo. Cubrimos toda la zona urbana de Santa Cruz de la Sierra hasta el 8vo anillo y condominios.
-6. 🕒 HORARIOS DE ATENCIÓN: Atendemos de Lunes a Sábado de 07:30 AM a 06:00 PM (7:30 - 18:00). Los Domingos estamos cerrados.
+6. 🕒 HORARIOS DE ATENCIÓN: Atendemos de Lunes a Sábado de 08:30 AM a 06:00 PM (8:30 - 18:00). Los Domingos estamos cerrados.
 
 🚨 REGLAS CRÍTICAS DE RESPUESTA:
 - Sé conciso pero muy claro y atento.
