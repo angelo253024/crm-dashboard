@@ -27,8 +27,11 @@ export class SupabaseQueryService {
 
     // 2. Si no hay respuesta rápida estática, intentar consultar las tablas de negocio dinámicas
     try {
-      // Precios y horarios son manejados ahora por Gemini para tener contexto inteligente del vehículo.
-      if (intent === 'horario' || intent === 'precios' || intent === 'servicios') {
+      if (intent === 'horario') {
+        return "🕒 **Horarios de Atención de Lavamóvil Norte**\n\nAtendemos a domicilio en los siguientes horarios:\n\n• **Lunes**: 07:30 AM - 06:00 PM\n• **Martes**: 07:30 AM - 06:00 PM\n• **Miércoles**: 07:30 AM - 06:00 PM\n• **Jueves**: 07:30 AM - 06:00 PM\n• **Viernes**: 07:30 AM - 06:00 PM\n• **Sábado**: 07:30 AM - 06:00 PM\n• **Domingo**: Cerrado\n\n¿Te gustaría programar tu servicio para hoy o algún día de la semana? 🚗✨";
+      }
+
+      if (intent === 'precios' || intent === 'servicios') {
         return null;
       }
 
@@ -65,7 +68,7 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'contacto') {
-        return "📞 **Canales de Atención**\n\nEstamos siempre a tu disposición:\n\n• **WhatsApp directo**: [+591 67750005](https://wa.me/59167750005)\n• **Llamadas**: +591 67750005\n• **Horario**: Lunes a Domingo de 08:00 a 19:00\n\n¿En qué podemos colaborarte hoy?";
+        return "📞 **Canales de Atención**\n\nEstamos siempre a tu disposición:\n\n• **WhatsApp directo**: [+591 67750005](https://wa.me/59167750005)\n• **Llamadas**: +591 67750005\n• **Horario**: Lunes a Sábado de 07:30 AM a 06:00 PM (Domingos cerrado)\n\n¿En qué podemos colaborarte hoy?";
       }
 
       if (intent === 'metodos_pago') {

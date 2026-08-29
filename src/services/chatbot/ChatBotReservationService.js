@@ -739,11 +739,23 @@ export class ChatBotReservationService {
             .select('*')
             .eq('fecha', targetDateStr);
             
+          // Validar si la fecha cae en Domingo
+          if (targetDateStr) {
+            const dateParts = targetDateStr.split('-');
+            if (dateParts.length === 3) {
+              const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+              if (dateObj.getDay() === 0) {
+                _reservationState.step = STEPS.ASKING_DATE;
+                return { text: '⚠️ Lo sentimos, los **domingos estamos cerrados**.\n\nNuestro horario de atención es de **Lunes a Sábado de 07:30 AM a 06:00 PM**.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates ? this._getNextDates() : null, requestGPS: false };
+              }
+            }
+          }
+
           if (dispoData && dispoData.length > 0) {
             const d = dispoData[0];
             if (d.cerrado) {
               _reservationState.step = STEPS.ASKING_DATE;
-              return { text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
+              return { text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates ? this._getNextDates() : null, requestGPS: false };
             }
             const startMin = parseMin(d.hora_inicio);
             const endMin = parseMin(d.hora_fin);
@@ -751,10 +763,10 @@ export class ChatBotReservationService {
               return { text: `⚠️ El horario de atención para esta fecha es de ${d.hora_inicio.substring(0,5)} a ${d.hora_fin.substring(0,5)}. Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
             }
           } else {
-            const startMin = parseMin('08:00');
+            const startMin = parseMin('07:30');
             const endMin = parseMin('18:00');
             if (reqMin < startMin || reqMin > endMin) {
-              return { text: `⚠️ El horario de atención general es de 08:00 a 18:00. Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
+              return { text: `⚠️ El horario de atención general es de 07:30 a 18:00 (Lunes a Sábado). Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
             }
           }
           const conflictReserva = (existingReservasCheck || []).find(r => {

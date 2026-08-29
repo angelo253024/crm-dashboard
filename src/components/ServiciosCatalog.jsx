@@ -586,6 +586,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           .select('*')
           .eq('fecha', fechaReserva);
           
+        // Validar si es Domingo
+        if (fechaReserva) {
+          const dateParts = fechaReserva.split('-');
+          if (dateParts.length === 3) {
+            const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+            if (dateObj.getDay() === 0) {
+              alert('⚠️ Lo sentimos, los domingos no atendemos. Nuestro horario de atención es de Lunes a Sábado de 07:30 AM a 06:00 PM. Por favor selecciona otra fecha.');
+              setIsSubmitting(false);
+              return;
+            }
+          }
+        }
+
         if (dispoList && dispoList.length > 0) {
           const d = dispoList[0];
           if (d.cerrado) {
@@ -601,11 +614,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
              return;
           }
         } else {
-          // Fallback
-          const startMin = timeToMin('08:00');
+          // Fallback horario general oficial
+          const startMin = timeToMin('07:30');
           const endMin = timeToMin('18:00');
           if (reqMin < startMin || reqMin > endMin) {
-             alert(`⚠️ El horario de atención es de 08:00 a 18:00. Por favor seleccione una hora dentro de este rango.`);
+             alert(`⚠️ El horario de atención general es de 07:30 a 18:00 (Lunes a Sábado). Por favor seleccione una hora dentro de este rango.`);
              setIsSubmitting(false);
              return;
           }
