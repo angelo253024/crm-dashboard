@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot, MapPin } from 'lucide-react';
 import { HybridAIService } from '../services/chatbot/HybridAIService';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import { geofencingService } from '../services/geofencing/GeofencingService';
+import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -24,7 +25,20 @@ export default function ChatBotWidget() {
   const [statusMessage, setStatusMessage] = useState('');
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 });
+  const [zonasCobertura, setZonasCobertura] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadZonas = async () => {
+      try {
+        const zonas = await geofencingService.getZonas(true);
+        setZonasCobertura(zonas);
+      } catch (err) {
+        console.error('Error fetching zonas for chatbot map:', err);
+      }
+    };
+    loadZonas();
+  }, []);
 
   // Helper para arreglar el renderizado gris del mapa
   const RecenterMap = () => {
@@ -619,7 +633,7 @@ export default function ChatBotWidget() {
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
                 <MapPin size={20} color="var(--accent-blue)" />
-                Selecciona tu ubicación
+                Mueve el pin a tu ubicación
               </h3>
               <button onClick={() => setShowMapModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
             </div>
@@ -629,6 +643,22 @@ export default function ChatBotWidget() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 />
+                {zonasCobertura.map(zona => {
+                  if (!zona.coordenadas || !Array.isArray(zona.coordenadas) || zona.coordenadas.length === 0) return null;
+                  const positions = zona.coordenadas.map(c => [c.lat, c.lng]);
+                  return (
+                    <Polygon 
+                      key={zona.id} 
+                      positions={positions} 
+                      pathOptions={{ 
+                        color: zona.color || '#1ca9c9', 
+                        fillColor: zona.color || '#1ca9c9', 
+                        fillOpacity: 0.2, 
+                        weight: 2 
+                      }} 
+                    />
+                  );
+                })}
                 <RecenterMap />
                 <MapClickHandler />
                 <Marker position={[mapPosition.lat, mapPosition.lng]} />
