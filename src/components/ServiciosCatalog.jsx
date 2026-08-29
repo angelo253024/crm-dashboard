@@ -272,6 +272,18 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   // Active reservations loaded from local storage
   const [activeReservas, setActiveReservas] = useState([]);
   const [selectedReservaId, setSelectedReservaId] = useState(null);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const chatAudioRef = useRef(new Audio('/aternos-notification.mp3'));
+
+  const requestBrowserNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      try {
+        await Notification.requestPermission();
+      } catch (e) {
+        console.warn('Error solicitando permisos de notificacion:', e);
+      }
+    }
+  };
 
   // Generador de slots en intervalos de 30 min para el horario comercial (08:30 a 18:00)
   const generateBusinessTimeSlots = (startStr = '08:30', endStr = '18:00') => {
@@ -449,11 +461,56 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     if (!error && data) {
       setActiveReservas(data);
       localStorage.setItem('active_reservas_list_v2', JSON.stringify(data));
-      
-      // Auto-limpieza: remover completadas/canceladas después de 2 horas (opcional)
-      // Por ahora las mantenemos visibles para que el cliente vea el historial de la sesión
     }
   };
+
+  // Listener global en segundo plano para mensajes del trabajador dirigidos al cliente
+  useEffect(() => {
+    if (!activeReservas || activeReservas.length === 0) return;
+
+    requestBrowserNotificationPermission();
+
+    const sessionIds = activeReservas.map(r => r.chat_session_id || `fallback_${r.id}`);
+
+    const channel = supabase
+      .channel('client-global-chat-listener')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'mensajes' },
+        (payload) => {
+          if (payload.new && payload.new.rol === 'bot' && sessionIds.includes(payload.new.session_id)) {
+            // Sonido de alerta
+            if (chatAudioRef.current) {
+              chatAudioRef.current.currentTime = 0;
+              chatAudioRef.current.play().catch(e => console.log('Audio autoplay:', e));
+            }
+            
+            // Si el chat flotante no está abierto, incrementar contador no leído
+            if (!showClientChat) {
+              setUnreadChatCount(prev => prev + 1);
+            }
+
+            // Notificación nativa del navegador / sistema operativo
+            if ('Notification' in window && Notification.permission === 'granted') {
+              try {
+                new Notification('Lavamóvil Norte - Mensaje del Lavador 🛵💬', {
+                  body: payload.new.contenido || 'Tienes un nuevo mensaje sobre tu lavado.',
+                  icon: '/logo.png',
+                  tag: 'chat-msg-' + payload.new.id
+                });
+              } catch (err) {
+                console.log('Error triggering Notification:', err);
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeReservas, showClientChat]);
 
   const isSecondaryService = (s) => {
     const isOtros = s.categoria === 'Otros' || s.categoria === 'Lavado Bicis y Motos';
@@ -975,13 +1032,35 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => {
+                  setUnreadChatCount(0);
                   setConfirmedReserva(reserva);
                   setShowClientChat(true);
                 }} 
                 className="btn-glass-primary"
-                style={{ flex: 1, minWidth: '180px', justifyContent: 'center' }}
+                style={{ 
+                  flex: 1, 
+                  minWidth: '180px', 
+                  justifyContent: 'center',
+                  position: 'relative',
+                  backgroundColor: unreadChatCount > 0 ? '#10b981' : undefined,
+                  boxShadow: unreadChatCount > 0 ? '0 0 15px rgba(16, 185, 129, 0.6)' : undefined
+                }}
               >
                 <MessageSquare size={18} /> Chat con Trabajador
+                {unreadChatCount > 0 && (
+                  <span style={{ 
+                    backgroundColor: '#ef4444', 
+                    color: '#fff', 
+                    fontSize: '11px', 
+                    fontWeight: 'bold', 
+                    padding: '2px 8px', 
+                    borderRadius: '10px', 
+                    marginLeft: '8px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                  }}>
+                    🔔 {unreadChatCount} nuevo{unreadChatCount > 1 ? 's' : ''}
+                  </span>
+                )}
               </button>
               <button 
                 onClick={() => setShowDetailsModal(true)} 
@@ -1529,6 +1608,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                 <button 
                   onClick={() => {
+                    setUnreadChatCount(0);
                     setConfirmedReserva(reserva);
                     setShowDetailsModal(false);
                     setShowClientChat(true);
