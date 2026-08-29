@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye, MessageCircle } from 'lucide-react';
+import { CalendarCheck, Map, Banknote, X, Calendar, DollarSign, TrendingUp, Filter, Trash2, Search, Eye, MessageCircle, Download, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '../supabase';
 import KpiCards from './KpiCards';
 import PipelineChart from './PipelineChart';
@@ -202,6 +202,92 @@ export default function Dashboard() {
     return cliente.includes(text) || servicioName.includes(text) || trabajador.includes(text);
   });
 
+  // Función robusta para exportar reporte financiero a Excel (.csv con formato UTF-8)
+  const exportarReporteExcel = (tipo = 'mes') => {
+    const lista = tipo === 'mes' ? finanzasDetalladas.mesServicios : serviciosFiltrados;
+    
+    if (!lista || lista.length === 0) {
+      alert("No hay registros disponibles para exportar en este período.");
+      return;
+    }
+
+    const monthLabel = selectedDate.substring(0, 7);
+    const filename = tipo === 'mes' 
+      ? `Reporte_Ingresos_Mes_${monthLabel}_Lavamovil.csv`
+      : `Reporte_Ingresos_${filtroActivo}_${selectedDate}_Lavamovil.csv`;
+
+    const headers = [
+      "Fecha",
+      "Hora",
+      "Cliente",
+      "Telefono",
+      "Vehiculo",
+      "Servicio Realizado",
+      "Trabajador Asignado",
+      "Metodo de Pago",
+      "Estado del Pago",
+      "Monto (Bs)"
+    ];
+
+    let totalAcumulado = 0;
+
+    const rows = lista.map(s => {
+      const fecha = String(s.fecha_reserva || s.created_at || '').split('T')[0];
+      const hora = String(s.hora_reserva || s.hora || '').substring(0, 5);
+      const cliente = `"${String(s.cliente_nombre || s.cliente || '-').replace(/"/g, '""')}"`;
+      const telefono = `"${String(getTelefono(s) || s.cliente_telefono || '-').replace(/"/g, '""')}"`;
+      const vehiculo = `"${String(s.vehiculo || s.cliente_vehiculo || '-').replace(/"/g, '""')}"`;
+      const servicioName = `"${String(servicios.find(svc => svc.id === s.servicio_id)?.nombre || s.servicio || '-').replace(/"/g, '""')}"`;
+      const trabajador = `"${String(trabajadores.find(t => t.id === s.trabajador_id)?.nombre || s.trabajador_nombre || 'Sin asignar').replace(/"/g, '""')}"`;
+      const metodo = s.payment_method || (s.payment_status === 'PAGADO' ? 'Efectivo' : 'Pendiente');
+      const estado = s.payment_status || (s.estado === 'Completado' ? 'PAGADO' : s.estado || 'Pendiente');
+      const monto = Number(s.precio_total || s.precio || 0);
+      
+      if (s.estado !== 'Cancelado') {
+        totalAcumulado += monto;
+      }
+
+      return [
+        fecha,
+        hora,
+        cliente,
+        telefono,
+        vehiculo,
+        servicioName,
+        trabajador,
+        metodo,
+        estado,
+        monto
+      ].join(';');
+    });
+
+    // Fila de resumen total
+    rows.push([
+      "",
+      "",
+      "TOTAL RECAUDADO",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      totalAcumulado
+    ].join(';'));
+
+    // Generar archivo con BOM UTF-8 (\uFEFF) para compatibilidad total con Excel en Windows/Mac
+    const csvData = "\uFEFF" + headers.join(';') + "\n" + rows.join('\n');
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
@@ -330,19 +416,46 @@ export default function Dashboard() {
 
               {/* Tabla Detallada */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>
                     Servicios Completados {filtroActivo === 'dia' ? 'este Día' : filtroActivo === 'semana' ? 'esta Semana' : 'este Mes'}
                   </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px' }}>
-                    <Search size={14} className="text-muted" />
-                    <input 
-                      type="text" 
-                      placeholder="Buscar cliente o servicio..." 
-                      value={filtroTexto}
-                      onChange={(e) => setFiltroTexto(e.target.value)}
-                      style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-main)', width: '160px' }}
-                    />
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px' }}>
+                      <Search size={14} className="text-muted" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar cliente o servicio..." 
+                        value={filtroTexto}
+                        onChange={(e) => setFiltroTexto(e.target.value)}
+                        style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: 'var(--text-main)', width: '160px' }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => exportarReporteExcel('mes')}
+                      style={{
+                        backgroundColor: '#10b981',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '7px 14px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
+                      }}
+                      title="Descargar todos los servicios e ingresos del mes en formato Excel"
+                      onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#059669'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#10b981'; }}
+                    >
+                      <Download size={15} /> Exportar Reporte a Excel
+                    </button>
                   </div>
                 </div>
                 
