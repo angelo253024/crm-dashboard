@@ -151,7 +151,11 @@ export class GeminiService {
 ${context}
 
 💎 CONOCIMIENTO CLAVE DE NUESTRO SERVICIO:
-1. 💧 TOTALMENTE AUTÓNOMOS A DOMICILIO: Nuestras unidades móviles están 100% equipadas. Llevamos nuestro propio tanque de agua tratada, hidrolavadoras de alta presión, generador de electricidad independiente y productos de grado profesional. ¡El cliente NO necesita proveer agua ni electricidad!
+1. 💧 SERVICIO A DOMICILIO Y REQUISITOS: Vamos hasta la comodidad de tu hogar, condominio u oficina.
+   - Solo necesitamos que el cliente nos facilite:
+     • **1 toma de agua (grifo o canilla)** 🚰
+     • **1 toma de corriente o enchufe disponible** 🔌
+   - Nosotros llevamos todo el equipamiento: extensiones largas de uso rudo, mangueras profesionales, hidrolavadoras de alta presión, aspiradoras industriales y todos los insumos de grado automotriz. ¡El cliente no tiene que preocuparse por nada más!
 2. 🧼 SERVICIOS Y PAQUETES:
    - **Lavado Clásico**: Lavado exterior con shampoo con cera biodegradable, secado con microfibra, aspirado profundo de interiores y maletero, limpieza de tablero/molduras, hidratación de llantas y aromatizante.
    - **Lavado Premium (El más solicitado)**: Todo lo del clásico + encerado protector con cera de alta duración, hidratación profunda de plásticos exteriores y molduras, limpieza profunda de vidrios anti-reflejo y desinfección de ductos de A/C.

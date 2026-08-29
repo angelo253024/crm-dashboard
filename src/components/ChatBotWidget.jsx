@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 export default function ChatBotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: '¡Hola! 👋✨ Soy tu asesor virtual de **Lavamóvil Norte**.\n\nVamos hasta tu ubicación con nuestro propio equipo autónomo (tanque de agua y generador). ¿En qué podemos consentir a tu vehículo hoy?', sender: 'bot', source: null }
+    { id: 1, text: '¡Hola! 👋✨ Soy tu asesor virtual de **Lavamóvil Norte**.\n\nVamos hasta tu domicilio u oficina con todo nuestro equipamiento profesional. Solo necesitamos una toma de agua y un enchufe disponible. ¿En qué podemos consentir a tu vehículo hoy?', sender: 'bot', source: null }
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -54,7 +54,7 @@ export default function ChatBotWidget() {
   const quickReplies = [
     { label: '✨ Paquetes y Precios', intent: 'precios' },
     { label: '📅 Reservar Cita', intent: 'reservar' },
-    { label: '💧 ¿Cómo funciona?', intent: 'autonomia' },
+    { label: '💧 ¿Cómo funciona?', intent: 'requisitos' },
     { label: '🧼 Tapicería y Asientos', intent: 'tapiceria' },
     { label: '⚙️ Lavado de Motor', intent: 'motor' },
     { label: '🚙 Zonas de Cobertura', intent: 'cobertura' },

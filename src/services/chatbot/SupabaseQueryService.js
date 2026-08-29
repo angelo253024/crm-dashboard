@@ -33,11 +33,11 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'saludo') {
-        return "¡Hola! 👋 ¡Qué gusto saludarte! Bienvenido a **Lavamóvil Norte** ✨🚗\n\nSomos tu servicio premium de lavado y detallado automotriz a domicilio en Santa Cruz de la Sierra.\n\n💧 Llevamos nuestro propio tanque de agua y generador eléctrico (100% autónomos).\n\n¿En qué podemos consentir a tu vehículo hoy?";
+        return "¡Hola! 👋 ¡Qué gusto saludarte! Bienvenido a **Lavamóvil Norte** ✨🚗\n\nSomos tu servicio premium de lavado y detallado automotriz a domicilio en Santa Cruz de la Sierra.\n\nVamos hasta la comodidad de tu hogar u oficina. Solo necesitamos un grifo de agua y un enchufe disponible, ¡y nosotros nos encargamos de dejar tu vehículo como nuevo!\n\n¿En qué podemos consentir a tu vehículo hoy?";
       }
 
-      if (intent === 'autonomia') {
-        return "💧 **¡Somos 100% Autónomos!**\n\nNuestras unidades móviles llegan a tu ubicación totalmente equipadas con:\n\n• **Tanque propio de agua tratada**\n• **Generador eléctrico independiente**\n• **Hidrolavadoras e insumos profesionales**\n\nNo te preocupes por facilitarnos agua ni luz, ¡nosotros nos encargamos de todo!";
+      if (intent === 'requisitos' || intent === 'autonomia') {
+        return "💧 **¿Cómo funciona nuestro servicio a domicilio?**\n\nVamos directamente hasta tu casa, condominio u oficina con todo nuestro equipamiento profesional.\n\n**Solo necesitamos de tu parte:**\n• **1 toma de agua (grifo o canilla)** 🚰\n• **1 toma de corriente o enchufe disponible** 🔌\n\nNosotros llevamos extensiones largas, mangueras, hidrolavadoras de alta presión, aspiradoras industriales y todos los insumos de alta gama. ¡Tú solo relájate mientras dejamos tu vehículo impecable!";
       }
 
       if (intent === 'insumos') {
