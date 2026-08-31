@@ -223,8 +223,8 @@ export default function GeofencingAdmin() {
       <div style={{ flex: 1, borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-color)', position: 'relative' }}>
         <MapContainer center={defaultCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
           <DrawInteraction isDrawing={mode === 'draw'} currentPolygon={currentPolygon} setCurrentPolygon={setCurrentPolygon} />
