@@ -70,7 +70,9 @@ export class ChatBotReservationService {
     return {
       text: '¡Perfecto! Vamos a agendar tu cita de lavado. 📅\n\nPara empezar, por favor indícame tu número de **WhatsApp**:',
       source: 'reservation',
-      buttons: null,
+      buttons: [
+        { label: '❌ Cancelar / Consultar otra cosa', value: 'cancelar' }
+      ],
       requestGPS: false,
     };
   }
@@ -81,7 +83,7 @@ export class ChatBotReservationService {
   static cancel() {
     _reservationState = null;
     return {
-      text: '❌ Reserva cancelada. Si necesitas algo más, ¡estoy aquí!',
+      text: '❌ Reserva cancelada. ¿Qué otra duda o consulta tienes? Con gusto te ayudo. ✨',
       source: 'reservation',
       buttons: null,
       requestGPS: false,
@@ -95,9 +97,24 @@ export class ChatBotReservationService {
     if (!_reservationState) return null;
 
     const input = userInput.trim();
+    const lower = input.toLowerCase();
 
-    // Cancelar en cualquier momento
-    if (['cancelar', 'salir', 'no', 'cancelar reserva'].includes(input.toLowerCase())) {
+    // Cancelar en cualquier momento si el usuario lo solicita o expresa otra intención
+    const isCancelExpression = (
+      ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lower) ||
+      lower.includes('cancelar') ||
+      lower.includes('consultar') ||
+      lower.includes('pregunta') ||
+      lower.includes('otra cosa') ||
+      lower.includes('otra duda') ||
+      lower.includes('quiero saber') ||
+      lower.includes('no quiero') ||
+      lower.includes('después') ||
+      lower.includes('luego') ||
+      lower.includes('espera')
+    );
+
+    if (isCancelExpression) {
       return this.cancel();
     }
 

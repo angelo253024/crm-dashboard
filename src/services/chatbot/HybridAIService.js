@@ -31,12 +31,35 @@ export class HybridAIService {
 
       // ========== PRIORIDAD 0: ¿Hay una reserva en curso? ==========
       if (ChatBotReservationService.isActive()) {
+        const lowerMsg = userMessage.toLowerCase().trim();
+        const isCancelPhrase = (
+          ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lowerMsg) ||
+          lowerMsg.includes('cancelar') ||
+          lowerMsg.includes('consultar') ||
+          lowerMsg.includes('pregunta') ||
+          lowerMsg.includes('otra cosa') ||
+          lowerMsg.includes('otra duda') ||
+          lowerMsg.includes('quiero saber') ||
+          lowerMsg.includes('no quiero') ||
+          lowerMsg.includes('después') ||
+          lowerMsg.includes('luego') ||
+          lowerMsg.includes('espera')
+        );
+
         const intentPreCheck = await IntentClassifier.classify(userMessage);
         
-        // Si el usuario cambia de tema y hace otra consulta conocida, cancelamos la reserva
-        if (intentPreCheck !== 'UNKNOWN' && intentPreCheck !== 'reservar') {
+        // Si el usuario cancela o hace otra consulta conocida, cancelamos la reserva
+        if (isCancelPhrase || (intentPreCheck !== 'UNKNOWN' && intentPreCheck !== 'reservar')) {
           ChatBotReservationService.cancel();
-          wasReservationCancelled = true;
+          if (intentPreCheck !== 'UNKNOWN' && intentPreCheck !== 'reservar') {
+            wasReservationCancelled = true;
+          } else if (isCancelPhrase && (lowerMsg.includes('consultar') || lowerMsg.includes('pregunta') || lowerMsg.includes('otra cosa'))) {
+            finalResponse = "❌ Reserva pausada. ¿Qué otra consulta tienes? Con gusto te ayudo. ✨";
+            source = 'reservation';
+          } else {
+            finalResponse = "❌ Reserva cancelada. Si necesitas algo más, ¡aquí estoy para ayudarte! ✨";
+            source = 'reservation';
+          }
         } else {
           onStatusUpdate("Procesando reserva...");
           const result = await ChatBotReservationService.processStep(userMessage);
