@@ -2,6 +2,27 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '../supabase';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
+import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+function LocationMarker({ position, setPosition }) {
+  useMapEvents({
+    click(e) {
+      setPosition(e.latlng);
+    },
+  });
+  return position === null ? null : (
+    <Marker position={position}></Marker>
+  );
+}
 
 export default function Citas() {
   const [events, setEvents] = useState([]);
@@ -11,6 +32,9 @@ export default function Citas() {
   const [trabajadoresList, setTrabajadoresList] = useState([]);
   const [serviciosList, setServiciosList] = useState([]);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapPosition, setMapPosition] = useState({ lat: -17.7833, lng: -63.1821 });
+  const [zonasCobertura, setZonasCobertura] = useState([]);
   const [manualForm, setManualForm] = useState({
     cliente_nombre: '',
     vehiculo: '',
@@ -51,11 +75,12 @@ export default function Citas() {
 
   const fetchReservas = async () => {
     setLoading(true);
-    const [resReservas, resTrabajadores, resServicios, resDispo] = await Promise.all([
+    const [resReservas, resTrabajadores, resServicios, resDispo, resZonas] = await Promise.all([
       supabase.from('reservas').select('*').order('fecha_reserva', { ascending: true }),
       supabase.from('trabajadores').select('id, nombre'),
       supabase.from('servicios').select('id, nombre, precio'),
-      supabase.from('disponibilidad_fechas').select('*')
+      supabase.from('disponibilidad_fechas').select('*'),
+      supabase.from('zonas_cobertura').select('*')
     ]);
       
     if (resReservas.error) {
@@ -66,6 +91,9 @@ export default function Citas() {
       setTrabajadoresList(tList);
       setServiciosList(sList);
       setDisponibilidadFechas(resDispo.data || []);
+      if (resZonas && resZonas.data) {
+        setZonasCobertura(resZonas.data);
+      }
       
       const formattedEvents = resReservas.data.map(res => {
         let workerName = 'Sin asignar';
@@ -553,8 +581,35 @@ export default function Citas() {
               </div>
 
               <div>
-                <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Ubicación (Coordenadas o Dirección)</label>
-                <input type="text" className="form-input" placeholder="Ej: Av. Principal 123 o -16.5, -68.1" value={manualForm.ubicacion_gps} onChange={e => setManualForm({...manualForm, ubicacion_gps: e.target.value})} style={{ width: '100%' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="text-body" style={{ fontWeight: '500' }}>Ubicación (Coordenadas o Dirección)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const match = manualForm.ubicacion_gps ? manualForm.ubicacion_gps.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/) : null;
+                      if (match) {
+                        setMapPosition({ lat: parseFloat(match[1]), lng: parseFloat(match[2]) });
+                      }
+                      setShowMapModal(true);
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid #3b82f6',
+                      color: '#3b82f6',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    🗺️ Elegir en Mapa
+                  </button>
+                </div>
+                <input type="text" className="form-input" placeholder="Ej: Av. Principal 123 o -17.78, -63.18" value={manualForm.ubicacion_gps} onChange={e => setManualForm({...manualForm, ubicacion_gps: e.target.value})} style={{ width: '100%' }} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '8px' }}>
@@ -681,6 +736,50 @@ export default function Citas() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showMapModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '500px', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-soft)' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>📍 Mueve el pin a tu ubicación</h3>
+              <button onClick={() => setShowMapModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            <div style={{ height: '350px', width: '100%' }}>
+              <MapContainer center={[mapPosition.lat, mapPosition.lng]} zoom={13} style={{ height: '100%', width: '100%' }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
+                {zonasCobertura.map(zona => {
+                  if (!zona.coordenadas || !Array.isArray(zona.coordenadas) || zona.coordenadas.length === 0) return null;
+                  const positions = zona.coordenadas.map(c => [c.lat, c.lng]);
+                  return (
+                    <Polygon 
+                      key={zona.id} 
+                      positions={positions} 
+                      pathOptions={{ 
+                        color: zona.color || '#1ca9c9', 
+                        fillColor: zona.color || '#1ca9c9', 
+                        fillOpacity: 0.2, 
+                        weight: 2 
+                      }} 
+                    />
+                  );
+                })}
+                <LocationMarker position={mapPosition} setPosition={setMapPosition} />
+              </MapContainer>
+            </div>
+            <div style={{ padding: '16px', display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--border-color)' }}>
+              <button type="button" onClick={() => setShowMapModal(false)} className="btn-secondary" style={{ padding: '10px 16px', borderRadius: '8px' }}>
+                Cancelar
+              </button>
+              <button type="button" onClick={() => {
+                setManualForm(prev => ({ ...prev, ubicacion_gps: `${mapPosition.lat.toFixed(6)}, ${mapPosition.lng.toFixed(6)}` }));
+                setShowMapModal(false);
+              }} className="btn-primary" style={{ padding: '10px 16px', borderRadius: '8px' }}>
+                Confirmar Ubicación
+              </button>
+            </div>
           </div>
         </div>
       )}
