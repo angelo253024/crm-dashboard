@@ -167,24 +167,44 @@ export default function ChatBotWidget() {
     );
   };
 
-  // Función para renderizar el texto del bot (negritas y botón de reservar)
+  // Función para renderizar el texto del bot (negritas, enlaces y botón de reservar)
   const renderMessageText = (msg) => {
     const text = msg.text;
     if (!text) return null;
     
     const hasReserva = text.includes('**[RESERVAR_CITA]**');
     const cleanText = text.replace('**[RESERVAR_CITA]**', '').trim();
-    const parts = cleanText.split(/(\*\*.*?\*\*)/g);
+    
+    // Parsear negritas y enlaces markdown [texto](url)
+    const renderFormattedText = (rawStr) => {
+      // Split por enlaces [texto](url) o **negrita**
+      const tokens = rawStr.split(/(\[.*?\]\(.*?\)|\*\*.*?\*\*)/g);
+      return tokens.map((token, i) => {
+        if (token.startsWith('**') && token.endsWith('**')) {
+          return <strong key={i}>{token.slice(2, -2)}</strong>;
+        }
+        const linkMatch = token.match(/^\[(.*?)\]\((.*?)\)$/);
+        if (linkMatch) {
+          return (
+            <a 
+              key={i} 
+              href={linkMatch[2]} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#25D366', fontWeight: 'bold', textDecoration: 'underline' }}
+            >
+              {linkMatch[1]}
+            </a>
+          );
+        }
+        return token;
+      });
+    };
     
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <span style={{ whiteSpace: 'pre-wrap' }}>
-          {parts.map((part, i) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={i}>{part.slice(2, -2)}</strong>;
-            }
-            return part;
-          })}
+          {renderFormattedText(cleanText)}
         </span>
         
         {hasReserva && (
@@ -250,7 +270,7 @@ export default function ChatBotWidget() {
           </div>
         )}
 
-        {/* Botones Interactivos (Servicios, Fechas, Confirmación) */}
+        {/* Botones Interactivos (Servicios, Fechas, Confirmación, WhatsApp) */}
         {msg.buttons && msg.buttons.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
             {msg.buttons.map((btn, idx) => (
@@ -275,19 +295,24 @@ export default function ChatBotWidget() {
                   onClick={() => handleButtonClick(btn)}
                   disabled={isTyping}
                   style={{
-                    backgroundColor: 'var(--bg-color)',
-                    color: 'var(--text-main)',
-                    border: '1px solid var(--border-color)',
-                    padding: '8px 14px',
+                    backgroundColor: btn.isLink ? '#25D366' : 'var(--bg-color)',
+                    color: btn.isLink ? '#ffffff' : 'var(--text-main)',
+                    border: btn.isLink ? 'none' : '1px solid var(--border-color)',
+                    padding: btn.isLink ? '10px 16px' : '8px 14px',
                     borderRadius: '10px',
                     fontSize: '13px',
-                    fontWeight: '600',
-                    textAlign: 'left',
+                    fontWeight: 'bold',
+                    textAlign: btn.isLink ? 'center' : 'left',
                     cursor: isTyping ? 'not-allowed' : 'pointer',
                     transition: 'all 0.2s ease',
+                    boxShadow: btn.isLink ? '0 4px 12px rgba(37, 211, 102, 0.35)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: btn.isLink ? 'center' : 'flex-start',
+                    gap: '8px'
                   }}
-                  onMouseEnter={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--accent-blue)')}
-                  onMouseLeave={e => !isTyping && (e.currentTarget.style.borderColor = 'var(--border-color)')}
+                  onMouseEnter={e => !isTyping && (e.currentTarget.style.filter = 'brightness(1.05)')}
+                  onMouseLeave={e => !isTyping && (e.currentTarget.style.filter = 'none')}
                 >
                   {btn.label}
                 </button>

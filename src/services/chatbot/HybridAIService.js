@@ -77,6 +77,12 @@ export class HybridAIService {
           if (localResponse) {
             finalResponse = localResponse;
             source = 'supabase';
+            if (intent === 'contacto' || finalResponse.includes('wa.me') || finalResponse.includes('[BOTON_WHATSAPP]')) {
+              finalResponse = finalResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
+              buttons = [
+                { label: '💬 Abrir WhatsApp Directo (+591 67750005)', isLink: true, url: 'https://wa.me/59167750005' }
+              ];
+            }
           } else {
             // 2. Si no hay respuesta local, intentar en Caché de IA
             onStatusUpdate("Revisando memoria caché...");
@@ -85,6 +91,12 @@ export class HybridAIService {
             if (cachedResponse) {
               finalResponse = cachedResponse;
               source = 'cache';
+              if (finalResponse.includes('wa.me') || finalResponse.includes('[BOTON_WHATSAPP]') || intent === 'contacto') {
+                finalResponse = finalResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
+                buttons = [
+                  { label: '💬 Abrir WhatsApp Directo (+591 67750005)', isLink: true, url: 'https://wa.me/59167750005' }
+                ];
+              }
             } else {
               // 3. Si no hay caché, usar Gemini
               onStatusUpdate("Pensando (IA)...");
@@ -97,10 +109,10 @@ export class HybridAIService {
               } else {
                 let finalAiResponse = aiResponse;
                 
-                if (finalAiResponse.includes('[BOTON_WHATSAPP]')) {
+                if (finalAiResponse.includes('[BOTON_WHATSAPP]') || intent === 'contacto' || finalAiResponse.includes('wa.me')) {
                   finalAiResponse = finalAiResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
                   buttons = [
-                    { label: '💬 Hablar con Asesor en WhatsApp', isLink: true, url: 'https://wa.me/59167750005' }
+                    { label: '💬 Abrir WhatsApp Directo (+591 67750005)', isLink: true, url: 'https://wa.me/59167750005' }
                   ];
                 }
 
