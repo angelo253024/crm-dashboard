@@ -677,7 +677,7 @@ export class ChatBotReservationService {
           }
 
           let maxCap = 1;
-          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
+          if (dispoData && dispoData.length > 0 && dispoData[0].tipo === 'slots' && dispoData[0].capacidad_por_slot) {
             maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
           }
 
@@ -776,7 +776,7 @@ export class ChatBotReservationService {
             }
           }
           let maxCap = 1;
-          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
+          if (dispoData && dispoData.length > 0 && dispoData[0].tipo === 'slots' && dispoData[0].capacidad_por_slot) {
             maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
           }
 

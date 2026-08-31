@@ -378,7 +378,7 @@ export default function Citas() {
                                   ) : dispoDay.tipo === 'slots' ? (
                                     <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0}) • Cap: {dispoDay.capacidad_por_slot || 1}</span>
                                   ) : (
-                                    <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango • Cap: {dispoDay.capacidad_por_slot || 1}</span>
+                                    <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango</span>
                                   )}
                                 </div>
                               )}
@@ -624,7 +624,7 @@ export default function Citas() {
                           }
                         }}>Agregar</button>
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
                         {dispoForm.slots.map(slot => (
                           <div key={slot} style={{ display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: 'var(--accent-blue)', color: 'white', padding: '4px 12px', borderRadius: '16px', fontSize: '14px' }}>
                             {slot}
@@ -633,44 +633,44 @@ export default function Citas() {
                         ))}
                         {dispoForm.slots.length === 0 && <span className="text-muted" style={{ fontSize: '13px' }}>No hay horarios agregados.</span>}
                       </div>
+
+                      <div style={{ padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                        <label className="text-body" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                          👥 Capacidad por Slot / Turno
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                          {[1, 2, 3].map(num => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => setDispoForm({...dispoForm, capacidad_por_slot: num})}
+                              style={{
+                                padding: '8px 4px',
+                                borderRadius: '6px',
+                                border: (dispoForm.capacidad_por_slot === num) ? '2px solid #3b82f6' : '1px solid var(--border-color)',
+                                backgroundColor: (dispoForm.capacidad_por_slot === num) ? 'rgba(59, 130, 246, 0.15)' : 'var(--card-bg)',
+                                color: (dispoForm.capacidad_por_slot === num) ? '#3b82f6' : 'var(--text-main)',
+                                fontWeight: (dispoForm.capacidad_por_slot === num) ? 'bold' : 'normal',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '2px',
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              <span style={{ fontSize: '13px' }}>{num} {num === 1 ? 'Persona' : 'Personas'}</span>
+                              <span style={{ fontSize: '10px', opacity: 0.75 }}>{num === 1 ? '(Por defecto)' : `(Hasta ${num} clientes)`}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>
+                          Controla cuántos clientes o reservas pueden agendarse simultáneamente en un mismo turno específico.
+                        </p>
+                      </div>
                     </div>
                   )}
-
-                  <div style={{ marginTop: '6px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <label className="text-body" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '13px' }}>
-                      👥 Capacidad por Horario / Slot
-                    </label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                      {[1, 2, 3].map(num => (
-                        <button
-                          key={num}
-                          type="button"
-                          onClick={() => setDispoForm({...dispoForm, capacidad_por_slot: num})}
-                          style={{
-                            padding: '8px 4px',
-                            borderRadius: '6px',
-                            border: (dispoForm.capacidad_por_slot === num) ? '2px solid #3b82f6' : '1px solid var(--border-color)',
-                            backgroundColor: (dispoForm.capacidad_por_slot === num) ? 'rgba(59, 130, 246, 0.15)' : 'var(--card-bg)',
-                            color: (dispoForm.capacidad_por_slot === num) ? '#3b82f6' : 'var(--text-main)',
-                            fontWeight: (dispoForm.capacidad_por_slot === num) ? 'bold' : 'normal',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '2px',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          <span style={{ fontSize: '13px' }}>{num} {num === 1 ? 'Persona' : 'Personas'}</span>
-                          <span style={{ fontSize: '10px', opacity: 0.75 }}>{num === 1 ? '(Por defecto)' : `(Hasta ${num} clientes)`}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>
-                      Controla cuántos clientes o reservas pueden agendarse simultáneamente en un mismo turno de esta fecha.
-                    </p>
-                  </div>
                 </>
               )}
               

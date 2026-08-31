@@ -356,7 +356,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         let maxCap = 1;
         if (dispoData && dispoData.length > 0) {
           const d = dispoData[0];
-          if (d.capacidad_por_slot) {
+          if (d.tipo === 'slots' && d.capacidad_por_slot) {
             maxCap = parseInt(d.capacidad_por_slot, 10) || 1;
           }
           if (d.cerrado) {
@@ -764,7 +764,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         }
 
         let maxCap = 1;
-        if (dispoList && dispoList.length > 0 && dispoList[0].capacidad_por_slot) {
+        if (dispoList && dispoList.length > 0 && dispoList[0].tipo === 'slots' && dispoList[0].capacidad_por_slot) {
           maxCap = parseInt(dispoList[0].capacidad_por_slot, 10) || 1;
         }
 
