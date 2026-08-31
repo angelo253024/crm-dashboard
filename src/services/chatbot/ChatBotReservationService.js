@@ -676,11 +676,17 @@ export class ChatBotReservationService {
             };
           }
 
+          let maxCap = 1;
+          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
+            maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
+          }
+
           const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
 
           const validSlots = allowedSlots.filter(slot => {
             const btnMin = parseMin(slot);
-            return !bookedMins.some(bMin => Math.abs(btnMin - bMin) < 60);
+            const conflictCount = bookedMins.filter(bMin => Math.abs(btnMin - bMin) < 60).length;
+            return conflictCount < maxCap;
           });
 
           const clockEmojis = {
@@ -769,18 +775,23 @@ export class ChatBotReservationService {
               return { text: `⚠️ El horario de atención general es de 08:30 a 18:00 (Lunes a Sábado). Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
             }
           }
-          const conflictReserva = (existingReservasCheck || []).find(r => {
+          let maxCap = 1;
+          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
+            maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
+          }
+
+          const conflictingReservas = (existingReservasCheck || []).filter(r => {
             const rMin = parseMin(r.hora_reserva || r.hora);
             return rMin !== -1 && Math.abs(reqMin - rMin) < 60;
           });
 
-          if (conflictReserva) {
+          if (conflictingReservas.length >= maxCap) {
             _reservationState.data.horaReserva = parsedTime;
             _reservationState.data.hasDelay = true;
             _reservationState.step = STEPS.CONFIRM_DELAY;
             
             return {
-              text: `⚠️ **¡Atención!** En este horario nuestros funcionarios están realizando otros servicios.\n\nEl tiempo de demora será de **1 hora aproximadamente** en salir para su ubicación.\n\n¿Qué desea hacer?`,
+              text: `⚠️ **¡Atención!** En este horario nuestros funcionarios ya cuentan con ${conflictingReservas.length} servicio(s) agendado(s) (capacidad máxima de ${maxCap} ${maxCap === 1 ? 'persona' : 'personas'} por turno).\n\nEl tiempo de demora será de **1 hora aproximadamente** en salir para su ubicación.\n\n¿Qué desea hacer?`,
               source: 'reservation',
               buttons: [
                 { label: '➡️ Continuar', value: 'DELAY_CONTINUE' },

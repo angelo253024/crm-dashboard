@@ -353,8 +353,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           .eq('fecha', fechaReserva);
 
         let baseSlots = [];
+        let maxCap = 1;
         if (dispoData && dispoData.length > 0) {
           const d = dispoData[0];
+          if (d.capacidad_por_slot) {
+            maxCap = parseInt(d.capacidad_por_slot, 10) || 1;
+          }
           if (d.cerrado) {
             setAvailableSlots([]);
             setHoraReserva('');
@@ -387,9 +391,9 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             return false;
           }
 
-          // Filtrar choques con otras reservas (mínimo 60 min de separación)
-          const hasConflict = bookedMins.some(bMin => Math.abs(sMin - bMin) < 60);
-          return !hasConflict;
+          // Filtrar choques con otras reservas si se alcanza la capacidad máxima permitida por slot (1, 2 o 3)
+          const conflictCount = bookedMins.filter(bMin => Math.abs(sMin - bMin) < 60).length;
+          return conflictCount < maxCap;
         });
 
         setAvailableSlots(validSlots);
@@ -759,15 +763,19 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           return;
         }
 
-        const conflictReserva = (existingReservasCheck || []).find(r => {
+        let maxCap = 1;
+        if (dispoList && dispoList.length > 0 && dispoList[0].capacidad_por_slot) {
+          maxCap = parseInt(dispoList[0].capacidad_por_slot, 10) || 1;
+        }
+
+        const conflictingReservas = (existingReservasCheck || []).filter(r => {
           if (isEditing && r.id === selectedReservaId) return false;
           const rMin = timeToMin(r.hora_reserva || r.hora);
           return rMin !== -1 && Math.abs(reqMin - rMin) < 60;
         });
 
-        if (conflictReserva) {
-          const conflictTimeStr = String(conflictReserva.hora_reserva || conflictReserva.hora || '').substring(0, 5);
-          alert(`⚠️ El horario seleccionado (${formattedHora}) se cruza con otra reserva ya programada a las ${conflictTimeStr}.\n\nDebe haber al menos 1 hora de rango/margen entre pedidos. Por favor selecciona otro horario.`);
+        if (conflictingReservas.length >= maxCap) {
+          alert(`⚠️ El horario seleccionado (${formattedHora}) ya no cuenta con cupos disponibles (máximo ${maxCap} ${maxCap === 1 ? 'persona/reserva' : 'personas/reservas'} para este turno).\n\nPor favor selecciona otro horario.`);
           setIsSubmitting(false);
           return;
         }

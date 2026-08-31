@@ -27,7 +27,8 @@ export default function Citas() {
     slots: [],
     hora_inicio: '08:00',
     hora_fin: '18:00',
-    cerrado: false
+    cerrado: false,
+    capacidad_por_slot: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -146,7 +147,8 @@ export default function Citas() {
         slots: existing.slots || [],
         hora_inicio: existing.hora_inicio ? existing.hora_inicio.substring(0, 5) : '08:00',
         hora_fin: existing.hora_fin ? existing.hora_fin.substring(0, 5) : '18:00',
-        cerrado: existing.cerrado
+        cerrado: existing.cerrado || false,
+        capacidad_por_slot: existing.capacidad_por_slot ? parseInt(existing.capacidad_por_slot, 10) : 1
       });
     } else {
       setDispoForm({
@@ -154,7 +156,8 @@ export default function Citas() {
         slots: [],
         hora_inicio: '08:00',
         hora_fin: '18:00',
-        cerrado: false
+        cerrado: false,
+        capacidad_por_slot: 1
       });
     }
     setShowDispoModal(true);
@@ -170,7 +173,8 @@ export default function Citas() {
         slots: dispoForm.slots,
         hora_inicio: dispoForm.hora_inicio + ':00',
         hora_fin: dispoForm.hora_fin + ':00',
-        cerrado: dispoForm.cerrado
+        cerrado: dispoForm.cerrado,
+        capacidad_por_slot: parseInt(dispoForm.capacidad_por_slot, 10) || 1
       };
       
       const { error } = await supabase
@@ -372,9 +376,9 @@ export default function Citas() {
                                   {dispoDay.cerrado ? (
                                     <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Cerrado</span>
                                   ) : dispoDay.tipo === 'slots' ? (
-                                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0})</span>
+                                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0}) • Cap: {dispoDay.capacidad_por_slot || 1}</span>
                                   ) : (
-                                    <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango</span>
+                                    <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango • Cap: {dispoDay.capacidad_por_slot || 1}</span>
                                   )}
                                 </div>
                               )}
@@ -631,6 +635,42 @@ export default function Citas() {
                       </div>
                     </div>
                   )}
+
+                  <div style={{ marginTop: '6px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <label className="text-body" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                      👥 Capacidad por Horario / Slot
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                      {[1, 2, 3].map(num => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setDispoForm({...dispoForm, capacidad_por_slot: num})}
+                          style={{
+                            padding: '8px 4px',
+                            borderRadius: '6px',
+                            border: (dispoForm.capacidad_por_slot === num) ? '2px solid #3b82f6' : '1px solid var(--border-color)',
+                            backgroundColor: (dispoForm.capacidad_por_slot === num) ? 'rgba(59, 130, 246, 0.15)' : 'var(--card-bg)',
+                            color: (dispoForm.capacidad_por_slot === num) ? '#3b82f6' : 'var(--text-main)',
+                            fontWeight: (dispoForm.capacidad_por_slot === num) ? 'bold' : 'normal',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '2px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <span style={{ fontSize: '13px' }}>{num} {num === 1 ? 'Persona' : 'Personas'}</span>
+                          <span style={{ fontSize: '10px', opacity: 0.75 }}>{num === 1 ? '(Por defecto)' : `(Hasta ${num} clientes)`}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', marginBottom: 0 }}>
+                      Controla cuántos clientes o reservas pueden agendarse simultáneamente en un mismo turno de esta fecha.
+                    </p>
+                  </div>
                 </>
               )}
               
