@@ -543,43 +543,82 @@ export default function ChatBotWidget() {
           <div ref={messagesEndRef} style={{ height: '20px' }} />
         </div>
 
-        {/* Contenedor de Consultas Rápidas */}
+        {/* Contenedor de Consultas Rápidas Deslizable */}
         <div style={{
-          padding: '12px 16px 8px 16px',
+          position: 'relative',
           backgroundColor: 'var(--card-bg)',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          whiteSpace: 'nowrap',
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none', // Firefox
-          msOverflowStyle: 'none' // IE/Edge
+          alignItems: 'center'
         }}>
           <style>{`
-            .quick-replies::-webkit-scrollbar { display: none; }
+            .quick-replies-scroll-container::-webkit-scrollbar {
+              height: 4px;
+            }
+            .quick-replies-scroll-container::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .quick-replies-scroll-container::-webkit-scrollbar-thumb {
+              background: rgba(255, 255, 255, 0.15);
+              border-radius: 4px;
+            }
           `}</style>
-          <div className="quick-replies" style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+          <div 
+            className="quick-replies-scroll-container"
+            onWheel={(e) => {
+              if (e.deltaY !== 0) {
+                e.currentTarget.scrollLeft += e.deltaY;
+              }
+            }}
+            style={{
+              padding: '10px 16px',
+              display: 'flex',
+              gap: '8px',
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+              WebkitOverflowScrolling: 'touch',
+              scrollBehavior: 'smooth',
+              width: '100%',
+              scrollbarWidth: 'thin'
+            }}
+          >
             {quickReplies.map((reply, idx) => (
               <button
                 key={idx}
                 onClick={() => handleQuickReply(reply)}
                 disabled={isTyping}
                 style={{
-                  padding: '6px 12px',
+                  padding: '7px 14px',
                   backgroundColor: 'var(--bg-color)',
                   color: 'var(--text-main)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
+                  borderRadius: '20px',
                   fontSize: '13px',
-                  fontWeight: '500',
+                  fontWeight: '600',
                   cursor: isTyping ? 'not-allowed' : 'pointer',
                   flexShrink: 0,
-                  transition: 'background-color 0.2s',
-                  opacity: isTyping ? 0.6 : 1
+                  transition: 'all 0.2s ease',
+                  opacity: isTyping ? 0.6 : 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  userSelect: 'none',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }}
-                onMouseEnter={e => !isTyping && (e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.1)')}
-                onMouseLeave={e => !isTyping && (e.currentTarget.style.backgroundColor = 'var(--bg-color)')}
+                onMouseEnter={e => {
+                  if (!isTyping) {
+                    e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.15)';
+                    e.currentTarget.style.borderColor = 'var(--accent-cyan)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isTyping) {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-color)';
+                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }
+                }}
               >
                 {reply.label}
               </button>
