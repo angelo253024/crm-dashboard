@@ -346,6 +346,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           .map(r => parseMin(r.hora_reserva || r.hora))
           .filter(m => m !== -1);
 
+        if (reservas && reservas.length >= 10) {
+          setAvailableSlots([]);
+          setHoraReserva('');
+          setIsFetchingSlots(false);
+          return;
+        }
+
         // 3. Revisar si hay excepciones en disponibilidad_fechas
         const { data: dispoData } = await supabase
           .from('disponibilidad_fechas')
