@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus, Edit3 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
+import { getMapUrls } from '../utils/navigationUrls';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -627,6 +628,37 @@ export default function Citas() {
                         <UserCheck size={16} color="var(--text-muted)" />
                         <span className="text-body">{ev.worker}</span>
                       </div>
+                      {(ev.raw?.ubicacion_gps || ev.raw?.ubicacion) && (() => {
+                        const mapInfo = getMapUrls(ev.raw.ubicacion_gps || ev.raw.ubicacion);
+                        return (
+                          <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--card-bg)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }}>
+                              <MapPin size={15} color="#ef4444" />
+                              <span style={{ color: 'var(--text-muted)' }}>{ev.raw.ubicacion_gps || ev.raw.ubicacion}</span>
+                            </div>
+                            {mapInfo.hasLocation && (
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <a
+                                  href={mapInfo.googleMapsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ padding: '4px 8px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 'bold' }}
+                                >
+                                  📍 Google Maps
+                                </a>
+                                <a
+                                  href={mapInfo.wazeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ padding: '4px 8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 'bold' }}
+                                >
+                                  🚗 Waze
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', gridColumn: '1 / -1', justifyContent: 'flex-end', marginTop: '4px' }}>
                         <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs.{ev.price}</span>
                         <button

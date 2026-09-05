@@ -44,9 +44,66 @@ export class ChatBotReservationService {
   }
 
   /**
-   * Inicia un nuevo flujo de reserva
+   * Analiza y extrae coordenadas o enlaces de Google Maps desde el texto del usuario
    */
-  static start() {
+  static parseLocationInput(input) {
+    if (!input || typeof input !== 'string') {
+      return { cleanAddress: '', cleanCoordinates: null, isGPS: false };
+    }
+    const str = input.trim();
+
+    // 1. Coordenadas numéricas directas: "-17.7833, -63.1821"
+    const coordMatch = str.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+    if (coordMatch) {
+      const lat = parseFloat(coordMatch[1]);
+      const lng = parseFloat(coordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        const coordsStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        const remainder = str.replace(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/, '').replace(/[📍\s,:]|Mi ubicación/gi, '').trim();
+        return {
+          cleanAddress: remainder.length > 3 ? `${remainder} (GPS: ${coordsStr})` : `📍 Ubicación GPS (${coordsStr})`,
+          cleanCoordinates: coordsStr,
+          isGPS: true
+        };
+      }
+    }
+
+    // 2. Enlace de Google Maps con coordenadas embebidas (?q=, @lat,lng, etc.)
+    const gmapsCoordMatch = str.match(/(?:@|[?&]q=|[?&]ll=)(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/);
+    if (gmapsCoordMatch) {
+      const lat = parseFloat(gmapsCoordMatch[1]);
+      const lng = parseFloat(gmapsCoordMatch[2]);
+      if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        const coordsStr = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        return {
+          cleanAddress: `📍 Ubicación Google Maps (${coordsStr})`,
+          cleanCoordinates: coordsStr,
+          isGPS: true
+        };
+      }
+    }
+
+    // 3. Enlace corto de Google Maps (maps.app.goo.gl o goo.gl/maps)
+    if (/maps\.app\.goo\.gl|goo\.gl\/maps|maps\.google\.com/i.test(str)) {
+      return {
+        cleanAddress: str,
+        cleanCoordinates: str,
+        isGPS: true
+      };
+    }
+
+    // 4. Dirección escrita común
+    return {
+      cleanAddress: str,
+      cleanCoordinates: null,
+      isGPS: false
+    };
+  }
+
+  /**
+   * Inicia un nuevo flujo de reserva (con opción de fecha y turno prefijados para Cierre Rápido)
+   */
+  static start(presetDate = null, presetTime = null) {
     _reservationState = {
       step: STEPS.ASKING_PHONE, // Ahora pedimos el teléfono primero
       savedProfile: null,
@@ -62,13 +119,21 @@ export class ChatBotReservationService {
         servicioPrecio: 0,
         serviciosAdicionales: [],
         ubicacion: '',
-        fechaReserva: '',
-        horaReserva: '',
+        ubicacion_gps: '',
+        fechaReserva: presetDate || '',
+        horaReserva: presetTime || '',
       }
     };
 
+    let intro = '¡Perfecto! Vamos a agendar tu cita de lavado. 📅';
+    if (presetDate && presetTime) {
+      const isToday = presetDate === new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const dateLabel = isToday ? 'hoy' : presetDate;
+      intro = `¡Excelente! Hemos apartado tu turno para **${dateLabel} a las ${presetTime}** ⏰.`;
+    }
+
     return {
-      text: '¡Perfecto! Vamos a agendar tu cita de lavado. 📅\n\nPara empezar, por favor indícame tu número de **WhatsApp**:',
+      text: `${intro}\n\nPara empezar, por favor indícame tu número de **WhatsApp**:`,
       source: 'reservation',
       buttons: [
         { label: '❌ Cancelar / Consultar otra cosa', value: 'cancelar' }
@@ -607,13 +672,25 @@ export class ChatBotReservationService {
         if (input.length < 3) {
           return { text: 'Por favor, ingresa una dirección válida o envía tu ubicación GPS.', source: 'reservation', buttons: null, requestGPS: true };
         }
-        _reservationState.data.ubicacion = input;
+
+        const locInfo = ChatBotReservationService.parseLocationInput(input);
+        _reservationState.data.ubicacion = locInfo.cleanAddress;
+        _reservationState.data.ubicacion_gps = locInfo.cleanCoordinates || locInfo.cleanAddress;
+
+        // Si la fecha y hora ya vienen fijadas por el Cierre Rápido (Punto 2)
+        if (_reservationState.data.fechaReserva && _reservationState.data.horaReserva) {
+          _reservationState.step = STEPS.CONFIRMING;
+          return this._buildSummaryResponse(false);
+        }
+
         _reservationState.step = STEPS.ASKING_DATE;
 
         // Generar botones con fechas próximas
         const dateButtons = this._getNextDates();
         return {
-          text: '📅 ¿Para qué **fecha** deseas el servicio?',
+          text: locInfo.isGPS 
+            ? '📍 ¡Ubicación GPS registrada correctamente!\n\n📅 ¿Para qué **fecha** deseas el servicio?' 
+            : '📅 ¿Para qué **fecha** deseas el servicio?',
           source: 'reservation',
           buttons: dateButtons,
           requestGPS: false,
@@ -1023,7 +1100,7 @@ export class ChatBotReservationService {
       const { data: insertData, error } = await supabase.from('reservas').insert([{
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
         vehiculo: finalVehiculo,
-        ubicacion_gps: d.ubicacion,
+        ubicacion_gps: d.ubicacion_gps || d.ubicacion,
         fecha_reserva: d.fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: d.servicioId,

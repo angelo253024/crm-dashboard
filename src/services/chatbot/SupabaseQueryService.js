@@ -1,4 +1,5 @@
 import { supabase } from '../../supabase';
+import { ChatBotReservationService } from './ChatBotReservationService';
 
 /**
  * Servicio encargado de realizar consultas a la base de datos local
@@ -60,6 +61,63 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'disponibilidad') {
+        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        try {
+          const dispo = await ChatBotReservationService._getSlotsForDate(todayStr);
+
+          if (!dispo.isSunday && !dispo.isClosed && !dispo.isFull && dispo.validSlots && dispo.validSlots.length > 0) {
+            // Identificar el turno más conveniente (si ya es tarde, primer turno de la tarde, o el primer libre)
+            const currentHour = new Date().getHours();
+            let targetSlot = dispo.validSlots[0];
+            if (currentHour >= 11) {
+              const afternoonSlot = dispo.validSlots.find(s => s >= '13:00');
+              if (afternoonSlot) targetSlot = afternoonSlot;
+            }
+
+            const [hStr, mStr] = targetSlot.split(':');
+            let hNum = parseInt(hStr, 10);
+            const ampm = hNum >= 12 ? 'PM' : 'AM';
+            if (hNum > 12) hNum -= 12;
+            if (hNum === 0) hNum = 12;
+            const readableSlot = `${String(hNum).padStart(2, '0')}:${mStr} ${ampm}`;
+
+            return {
+              text: `¡Buenas tardes! ✨ Sí, tenemos disponibilidad en la agenda para **hoy**.\n\n¿Te quedaría perfecto a las **${readableSlot}** aproximadamente para agendar tu servicio?`,
+              buttons: [
+                { label: `✅ Sí, agendar a las ${readableSlot} (Hoy)`, value: `FAST_BOOK|${todayStr}|${targetSlot}` },
+                { label: '🕒 Ver otros horarios disponibles', value: 'reservar' }
+              ]
+            };
+          } else {
+            // Si hoy ya está completo o cerrado, proponer mañana
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            if (tomorrow.getDay() === 0) tomorrow.setDate(tomorrow.getDate() + 1); // saltar domingo
+            const tomorrowStr = tomorrow.toISOString().split('T')[0];
+            const dispoTomorrow = await ChatBotReservationService._getSlotsForDate(tomorrowStr);
+
+            if (dispoTomorrow.validSlots && dispoTomorrow.validSlots.length > 0) {
+              const firstSlot = dispoTomorrow.validSlots[0];
+              const [hStr, mStr] = firstSlot.split(':');
+              let hNum = parseInt(hStr, 10);
+              const ampm = hNum >= 12 ? 'PM' : 'AM';
+              if (hNum > 12) hNum -= 12;
+              if (hNum === 0) hNum = 12;
+              const readableSlot = `${String(hNum).padStart(2, '0')}:${mStr} ${ampm}`;
+
+              return {
+                text: `Por ahora ya no tenemos espacios libres para hoy, **¡pero para mañana sí tenemos disponibilidad!** 📅\n\n¿Te gustaría que te reservemos para mañana a las **${readableSlot}**?`,
+                buttons: [
+                  { label: `✅ Sí, agendar mañana a las ${readableSlot}`, value: `FAST_BOOK|${tomorrowStr}|${firstSlot}` },
+                  { label: '🕒 Ver otros horarios para mañana', value: 'reservar' }
+                ]
+              };
+            }
+          }
+        } catch (err) {
+          console.error("Error al consultar disponibilidad en tiempo real:", err);
+        }
+
         return "📅 **Disponibilidad y Horarios de Atención**\n\nAtendemos de **Lunes a Sábado de 08:30 AM a 06:00 PM** (Domingos descansamos).\n\nNuestros turnos estándar son a las **08:30 AM, 10:30 AM, 01:30 PM, 03:30 PM y 05:00 PM**.\n\n¿Te gustaría que verifiquemos los cupos en tiempo real y reservemos tu turno? **[RESERVAR_CITA]**";
       }
 

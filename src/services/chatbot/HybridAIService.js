@@ -80,33 +80,50 @@ export class HybridAIService {
 
       // Si no hay reserva (o fue cancelada arriba) y aún no hay respuesta
       if (!ChatBotReservationService.isActive() && finalResponse === "") {
-        // ========== FLUJO NORMAL ==========
-        onStatusUpdate("Analizando intención...");
-        const intent = await IntentClassifier.classify(userMessage);
-
-        // ¿El usuario quiere reservar?
-        if (intent === 'reservar') {
-          onStatusUpdate("Iniciando reserva...");
-          const result = ChatBotReservationService.start();
+        // ¿El usuario presionó un botón de FAST_BOOK (Cierre Rápido)?
+        if (typeof userMessage === 'string' && userMessage.startsWith('FAST_BOOK|')) {
+          const parts = userMessage.split('|');
+          const pDate = parts[1];
+          const pTime = parts[2];
+          onStatusUpdate("Iniciando reserva rápida...");
+          const result = ChatBotReservationService.start(pDate, pTime);
           finalResponse = result.text;
           source = result.source;
           buttons = result.buttons || null;
           requestGPS = result.requestGPS || false;
         } else {
-          onStatusUpdate("Consultando Base de Datos...");
-          // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
-          const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
-          
-          if (localResponse) {
-            finalResponse = localResponse;
-            source = 'supabase';
-            if (intent === 'contacto' || finalResponse.includes('wa.me') || finalResponse.includes('[BOTON_WHATSAPP]')) {
-              finalResponse = finalResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
-              buttons = [
-                { label: '💬 Abrir WhatsApp Directo (+591 67750005)', isLink: true, url: 'https://wa.me/59167750005' }
-              ];
-            }
+          // ========== FLUJO NORMAL ==========
+          onStatusUpdate("Analizando intención...");
+          const intent = await IntentClassifier.classify(userMessage);
+
+          // ¿El usuario quiere reservar?
+          if (intent === 'reservar') {
+            onStatusUpdate("Iniciando reserva...");
+            const result = ChatBotReservationService.start();
+            finalResponse = result.text;
+            source = result.source;
+            buttons = result.buttons || null;
+            requestGPS = result.requestGPS || false;
           } else {
+            onStatusUpdate("Consultando Base de Datos...");
+            // 1. Intentar responder desde Supabase (Reglas, FAQ, Tablas de negocio)
+            const localResponse = await SupabaseQueryService.getResponseForIntent(intent);
+            
+            if (localResponse) {
+              if (typeof localResponse === 'object' && localResponse.text) {
+                finalResponse = localResponse.text;
+                buttons = localResponse.buttons || null;
+              } else {
+                finalResponse = localResponse;
+              }
+              source = 'supabase';
+              if (intent === 'contacto' || (typeof finalResponse === 'string' && (finalResponse.includes('wa.me') || finalResponse.includes('[BOTON_WHATSAPP]')))) {
+                finalResponse = finalResponse.replace(/\[BOTON_WHATSAPP\]/g, '').trim();
+                buttons = [
+                  { label: '💬 Abrir WhatsApp Directo (+591 67750005)', isLink: true, url: 'https://wa.me/59167750005' }
+                ];
+              }
+            } else {
             // 2. Si no hay respuesta local, intentar en Caché de IA
             onStatusUpdate("Revisando memoria caché...");
             const cachedResponse = await CacheService.getCachedResponse(userMessage);
@@ -156,6 +173,7 @@ export class HybridAIService {
           }
         }
       }
+    }
 
     } catch (error) {
       console.error("Error en HybridAIService:", error);

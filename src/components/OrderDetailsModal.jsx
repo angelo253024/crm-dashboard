@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, MapPin } from 'lucide-react';
 import OrderTimeline from './OrderTimeline';
+import { getMapUrls } from '../utils/navigationUrls';
 
 export default function OrderDetailsModal({ reserva, servicios, onClose }) {
   if (!reserva) return null;
@@ -59,13 +60,32 @@ export default function OrderDetailsModal({ reserva, servicios, onClose }) {
                <div><span style={{ color: 'var(--text-muted)' }}>Vehículo:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{vehicleName}</span></div>
                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
-                    <span style={{ color: 'var(--text-muted)' }}>Dirección:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps || 'No registrada'}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Dirección:</span> <span style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps || reserva.ubicacion || 'No registrada'}</span>
                   </div>
-                  {reserva.ubicacion_gps && reserva.ubicacion_gps.includes(',') && (
-                    <button style={{ padding: '4px 8px', backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--accent-cyan)', border: '1px solid rgba(28, 169, 201, 0.3)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <MapPin size={12} /> Ver en el mapa
-                    </button>
-                  )}
+                  {(() => {
+                    const mapInfo = getMapUrls(reserva.ubicacion_gps || reserva.ubicacion);
+                    if (!mapInfo.hasLocation) return null;
+                    return (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <a 
+                          href={mapInfo.googleMapsUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ padding: '4px 8px', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 'bold' }}
+                        >
+                          <MapPin size={12} /> Google Maps
+                        </a>
+                        <a 
+                          href={mapInfo.wazeUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ padding: '4px 8px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 'bold' }}
+                        >
+                          🚗 Waze
+                        </a>
+                      </div>
+                    );
+                  })()}
                </div>
             </div>
           </div>
