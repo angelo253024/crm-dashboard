@@ -127,6 +127,7 @@ export default function MotoDashboard({ user }) {
   const [todasReservas, setTodasReservas] = useState([]);
   const [pendientes, setPendientes] = useState([]);
   const [hiddenPendientes, setHiddenPendientes] = useState([]);
+  const [rejectedReservas, setRejectedReservas] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [activeChatSession, setActiveChatSession] = useState(null);
   const [showExtraService, setShowExtraService] = useState(null);
@@ -134,6 +135,18 @@ export default function MotoDashboard({ user }) {
   const [extraServicioDesc, setExtraServicioDesc] = useState('');
   const [extraServicioMonto, setExtraServicioMonto] = useState('');
   const [serviciosCatalogo, setServiciosCatalogo] = useState([]);
+
+  const autoAssignLockRef = useRef(false);
+  const rejectedReservasRef = useRef(new Set());
+  const estadoRef = useRef(estado);
+
+  useEffect(() => {
+    estadoRef.current = estado;
+  }, [estado]);
+
+  useEffect(() => {
+    rejectedReservasRef.current = rejectedReservas;
+  }, [rejectedReservas]);
   
   // Historial State
   const [historialSearch, setHistorialSearch] = useState('');
@@ -181,21 +194,31 @@ export default function MotoDashboard({ user }) {
       const channel = supabase
         .channel('reservas_moto')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reservas' }, payload => {
-          fetchReservasAsignadas();
+          fetchReservasAsignadas(true);
           fetchLiquidacionData();
           
           if (payload.eventType === 'INSERT') {
             if (payload.new.trabajador_id === user.id || payload.new.estado_reserva === 'pendiente') {
               playMobileAlert();
-              if(window.Notification && Notification.permission === "granted") {
-                new Notification("¡Nuevo Lavado Disponible!", { body: "Revisa tu panel de trabajos." });
+              if (window.Notification && Notification.permission === "granted") {
+                new Notification(payload.new.trabajador_id === user.id ? "¡Nuevo Lavado Asignado!" : "¡Nuevo Lavado Disponible!", { body: "Revisa tu panel de trabajos." });
               }
             }
-          } else if (payload.eventType === 'UPDATE' && payload.new.estado_reserva === 'asignado' && payload.new.trabajador_id === user.id) {
-            // Notificar al trabajador si se le reasigna un trabajo
-            playMobileAlert();
-            if(window.Notification && Notification.permission === "granted") {
-              new Notification("¡Nuevo Lavado Asignado!", { body: "Revisa tu panel de trabajos." });
+          } else if (payload.eventType === 'UPDATE') {
+            if (payload.new.estado_reserva === 'asignado' && payload.new.trabajador_id === user.id) {
+              // Notificar al trabajador si se le asigna un trabajo
+              playMobileAlert();
+              if (window.Notification && Notification.permission === "granted") {
+                new Notification("¡Nuevo Lavado Asignado!", { body: "Revisa tu panel de trabajos." });
+              }
+            } else if (payload.new.estado_reserva === 'pendiente' && !payload.new.trabajador_id) {
+              // Notificar si otro compañero liberó un trabajo y está libre para tomar
+              if (!rejectedReservasRef.current.has(payload.new.id)) {
+                playMobileAlert();
+                if (window.Notification && Notification.permission === "granted") {
+                  new Notification("¡Lavado Disponible!", { body: "Un servicio ha quedado libre para tomar." });
+                }
+              }
             }
           }
         })
@@ -255,36 +278,88 @@ export default function MotoDashboard({ user }) {
   const fetchTrabajadorEstado = async () => {
     const { data } = await supabase.from('trabajadores').select('estado_disponibilidad').eq('id', user.id).single();
     if (data) {
-      setEstado(data.estado_disponibilidad || 'inactivo');
+      const nuevoEst = data.estado_disponibilidad || 'inactivo';
+      setEstado(nuevoEst);
+      estadoRef.current = nuevoEst;
     }
   };
 
-  const fetchReservasAsignadas = async () => {
-    const { data } = await supabase
-      .from('reservas')
-      .select('*')
-      .eq('trabajador_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      setTodasReservas(data);
-      setReservas(data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino' || r.estado_reserva === 'en_proceso'));
+  const tryAutoAssignPending = async (pendingList) => {
+    if (autoAssignLockRef.current) return;
+    if (!user?.id || estadoRef.current !== 'disponible') return;
+
+    // Buscar el primer servicio pendiente que no haya sido rechazado por este trabajador ni ocultado
+    const candidato = pendingList.find(p => !rejectedReservasRef.current.has(p.id) && !hiddenPendientes.includes(p.id));
+    if (!candidato) return;
+
+    autoAssignLockRef.current = true;
+    try {
+      // Bloqueo atómico de concurrencia: solo se auto-asigna si continúa sin trabajador_id
+      const { data, error } = await supabase
+        .from('reservas')
+        .update({
+          trabajador_id: user.id,
+          estado_reserva: 'asignado'
+        })
+        .eq('id', candidato.id)
+        .is('trabajador_id', null)
+        .select();
+
+      if (!error && data && data.length > 0) {
+        playMobileAlert();
+        if (window.Notification && Notification.permission === "granted") {
+          new Notification("¡Nuevo Lavado Auto-Asignado!", {
+            body: `Se te ha asignado automáticamente un nuevo servicio. Revisa tu panel.`
+          });
+        }
+        await fetchReservasAsignadas(false);
+      }
+    } catch (err) {
+      console.error("Error en tryAutoAssignPending:", err);
+    } finally {
+      autoAssignLockRef.current = false;
     }
-    
-    // Fetch pending services available to claim
-    const { data: pendingData } = await supabase
-      .from('reservas')
-      .select('*')
-      .eq('estado_reserva', 'pendiente')
-      .is('trabajador_id', null)
-      .order('created_at', { ascending: false });
+  };
+
+  const fetchReservasAsignadas = async (allowAutoAssign = true) => {
+    try {
+      const { data } = await supabase
+        .from('reservas')
+        .select('*')
+        .eq('trabajador_id', user.id)
+        .order('created_at', { ascending: false });
       
-    if (pendingData) {
-      setPendientes(pendingData);
+      let currentActive = [];
+      if (data) {
+        setTodasReservas(data);
+        currentActive = data.filter(r => r.estado_reserva === 'asignado' || r.estado_reserva === 'en_camino' || r.estado_reserva === 'en_proceso');
+        setReservas(currentActive);
+      }
+      
+      // Fetch pending services available to claim
+      const { data: pendingData } = await supabase
+        .from('reservas')
+        .select('*')
+        .eq('estado_reserva', 'pendiente')
+        .is('trabajador_id', null)
+        .order('created_at', { ascending: false });
+        
+      if (pendingData) {
+        setPendientes(pendingData);
+      }
+      
+      setLoading(false);
+
+      // Si el trabajador está Disponible y no tiene trabajos activos en curso, autoasignar
+      if (allowAutoAssign && estadoRef.current === 'disponible' && currentActive.length === 0 && pendingData && pendingData.length > 0) {
+        setTimeout(() => {
+          tryAutoAssignPending(pendingData);
+        }, 150);
+      }
+    } catch (err) {
+      console.error("Error al cargar reservas:", err);
+      setLoading(false);
     }
-    
-    
-    setLoading(false);
   };
 
   const fetchServiciosCatalogo = async () => {
@@ -395,6 +470,7 @@ export default function MotoDashboard({ user }) {
 
   const changeEstado = async (nuevoEstado) => {
     setEstado(nuevoEstado);
+    estadoRef.current = nuevoEstado;
     await supabase.from('trabajadores').update({ estado_disponibilidad: nuevoEstado }).eq('id', user.id);
     
     // Forzar petición de permisos de GPS activamente tras la interacción del usuario
@@ -409,25 +485,31 @@ export default function MotoDashboard({ user }) {
            }).eq('id', user.id).then();
         },
         (err) => {
-           alert("GPS Bloqueado. Por favor, ve a la configuración de tu navegador y permite la ubicación para esta app.");
+           console.warn("GPS no disponible o denegado:", err);
         },
         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
+    }
+
+    if (nuevoEstado === 'disponible') {
+      fetchReservasAsignadas(true);
     }
   };
 
   const aceptarReserva = async (id) => {
     await supabase.from('reservas').update({ estado_reserva: 'en_camino' }).eq('id', id);
     setEstado('ocupado');
+    estadoRef.current = 'ocupado';
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'ocupado' }).eq('id', user.id);
-    fetchReservasAsignadas();
+    fetchReservasAsignadas(false);
   };
   
   const llegueAlLugar = async (id) => {
     await supabase.from('reservas').update({ estado_reserva: 'en_proceso' }).eq('id', id);
     setEstado('en_proceso');
+    estadoRef.current = 'en_proceso';
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'en_proceso' }).eq('id', user.id);
-    fetchReservasAsignadas();
+    fetchReservasAsignadas(false);
   };
 
   const handleOpenPayment = async (res) => {
@@ -472,29 +554,80 @@ export default function MotoDashboard({ user }) {
     await supabase.from('reservas').update(updates).eq('id', selectedReservaForPayment.id);
     
     setEstado('disponible');
+    estadoRef.current = 'disponible';
     await supabase.from('trabajadores').update({ estado_disponibilidad: 'disponible' }).eq('id', user.id);
     
     setPaymentModalOpen(false);
     setSelectedReservaForPayment(null);
-    fetchReservasAsignadas();
+    fetchReservasAsignadas(true);
   };
 
   const rechazarReserva = async (id) => {
     try {
-      // Marcar como pendiente para que otros puedan tomarlo
-      await supabase.from('reservas').update({ trabajador_id: null, estado_reserva: 'pendiente' }).eq('id', id);
-    } catch(err) {
-      console.error(err);
+      // 1. Guardar en lista de rechazados localmente para no reasignarlo inmediatamente en bucle a este trabajador
+      setRejectedReservas(prev => new Set([...prev, id]));
+      rejectedReservasRef.current.add(id);
+
+      // 2. Liberar el servicio en Supabase para que vuelva a estar pendiente y libre para otros compañeros
+      const { error } = await supabase
+        .from('reservas')
+        .update({ 
+          trabajador_id: null, 
+          estado_reserva: 'pendiente' 
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error al cancelar servicio:", error);
+        alert("Hubo un error al cancelar: " + error.message);
+        return;
+      }
+
+      // Si el trabajador estaba ocupado por este trabajo, devolver su estado a disponible
+      if (estadoRef.current === 'ocupado' || estadoRef.current === 'en_proceso') {
+        await changeEstado('disponible');
+      }
+
+      await fetchReservasAsignadas(false);
+    } catch (err) {
+      console.error("Error en rechazarReserva:", err);
     }
-    fetchReservasAsignadas();
   };
 
   const reclamarReserva = async (id) => {
-    await supabase.from('reservas').update({ 
-      trabajador_id: user.id, 
-      estado_reserva: 'asignado' 
-    }).eq('id', id);
-    fetchReservasAsignadas();
+    try {
+      // Bloqueo atómico: solo toma el servicio si sigue disponible sin asignar
+      const { data, error } = await supabase
+        .from('reservas')
+        .update({ 
+          trabajador_id: user.id, 
+          estado_reserva: 'asignado' 
+        })
+        .eq('id', id)
+        .is('trabajador_id', null)
+        .select();
+
+      if (error) {
+        alert("Error al tomar el servicio: " + error.message);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        alert("Este servicio ya fue tomado por otro compañero.");
+      } else {
+        // Remover de rechazados si estaba allí previamente
+        setRejectedReservas(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+        rejectedReservasRef.current.delete(id);
+      }
+
+      fetchReservasAsignadas(false);
+    } catch (err) {
+      console.error("Error reclamando reserva:", err);
+    }
   };
 
   const handleAddExtra = async (e, resId) => {
@@ -1006,14 +1139,19 @@ export default function MotoDashboard({ user }) {
                     <button onClick={() => aceptarReserva(res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                       <Check size={18} /> Voy en Camino
                     </button>
-                    <button onClick={() => rechazarReserva(res.id)} style={{ padding: '12px 16px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-                      <X size={18} /> Rechazar
+                    <button onClick={() => rechazarReserva(res.id)} style={{ padding: '12px 16px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }} title="Cancelar y liberar para que lo tome otro compañero">
+                      <X size={18} /> Cancelar / Dejar para otro
                     </button>
                   </>
                 ) : res.estado_reserva === 'en_camino' ? (
-                  <button onClick={() => llegueAlLugar(res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#facc15', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
-                    <MapPin size={18} /> Llegué al Lugar
-                  </button>
+                  <>
+                    <button onClick={() => llegueAlLugar(res.id)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#facc15', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                      <MapPin size={18} /> Llegué al Lugar
+                    </button>
+                    <button onClick={() => { if(window.confirm("¿Deseas cancelar y liberar este servicio para que lo tome otro compañero?")) rechazarReserva(res.id); }} style={{ padding: '12px 16px', backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }} title="Cancelar y liberar para otro compañero">
+                      <X size={18} /> Cancelar y Liberar
+                    </button>
+                  </>
                 ) : (
                   <button onClick={() => handleOpenPayment(res)} style={{ flex: 1, minWidth: '140px', padding: '12px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                     <Check size={18} /> Marcar Lavado Terminado

@@ -246,7 +246,7 @@ export default function Citas() {
         trabajador_id: finalTrabajadorId,
         ubicacion_gps: manualForm.ubicacion_gps,
         estado: 'Reservado',
-        estado_reserva: 'confirmada',
+        estado_reserva: finalTrabajadorId ? 'asignado' : 'pendiente',
         precio_total: totalPrice,
       };
       
