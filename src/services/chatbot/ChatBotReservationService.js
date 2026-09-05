@@ -854,7 +854,7 @@ export class ChatBotReservationService {
             .eq('fecha', targetDateStr);
 
           let maxCap = 1;
-          if (dispoData && dispoData.length > 0 && dispoData[0].tipo === 'slots' && dispoData[0].capacidad_por_slot) {
+          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
             maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
           }
 
@@ -1186,6 +1186,31 @@ export class ChatBotReservationService {
   }
 
   /**
+   * Genera turnos en intervalos de 30 minutos (:00 y :30) entre dos horarios dados
+   */
+  static _generateTimeSlots(startStr = '08:00', endStr = '18:00') {
+    const slots = [];
+    const parseMin = (t) => {
+      if (!t) return 0;
+      const parts = String(t).split(':');
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+    const formatMin = (m) => {
+      const h = Math.floor(m / 60);
+      const min = m % 60;
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    };
+
+    const startMin = parseMin(startStr);
+    const endMin = parseMin(endStr);
+
+    for (let m = startMin; m <= endMin; m += 30) {
+      slots.push(formatMin(m));
+    }
+    return slots;
+  }
+
+  /**
    * Obtiene la disponibilidad real de horarios para una fecha dada.
    */
   static async _getSlotsForDate(dateStr) {
@@ -1222,22 +1247,20 @@ export class ChatBotReservationService {
         if (d.cerrado) {
           return { isSunday: false, isClosed: true, isFull: true, validSlots: [], buttons: [] };
         }
-        if (d.tipo === 'slots' && Array.isArray(d.slots) && d.slots.length > 0) {
-          allowedSlots = d.slots;
-        } else {
-          const startMin = parseMin(d.hora_inicio);
-          const endMin = parseMin(d.hora_fin);
-          const defaultSlots = ['08:30', '10:30', '13:30', '15:30', '17:00'];
-          allowedSlots = defaultSlots.filter(s => {
-            const sMin = parseMin(s);
-            return sMin >= startMin && sMin <= endMin;
-          });
-        }
         if (d.capacidad_por_slot) {
           maxCap = parseInt(d.capacidad_por_slot, 10) || 1;
         }
+        if (d.tipo === 'slots' && Array.isArray(d.slots) && d.slots.length > 0) {
+          allowedSlots = d.slots;
+        } else {
+          // Modo Rango: generar turnos en punto y y media (:00 y :30) desde hora_inicio hasta hora_fin
+          const startStr = d.hora_inicio ? d.hora_inicio.substring(0, 5) : '08:00';
+          const endStr = d.hora_fin ? d.hora_fin.substring(0, 5) : '18:00';
+          allowedSlots = this._generateTimeSlots(startStr, endStr);
+        }
       } else {
-        allowedSlots = ['08:30', '10:30', '13:30', '15:30', '17:00'];
+        // Modo por defecto estándar: turnos en punto y y media (:00 y :30) de 08:00 a 18:00
+        allowedSlots = this._generateTimeSlots('08:00', '18:00');
       }
 
       // 3. Consultar reservas existentes en esa fecha
@@ -1250,9 +1273,14 @@ export class ChatBotReservationService {
       const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
 
       // Si es hoy, filtrar turnos que ya pasaron
-      const todayStr = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const localYear = now.getFullYear();
+      const localMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const localDay = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${localYear}-${localMonth}-${localDay}`;
+      
       const isToday = dateStr === todayStr;
-      const currentMin = new Date().getHours() * 60 + new Date().getMinutes();
+      const currentMin = now.getHours() * 60 + now.getMinutes();
 
       // 4. Filtrar slots disponibles
       const validSlots = allowedSlots.filter(slot => {
@@ -1265,7 +1293,7 @@ export class ChatBotReservationService {
       });
 
       const clockEmojis = {
-        '08:00': '🕘', '08:30': '🕤', '09:00': '🕙', '09:30': '🕥', '10:00': '🕥', '10:30': '🕦', '11:00': '🕦', '11:30': '🕛',
+        '08:00': '🕘', '08:30': '🕤', '09:00': '🕙', '09:30': '🕥', '10:00': '🕙', '10:30': '🕦', '11:00': '🕚', '11:30': '🕦',
         '12:00': '🕛', '12:30': '🕧', '13:00': '🕐', '13:30': '🕜', '14:00': '🕑', '14:30': '🕝', '15:00': '🕒', '15:30': '🕞',
         '16:00': '🕓', '16:30': '🕟', '17:00': '🕔', '17:30': '🕠', '18:00': '🕕', '18:30': '🕡'
       };
@@ -1275,7 +1303,7 @@ export class ChatBotReservationService {
         value: slot
       }));
 
-      const isFull = (existingReservasDate && existingReservasDate.length >= 10) || validSlots.length === 0;
+      const isFull = validSlots.length === 0;
 
       return {
         isSunday: false,
