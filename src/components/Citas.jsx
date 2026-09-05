@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus, Edit3 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
@@ -53,6 +53,18 @@ export default function Citas() {
     hora_fin: '18:00',
     cerrado: false,
     capacidad_por_slot: 1
+  });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [editForm, setEditForm] = useState({
+    cliente_nombre: '',
+    vehiculo: '',
+    servicio_id: '',
+    trabajador_id: '',
+    fecha_reserva: '',
+    hora_reserva: '',
+    precio_total: 0,
+    ubicacion_gps: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -126,7 +138,10 @@ export default function Citas() {
           car: res.vehiculo,
           worker: workerName,
           paymentMethod: res.payment_method,
-          paymentStatus: res.payment_status
+          paymentStatus: res.payment_status,
+          servicio_id: res.servicio_id,
+          trabajador_id: res.trabajador_id || res.empleado_id,
+          raw: res
         };
       });
       setEvents(formattedEvents);
@@ -217,6 +232,100 @@ export default function Citas() {
       setDisponibilidadFechas(data || []);
     } catch (err) {
       alert('Error guardando horario: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenEditModal = (ev) => {
+    const raw = ev.raw || {};
+    let sId = ev.servicio_id || raw.servicio_id || '';
+    if (!sId) {
+      const match = serviciosList.find(s => s.nombre === ev.title);
+      if (match) sId = match.id;
+    }
+
+    let wId = ev.trabajador_id || raw.trabajador_id || raw.empleado_id || '';
+    if (!wId) {
+      const matchW = trabajadoresList.find(t => t.nombre === ev.worker);
+      if (matchW) wId = matchW.id;
+    }
+
+    setEditingEvent(ev);
+    setEditForm({
+      cliente_nombre: ev.customer || raw.cliente_nombre || '',
+      vehiculo: ev.car || raw.vehiculo || '',
+      servicio_id: sId,
+      trabajador_id: wId,
+      fecha_reserva: ev.dateStr || raw.fecha_reserva || '',
+      hora_reserva: ev.time || (raw.hora_reserva ? raw.hora_reserva.substring(0, 5) : '08:30'),
+      precio_total: ev.price ?? raw.precio_total ?? 0,
+      ubicacion_gps: raw.ubicacion_gps || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditServiceChange = (newServiceId) => {
+    const selectedService = serviciosList.find(s => s.id === newServiceId);
+    setEditForm(prev => ({
+      ...prev,
+      servicio_id: newServiceId,
+      precio_total: selectedService ? selectedService.precio : prev.precio_total
+    }));
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingEvent) return;
+    setIsSubmitting(true);
+    try {
+      if (!editForm.hora_reserva) {
+        alert('Por favor selecciona una hora para la cita.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!editForm.vehiculo.trim()) {
+        alert('Por favor ingresa los datos del vehículo.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (!editForm.servicio_id) {
+        alert('Por favor selecciona un servicio.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const formattedHora = editForm.hora_reserva.length === 5 
+        ? `${editForm.hora_reserva}:00` 
+        : editForm.hora_reserva;
+
+      const updatePayload = {
+        vehiculo: editForm.vehiculo.trim(),
+        servicio_id: editForm.servicio_id,
+        fecha_reserva: editForm.fecha_reserva,
+        hora_reserva: formattedHora,
+        precio_total: parseFloat(editForm.precio_total) || 0,
+        trabajador_id: editForm.trabajador_id || null
+      };
+
+      const { error } = await supabase
+        .from('reservas')
+        .update(updatePayload)
+        .eq('id', editingEvent.id);
+
+      if (error) throw error;
+
+      alert('✅ Cita actualizada exitosamente');
+      setShowEditModal(false);
+      setEditingEvent(null);
+      await fetchReservas();
+
+      if (editForm.fecha_reserva && editForm.fecha_reserva !== selectedDateStr) {
+        setSelectedDateStr(editForm.fecha_reserva);
+      }
+    } catch (err) {
+      console.error('Error al actualizar la cita:', err);
+      alert('Error al actualizar la cita: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -518,8 +627,34 @@ export default function Citas() {
                         <UserCheck size={16} color="var(--text-muted)" />
                         <span className="text-body">{ev.worker}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', gridColumn: '1 / -1', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', gridColumn: '1 / -1', justifyContent: 'flex-end', marginTop: '4px' }}>
                         <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs.{ev.price}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(ev)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '6px 12px',
+                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                            border: '1px solid var(--accent-blue)',
+                            color: 'var(--accent-blue)',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.08)';
+                          }}
+                        >
+                          <Edit3 size={14} /> Editar Cita
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -780,6 +915,181 @@ export default function Citas() {
                 Confirmar Ubicación
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1200, padding: '24px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '540px', boxShadow: 'var(--shadow-soft)', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+              <div>
+                <h2 className="text-h2" style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Edit3 size={20} color="var(--accent-blue)" /> Editar Cita
+                </h2>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Cliente: <strong style={{ color: 'var(--text-main)' }}>{editForm.cliente_nombre || 'No registrado'}</strong>
+                </p>
+              </div>
+              <button 
+                onClick={() => { setShowEditModal(false); setEditingEvent(null); }} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Servicio */}
+              <div>
+                <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                  🧼 Servicio
+                </label>
+                <select 
+                  required 
+                  className="form-input" 
+                  value={editForm.servicio_id} 
+                  onChange={e => handleEditServiceChange(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 12px' }}
+                >
+                  <option value="">Seleccione un servicio</option>
+                  {serviciosList.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} — Bs. {s.precio}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Vehículo */}
+              <div>
+                <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                  🚗 Vehículo (Marca, Modelo, Tipo)
+                </label>
+                <input 
+                  type="text" 
+                  required 
+                  className="form-input" 
+                  placeholder="Ej: Suzuki Grand Vitara (SUV mediana)" 
+                  value={editForm.vehiculo} 
+                  onChange={e => setEditForm({...editForm, vehiculo: e.target.value})} 
+                  style={{ width: '100%', padding: '10px 12px' }} 
+                />
+              </div>
+
+              {/* Fecha y Hora */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                    📅 Fecha de la Cita
+                  </label>
+                  <input 
+                    type="date" 
+                    required 
+                    className="form-input" 
+                    value={editForm.fecha_reserva} 
+                    onChange={e => setEditForm({...editForm, fecha_reserva: e.target.value})} 
+                    style={{ width: '100%', padding: '10px 12px' }} 
+                  />
+                </div>
+                <div>
+                  <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                    ⏰ Hora de la Cita
+                  </label>
+                  <input 
+                    type="time" 
+                    required 
+                    className="form-input" 
+                    value={editForm.hora_reserva} 
+                    onChange={e => setEditForm({...editForm, hora_reserva: e.target.value})} 
+                    style={{ width: '100%', padding: '10px 12px' }} 
+                  />
+                </div>
+              </div>
+
+              {/* Atajos rápidos de turnos */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  ⚡ Turnos habituales rápidos:
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['08:30', '10:30', '13:30', '15:00', '15:30', '17:00'].map(slot => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setEditForm(prev => ({ ...prev, hora_reserva: slot }))}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '16px',
+                        border: editForm.hora_reserva === slot ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)',
+                        backgroundColor: editForm.hora_reserva === slot ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-color)',
+                        color: editForm.hora_reserva === slot ? 'var(--accent-blue)' : 'var(--text-muted)',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Precio Total y Trabajador */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                    💰 Precio Total (Bs.)
+                  </label>
+                  <input 
+                    type="number" 
+                    step="any"
+                    required 
+                    className="form-input" 
+                    value={editForm.precio_total} 
+                    onChange={e => setEditForm({...editForm, precio_total: e.target.value})} 
+                    style={{ width: '100%', padding: '10px 12px' }} 
+                  />
+                </div>
+                <div>
+                  <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
+                    👷 Trabajador Asignado
+                  </label>
+                  <select 
+                    className="form-input" 
+                    value={editForm.trabajador_id} 
+                    onChange={e => setEditForm({...editForm, trabajador_id: e.target.value})} 
+                    style={{ width: '100%', padding: '10px 12px' }}
+                  >
+                    <option value="">Sin asignar</option>
+                    {trabajadoresList.map(t => (
+                      <option key={t.id} value={t.id}>{t.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Botones de acción */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                <button 
+                  type="button" 
+                  className="btn-secondary" 
+                  onClick={() => { setShowEditModal(false); setEditingEvent(null); }}
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  disabled={isSubmitting}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  {isSubmitting ? 'Guardando Cambios...' : '💾 Guardar Cambios'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
