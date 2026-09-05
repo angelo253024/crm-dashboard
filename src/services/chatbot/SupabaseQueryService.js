@@ -59,6 +59,10 @@ export class SupabaseQueryService {
         return "¡Excelente! Con gusto agendaremos tu cita para dejar tu vehículo impecable. **[RESERVAR_CITA]**";
       }
 
+      if (intent === 'disponibilidad') {
+        return "📅 **Disponibilidad y Horarios de Atención**\n\nAtendemos de **Lunes a Sábado de 08:30 AM a 06:00 PM** (Domingos descansamos).\n\nNuestros turnos estándar son a las **08:30 AM, 10:30 AM, 01:30 PM, 03:30 PM y 05:00 PM**.\n\n¿Te gustaría que verifiquemos los cupos en tiempo real y reservemos tu turno? **[RESERVAR_CITA]**";
+      }
+
       if (intent === 'ubicacion') {
         return "📍 **Servicio 100% a Domicilio**\n\nOperamos en toda la ciudad de **Santa Cruz de la Sierra**.\n\nNo necesitas moverte ni perder tiempo en filas: ¡vamos hasta tu casa, condominio u oficina!";
       }

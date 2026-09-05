@@ -68,6 +68,7 @@ export default function ChatBotWidget() {
   const quickReplies = [
     { label: '✨ Paquetes y Precios', intent: 'precios' },
     { label: '📅 Reservar Cita', intent: 'reservar' },
+    { label: '🗓️ Ver Disponibilidad', intent: 'disponibilidad' },
     { label: '💧 ¿Cómo funciona?', intent: 'requisitos' },
     { label: '🧼 Tapicería y Asientos', intent: 'tapiceria' },
     { label: '⚙️ Lavado de Motor', intent: 'motor' },
@@ -387,6 +388,7 @@ export default function ChatBotWidget() {
   const getSourceIcon = (source) => {
     if (source === 'openai') return <Sparkles size={12} color="#8b5cf6" title="Respuesta generada por OpenAI" />;
     if (source === 'supabase' || source === 'cache') return <Database size={12} color="#10b981" title="Respuesta desde Base de Datos/Caché" />;
+    if (source === 'reservation' || source === 'reservation-done') return <Bot size={12} color="#10b981" title="Asistente de Reservas" />;
     return null;
   };
 
@@ -492,14 +494,20 @@ export default function ChatBotWidget() {
               position: 'relative'
             }}>
               <div style={{
-                backgroundColor: msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--card-bg)',
+                background: msg.source === 'reservation-done' 
+                  ? 'linear-gradient(145deg, var(--card-bg) 0%, rgba(16, 185, 129, 0.08) 100%)' 
+                  : (msg.sender === 'user' ? 'var(--accent-blue)' : 'var(--card-bg)'),
                 color: msg.sender === 'user' ? '#fff' : 'var(--text-main)',
                 padding: '12px 16px',
                 borderRadius: '16px',
                 borderBottomRightRadius: msg.sender === 'user' ? '4px' : '16px',
                 borderBottomLeftRadius: msg.sender === 'bot' ? '4px' : '16px',
-                border: msg.sender === 'bot' ? '1px solid var(--border-color)' : 'none',
-                boxShadow: 'var(--shadow-sm)',
+                border: msg.source === 'reservation-done'
+                  ? '1px solid rgba(16, 185, 129, 0.45)'
+                  : (msg.sender === 'bot' ? '1px solid var(--border-color)' : 'none'),
+                boxShadow: msg.source === 'reservation-done'
+                  ? '0 6px 20px rgba(16, 185, 129, 0.15)'
+                  : 'var(--shadow-sm)',
                 fontSize: '14px',
                 lineHeight: '1.5'
               }}>

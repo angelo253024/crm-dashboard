@@ -620,133 +620,142 @@ export class ChatBotReservationService {
         };
 
       case STEPS.ASKING_DATE:
+        // Si el usuario presionó un botón de slot sugerido (Punto 2)
+        if (typeof input === 'string' && input.startsWith('SUGGESTED_SLOT|')) {
+          const parts = input.split('|');
+          if (parts.length === 3) {
+            _reservationState.data.fechaReserva = parts[1];
+            _reservationState.data.horaReserva = parts[2];
+            _reservationState.data.hasDelay = false;
+            _reservationState.step = STEPS.CONFIRMING;
+            return this._buildSummaryResponse(false);
+          }
+        }
+
+        if (input === 'CHANGE_DATE') {
+          return {
+            text: 'Por favor selecciona o escribe la **fecha** deseada:',
+            source: 'reservation',
+            buttons: this._getNextDates(),
+            requestGPS: false,
+          };
+        }
+
         const parsedDate = this._parseDate(input);
         if (!parsedDate) {
-          return { text: 'Formato de fecha no válido. Selecciona uno de los botones o escribe en formato **DD/MM/YYYY**.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
+          return { text: 'Formato de fecha no válido. Selecciona uno de los botones o escribe en formato **DD/MM/YYYY** o "Mañana".', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
         }
         
         const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
         if (parsedDate < todayStr) {
           return { text: 'No puedes reservar en una fecha pasada. Por favor selecciona una fecha válida o uno de los botones.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
         }
-        
-        _reservationState.data.fechaReserva = parsedDate;
-        _reservationState.step = STEPS.ASKING_TIME;
 
-        let availableTimeButtons = [];
+        // Obtener disponibilidad real de la fecha solicitada
+        const dateAvailability = await this._getSlotsForDate(parsedDate);
 
-        try {
-          const parseMin = (tStr) => {
-            if (!tStr) return -1;
-            const parts = String(tStr).split(':');
-            if (parts.length < 2) return -1;
-            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        if (dateAvailability.isSunday) {
+          return {
+            text: '⚠️ Lo sentimos, los **domingos estamos cerrados**.\n\nNuestro horario de atención es de **Lunes a Sábado de 08:30 AM a 06:00 PM**.\n\nPor favor, selecciona **otra fecha**:',
+            source: 'reservation',
+            buttons: this._getNextDates(),
+            requestGPS: false,
           };
+        }
 
-          // Validar disponibilidad de fecha
-          const { data: dispoData } = await supabase
-            .from('disponibilidad_fechas')
-            .select('*')
-            .eq('fecha', parsedDate);
+        if (dateAvailability.isClosed) {
+          return {
+            text: '⚠️ Lo sentimos, en la fecha seleccionada no hay atención (marcado como día cerrado o feriado).\n\nPor favor, selecciona o escribe **otra fecha**:',
+            source: 'reservation',
+            buttons: this._getNextDates(),
+            requestGPS: false,
+          };
+        }
 
-          let allowedSlots = [];
-
-          if (dispoData && dispoData.length > 0) {
-            const d = dispoData[0];
-            if (d.cerrado) {
-              _reservationState.step = STEPS.ASKING_DATE;
-              return {
-                text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona o escribe **otra fecha**:',
-                source: 'reservation',
-                buttons: this._getNextDates(),
-                requestGPS: false
-              };
-            }
-            if (d.tipo === 'slots' && d.slots && d.slots.length > 0) {
-              allowedSlots = d.slots;
-            } else {
-              const startMin = parseMin(d.hora_inicio);
-              const endMin = parseMin(d.hora_fin);
-              const defaultSlots = ['08:30', '09:30', '10:30', '11:30', '14:00', '15:00', '16:00', '17:00', '18:00'];
-              allowedSlots = defaultSlots.filter(s => {
-                const sMin = parseMin(s);
-                return sMin >= startMin && sMin <= endMin;
-              });
-            }
-          } else {
-             allowedSlots = ['08:30', '09:30', '10:30', '11:30', '14:00', '15:00', '16:00', '17:00', '18:00'];
+        // Si la agenda está llena para la fecha solicitada (Punto 2: Reagendamiento inteligente proactivo)
+        if (dateAvailability.isFull) {
+          const nextDateObj = new Date(parsedDate + 'T12:00:00');
+          nextDateObj.setDate(nextDateObj.getDate() + 1);
+          if (nextDateObj.getDay() === 0) {
+            nextDateObj.setDate(nextDateObj.getDate() + 1); // saltar domingo al lunes
           }
+          const nextDateStr = nextDateObj.toISOString().split('T')[0];
+          const nextAvailability = await this._getSlotsForDate(nextDateStr);
 
-          const { data: existingReservasDate } = await supabase
-            .from('reservas')
-            .select('hora_reserva, hora, estado')
-            .eq('fecha_reserva', parsedDate)
-            .neq('estado', 'Cancelado');
+          const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+          const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          const nextDateLabel = `${dayNames[nextDateObj.getDay()]} ${nextDateObj.getDate()} de ${monthNames[nextDateObj.getMonth()]}`;
 
-          if (existingReservasDate && existingReservasDate.length >= 10) {
-            _reservationState.step = STEPS.ASKING_DATE;
+          if (nextAvailability.validSlots && nextAvailability.validSlots.length > 0) {
+            _reservationState.step = STEPS.ASKING_TIME;
+            const suggestedButtons = nextAvailability.validSlots.map(slot => ({
+              label: `🕒 ${slot} (${dayNames[nextDateObj.getDay()]})`,
+              value: `SUGGESTED_SLOT|${nextDateStr}|${slot}`
+            }));
+
+            suggestedButtons.push({
+              label: '📅 Elegir otra fecha',
+              value: 'CHANGE_DATE'
+            });
+
             return {
-              text: '⚠️ Por hoy alcanzamos nuestro límite de reservas. Solo se puede agendar cita manualmente contactando al administrador.\n\nPor favor, selecciona o escribe **otra fecha**:',
+              text: `⚠️ **¡Agenda Completa para el ${parsedDate}!**\n\nPor el momento ya tenemos todas nuestras unidades comprometidas para esa fecha 🛵💨.\n\n💡 **¡Estamos agendando para ${nextDateLabel}!**\nTenemos estos horarios disponibles para ti:\n\n_Haz clic en un horario para apartar tu cupo de inmediato o elige otra fecha:_`,
+              source: 'reservation',
+              buttons: suggestedButtons,
+              requestGPS: false
+            };
+          } else {
+            return {
+              text: `⚠️ Por el momento tenemos alta demanda y los cupos para ${parsedDate} están completos.\n\nPor favor selecciona **otra fecha posterior**:`,
               source: 'reservation',
               buttons: this._getNextDates(),
               requestGPS: false
             };
           }
-
-          let maxCap = 1;
-          if (dispoData && dispoData.length > 0 && dispoData[0].tipo === 'slots' && dispoData[0].capacidad_por_slot) {
-            maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
-          }
-
-          const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
-
-          const validSlots = allowedSlots.filter(slot => {
-            const btnMin = parseMin(slot);
-            const conflictCount = bookedMins.filter(bMin => Math.abs(btnMin - bMin) < 60).length;
-            return conflictCount < maxCap;
-          });
-
-          const clockEmojis = {
-            '08:00': '🕘', '08:30': '🕤', '09:00': '🕙', '09:30': '🕥', '10:00': '🕥', '10:30': '🕦', '11:00': '🕦', '11:30': '🕛',
-            '12:00': '🕛', '12:30': '🕧', '13:00': '🕐', '13:30': '🕜', '14:00': '🕑', '14:30': '🕝', '15:00': '🕒', '15:30': '🕞',
-            '16:00': '🕓', '16:30': '🕟', '17:00': '🕔', '17:30': '🕠', '18:00': '🕕', '18:30': '🕡'
-          };
-
-          availableTimeButtons = validSlots.map(slot => ({
-            label: `${clockEmojis[slot] || '🕒'} ${slot}`,
-            value: slot
-          }));
-        } catch (e) {
-          console.error("Error al verificar disponibilidad de horarios:", e);
         }
 
-        let timePromptMsg = '🕐 ¿A qué **hora** prefieres?\n\nSelecciona o escribe la hora (formato HH:MM):';
-        if (availableTimeButtons.length === 0) {
-          timePromptMsg = '⚠️ Los horarios estándar están ocupados para esta fecha (requerimos al menos 1 hora de rango entre pedidos).\n\nPor favor escribe un horario disponible (ej: 12:30, 18:00) o ingresa otra fecha.';
-        }
+        // Si hay horarios disponibles para la fecha solicitada
+        _reservationState.data.fechaReserva = parsedDate;
+        _reservationState.step = STEPS.ASKING_TIME;
 
         return {
-          text: timePromptMsg,
+          text: `📅 Fecha: **${parsedDate}**.\n\n🕐 ¿A qué **hora** prefieres?\n\nSelecciona uno de los turnos disponibles o escribe la hora:`,
           source: 'reservation',
-          buttons: availableTimeButtons.length > 0 ? availableTimeButtons : null,
+          buttons: dateAvailability.buttons,
           requestGPS: false,
         };
 
       case STEPS.ASKING_TIME:
+        // Si el usuario presionó un botón de slot sugerido (Punto 2)
+        if (typeof input === 'string' && input.startsWith('SUGGESTED_SLOT|')) {
+          const parts = input.split('|');
+          if (parts.length === 3) {
+            _reservationState.data.fechaReserva = parts[1];
+            _reservationState.data.horaReserva = parts[2];
+            _reservationState.data.hasDelay = false;
+            _reservationState.step = STEPS.CONFIRMING;
+            return this._buildSummaryResponse(false);
+          }
+        }
+
+        if (input === 'CHANGE_DATE' || input === 'DELAY_CHANGE_TIME') {
+          _reservationState.step = STEPS.ASKING_DATE;
+          return {
+            text: 'Por favor selecciona o escribe la **fecha** deseada:',
+            source: 'reservation',
+            buttons: this._getNextDates(),
+            requestGPS: false,
+          };
+        }
+
         const parsedTime = this._parseTime(input);
         if (!parsedTime) {
-          return { text: 'Formato de hora no válido. Escribe en formato **HH:MM** (ej: 10:30).', source: 'reservation', buttons: null, requestGPS: false };
+          return { text: 'Formato de hora no válido. Escribe en formato **HH:MM** (ej: 10:30 o 08:30am).', source: 'reservation', buttons: null, requestGPS: false };
         }
 
         // Validar choque de horario (mínimo 1 hora / 60 min entre reservas)
         try {
           const targetDateStr = _reservationState.data.fechaReserva;
-          const { data: existingReservasCheck } = await supabase
-            .from('reservas')
-            .select('hora_reserva, hora, estado')
-            .eq('fecha_reserva', targetDateStr)
-            .neq('estado', 'Cancelado');
-
           const parseMin = (tStr) => {
             if (!tStr) return -1;
             const parts = String(tStr).split(':');
@@ -755,43 +764,18 @@ export class ChatBotReservationService {
           };
 
           const reqMin = parseMin(parsedTime);
-          
-          // Validar contra disponibilidad_fechas
+
+          const { data: existingReservasCheck } = await supabase
+            .from('reservas')
+            .select('hora_reserva, hora, estado')
+            .eq('fecha_reserva', targetDateStr)
+            .neq('estado', 'Cancelado');
+
           const { data: dispoData } = await supabase
             .from('disponibilidad_fechas')
             .select('*')
             .eq('fecha', targetDateStr);
-            
-          // Validar si la fecha cae en Domingo
-          if (targetDateStr) {
-            const dateParts = targetDateStr.split('-');
-            if (dateParts.length === 3) {
-              const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
-              if (dateObj.getDay() === 0) {
-                _reservationState.step = STEPS.ASKING_DATE;
-                return { text: '⚠️ Lo sentimos, los **domingos estamos cerrados**.\n\nNuestro horario de atención es de **Lunes a Sábado de 08:30 AM a 06:00 PM**.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates ? this._getNextDates() : null, requestGPS: false };
-              }
-            }
-          }
 
-          if (dispoData && dispoData.length > 0) {
-            const d = dispoData[0];
-            if (d.cerrado) {
-              _reservationState.step = STEPS.ASKING_DATE;
-              return { text: '⚠️ Lo sentimos, no hay atención en la fecha seleccionada porque está marcado como día cerrado.\n\nPor favor, selecciona **otra fecha**:', source: 'reservation', buttons: this._getNextDates ? this._getNextDates() : null, requestGPS: false };
-            }
-            const startMin = parseMin(d.hora_inicio);
-            const endMin = parseMin(d.hora_fin);
-            if (reqMin < startMin || reqMin > endMin) {
-              return { text: `⚠️ El horario de atención para esta fecha es de ${d.hora_inicio.substring(0,5)} a ${d.hora_fin.substring(0,5)}. Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
-            }
-          } else {
-            const startMin = parseMin('08:30');
-            const endMin = parseMin('18:00');
-            if (reqMin < startMin || reqMin > endMin) {
-              return { text: `⚠️ El horario de atención general es de 08:30 a 18:00 (Lunes a Sábado). Por favor escribe una hora dentro de este rango.`, source: 'reservation', buttons: null, requestGPS: false };
-            }
-          }
           let maxCap = 1;
           if (dispoData && dispoData.length > 0 && dispoData[0].tipo === 'slots' && dispoData[0].capacidad_por_slot) {
             maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
@@ -808,11 +792,11 @@ export class ChatBotReservationService {
             _reservationState.step = STEPS.CONFIRM_DELAY;
             
             return {
-              text: `⚠️ **¡Atención!** En este horario nuestros funcionarios ya cuentan con ${conflictingReservas.length} servicio(s) agendado(s) (capacidad máxima de ${maxCap} ${maxCap === 1 ? 'persona' : 'personas'} por turno).\n\nEl tiempo de demora será de **1 hora aproximadamente** en salir para su ubicación.\n\n¿Qué desea hacer?`,
+              text: `⚠️ **¡Turno de alta demanda!** En este horario nuestros funcionarios ya cuentan con ${conflictingReservas.length} servicio(s) agendado(s).\n\nEl tiempo de demora será de **1 hora aproximadamente** en salir para su ubicación.\n\n¿Qué desea hacer?`,
               source: 'reservation',
               buttons: [
-                { label: '➡️ Continuar', value: 'DELAY_CONTINUE' },
-                { label: '🕘 Cambiar hora', value: 'DELAY_CHANGE_TIME' },
+                { label: '➡️ Continuar con demora', value: 'DELAY_CONTINUE' },
+                { label: '🕘 Cambiar de fecha/hora', value: 'DELAY_CHANGE_TIME' },
                 { label: '❌ Cancelar pedido', value: 'DELAY_CANCEL' }
               ],
               requestGPS: false
@@ -825,72 +809,33 @@ export class ChatBotReservationService {
         _reservationState.data.horaReserva = parsedTime;
         _reservationState.data.hasDelay = false;
         _reservationState.step = STEPS.CONFIRMING;
-
-        const d = _reservationState.data;
-        const extrasResumen = d.serviciosAdicionales || [];
-        const totalPriceResumen = d.servicioPrecio + extrasResumen.reduce((sum, s) => sum + Number(s.precio), 0);
-        
-        let extraListText = '';
-        if (extrasResumen.length > 0) {
-          extraListText = '\n✨ **Servicios Adicionales:**\n' + extrasResumen.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n') + '\n';
-        }
-
-        const confirmButtons = [
-          { label: '✅ Confirmar Reserva', value: 'CONFIRMAR_SI' },
-          { label: '❌ Cancelar', value: 'CONFIRMAR_NO' },
-        ];
-
-        return {
-          text: `📋 **Resumen de tu Reserva:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Todo correcto?`,
-          source: 'reservation',
-          buttons: confirmButtons,
-          requestGPS: false,
-        };
+        return this._buildSummaryResponse(false);
 
       case STEPS.CONFIRM_DELAY:
         if (input === 'DELAY_CANCEL' || input.toLowerCase().includes('cancel')) {
           return this.cancel();
         }
         if (input === 'DELAY_CHANGE_TIME' || input.toLowerCase().includes('cambiar')) {
-          _reservationState.step = STEPS.ASKING_TIME;
+          _reservationState.step = STEPS.ASKING_DATE;
           return {
-            text: '🕐 ¿A qué **hora** prefieres?\n\nSelecciona o escribe la hora (formato HH:MM):',
+            text: 'Por favor selecciona o escribe otra fecha para revisar horarios libres:',
             source: 'reservation',
-            buttons: null,
+            buttons: this._getNextDates(),
             requestGPS: false,
           };
         }
         
         if (input === 'DELAY_CONTINUE' || input.toLowerCase().includes('continuar')) {
           _reservationState.step = STEPS.CONFIRMING;
-          const d = _reservationState.data;
-          const extrasResumen = d.serviciosAdicionales || [];
-          const totalPriceResumen = d.servicioPrecio + extrasResumen.reduce((sum, s) => sum + Number(s.precio), 0);
-          
-          let extraListText = '';
-          if (extrasResumen.length > 0) {
-            extraListText = '\n✨ **Servicios Adicionales:**\n' + extrasResumen.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n') + '\n';
-          }
-
-          const confirmButtons = [
-            { label: '✅ Confirmar Reserva', value: 'CONFIRMAR_SI' },
-            { label: '❌ Cancelar', value: 'CONFIRMAR_NO' },
-          ];
-
-          return {
-            text: `📋 **Resumen de tu Reserva (Con Demora):**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Todo correcto?`,
-            source: 'reservation',
-            buttons: confirmButtons,
-            requestGPS: false,
-          };
+          return this._buildSummaryResponse(true);
         }
         
         return {
           text: 'Por favor selecciona una opción válida.',
           source: 'reservation',
           buttons: [
-            { label: '➡️ Continuar', value: 'DELAY_CONTINUE' },
-            { label: '🕘 Cambiar hora', value: 'DELAY_CHANGE_TIME' },
+            { label: '➡️ Continuar con demora', value: 'DELAY_CONTINUE' },
+            { label: '🕘 Cambiar de fecha/hora', value: 'DELAY_CHANGE_TIME' },
             { label: '❌ Cancelar pedido', value: 'DELAY_CANCEL' }
           ],
           requestGPS: false
@@ -923,10 +868,34 @@ export class ChatBotReservationService {
           
           if (result.success) {
             const reserva = result.data;
-            const demoraMsg = _reservationState.data.hasDelay ? "\n\n⚠️ *Nota: Aceptaste una demora de 1 hora por alta demanda.*" : "";
+            const demoraMsg = _reservationState.data.hasDelay ? "\n⚠️ *Nota: Servicio programado con margen de espera por alta demanda.*" : "";
+            
+            // Formatear fecha bonita y legible (Punto 5)
+            let fechaLegible = reserva.fechaReserva;
+            try {
+              if (reserva.fechaReserva && reserva.fechaReserva.includes('-')) {
+                const [y, m, d] = reserva.fechaReserva.split('-');
+                const dObj = new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10));
+                const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                fechaLegible = `${diasSemana[dObj.getDay()]}, ${dObj.getDate()} de ${meses[dObj.getMonth()]} de ${dObj.getFullYear()}`;
+              }
+            } catch(e) {}
+
+            let ubicacionLimpia = reserva.ubicacion || 'Guardada en sistema';
+            if (ubicacionLimpia.length > 55) {
+              ubicacionLimpia = ubicacionLimpia.substring(0, 52) + '...';
+            }
+
+            const extrasList = Array.isArray(reserva.extras) && reserva.extras.length > 0
+              ? `\n✨ **Adicionales:** ${reserva.extras.map(e => e.nombre).join(', ')}`
+              : '';
+
             _reservationState = null; // Limpiar estado
+            
+            // Ficha formal y estructurada de cierre de cita (Punto 5)
             return {
-              text: `🎉 **¡Reserva Confirmada!**\n\n✅ Tu reserva ha sido registrada exitosamente.\n\n📋 **Detalles:**\n• Servicio: ${reserva.servicioNombre}\n• Fecha: ${reserva.fechaReserva} a las ${reserva.horaReserva}\n• Precio Total: Bs. ${reserva.servicioPrecio}${demoraMsg}\n\nPronto un trabajador se pondrá en contacto contigo. **El tiempo de espera aproximado será de 30 a 40 min** en llegar a su ubicación. ¡Gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
+              text: `🎉 **¡Tu reserva está confirmada con éxito!**\n\n📋 **Ficha de tu Servicio:**\n━━━━━━━━━━━━━━━━━━━━━━\n👤 **Cliente:** ${reserva.clienteNombre}\n📱 **WhatsApp:** ${reserva.clienteTelefono}\n🚗 **Vehículo:** ${reserva.vehiculo}\n🧼 **Servicio:** ${reserva.servicioNombre}${extrasList}\n💰 **Total a Pagar:** Bs. ${reserva.servicioPrecio}\n📅 **Fecha:** ${fechaLegible}\n🕐 **Hora programada:** ${reserva.horaReserva}\n📍 **Ubicación:** ${ubicacionLimpia}${demoraMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🛵 **Estado:** Confirmada y en cola de despacho.\n🔔 Te notificaremos en cuanto tu lavador asignado vaya en camino hacia tu ubicación.\n\n¡Muchas gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
@@ -1117,20 +1086,22 @@ export class ChatBotReservationService {
   }
 
   /**
-   * Genera botones con las próximas 5 fechas disponibles
+   * Genera botones con las próximas fechas disponibles
    */
   static _getNextDates() {
     const dates = [];
     const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     
-    for (let i = 1; i <= 5; i++) {
+    // Ofrecer Hoy y los próximos 4 días (saltando domingos)
+    for (let i = 0; i <= 4; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
-      const dayName = dayNames[d.getDay()];
-      const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-      const isoDate = d.toISOString().split('T')[0]; // YYYY-MM-DD for DB
+      if (d.getDay() === 0) continue; // Saltar domingo
+      const dayName = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : dayNames[d.getDay()];
+      const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const isoDate = d.toISOString().split('T')[0];
       dates.push({
-        label: `📅 ${dayName} ${formatted}`,
+        label: `📅 ${dayName} (${formatted})`,
         value: isoDate,
       });
     }
@@ -1138,22 +1109,173 @@ export class ChatBotReservationService {
   }
 
   /**
+   * Obtiene la disponibilidad real de horarios para una fecha dada.
+   */
+  static async _getSlotsForDate(dateStr) {
+    if (!dateStr) return { isSunday: false, isClosed: false, isFull: true, validSlots: [], buttons: [] };
+
+    const parseMin = (tStr) => {
+      if (!tStr) return -1;
+      const parts = String(tStr).split(':');
+      if (parts.length < 2) return -1;
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+
+    // 1. Validar si cae en domingo
+    const dateParts = dateStr.split('-');
+    if (dateParts.length === 3) {
+      const dateObj = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+      if (dateObj.getDay() === 0) {
+        return { isSunday: true, isClosed: true, isFull: true, validSlots: [], buttons: [] };
+      }
+    }
+
+    let allowedSlots = [];
+    let maxCap = 1;
+
+    try {
+      // 2. Validar contra disponibilidad_fechas
+      const { data: dispoData } = await supabase
+        .from('disponibilidad_fechas')
+        .select('*')
+        .eq('fecha', dateStr);
+
+      if (dispoData && dispoData.length > 0) {
+        const d = dispoData[0];
+        if (d.cerrado) {
+          return { isSunday: false, isClosed: true, isFull: true, validSlots: [], buttons: [] };
+        }
+        if (d.tipo === 'slots' && Array.isArray(d.slots) && d.slots.length > 0) {
+          allowedSlots = d.slots;
+        } else {
+          const startMin = parseMin(d.hora_inicio);
+          const endMin = parseMin(d.hora_fin);
+          const defaultSlots = ['08:30', '10:30', '13:30', '15:30', '17:00'];
+          allowedSlots = defaultSlots.filter(s => {
+            const sMin = parseMin(s);
+            return sMin >= startMin && sMin <= endMin;
+          });
+        }
+        if (d.capacidad_por_slot) {
+          maxCap = parseInt(d.capacidad_por_slot, 10) || 1;
+        }
+      } else {
+        allowedSlots = ['08:30', '10:30', '13:30', '15:30', '17:00'];
+      }
+
+      // 3. Consultar reservas existentes en esa fecha
+      const { data: existingReservasDate } = await supabase
+        .from('reservas')
+        .select('hora_reserva, hora, estado')
+        .eq('fecha_reserva', dateStr)
+        .neq('estado', 'Cancelado');
+
+      const bookedMins = (existingReservasDate || []).map(r => parseMin(r.hora_reserva || r.hora)).filter(m => m !== -1);
+
+      // Si es hoy, filtrar turnos que ya pasaron
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isToday = dateStr === todayStr;
+      const currentMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+      // 4. Filtrar slots disponibles
+      const validSlots = allowedSlots.filter(slot => {
+        const btnMin = parseMin(slot);
+        if (isToday && btnMin <= currentMin + 30) {
+          return false;
+        }
+        const conflictCount = bookedMins.filter(bMin => Math.abs(btnMin - bMin) < 60).length;
+        return conflictCount < maxCap;
+      });
+
+      const clockEmojis = {
+        '08:00': '🕘', '08:30': '🕤', '09:00': '🕙', '09:30': '🕥', '10:00': '🕥', '10:30': '🕦', '11:00': '🕦', '11:30': '🕛',
+        '12:00': '🕛', '12:30': '🕧', '13:00': '🕐', '13:30': '🕜', '14:00': '🕑', '14:30': '🕝', '15:00': '🕒', '15:30': '🕞',
+        '16:00': '🕓', '16:30': '🕟', '17:00': '🕔', '17:30': '🕠', '18:00': '🕕', '18:30': '🕡'
+      };
+
+      const buttons = validSlots.map(slot => ({
+        label: `${clockEmojis[slot] || '🕒'} ${slot}`,
+        value: slot
+      }));
+
+      const isFull = (existingReservasDate && existingReservasDate.length >= 10) || validSlots.length === 0;
+
+      return {
+        isSunday: false,
+        isClosed: false,
+        isFull,
+        validSlots,
+        buttons
+      };
+    } catch (e) {
+      console.error("Error en _getSlotsForDate:", e);
+      return { isSunday: false, isClosed: false, isFull: false, validSlots: allowedSlots, buttons: [] };
+    }
+  }
+
+  /**
+   * Construye el mensaje de resumen previo a la confirmación
+   */
+  static _buildSummaryResponse(hasDelay = false) {
+    const d = _reservationState.data;
+    const extrasResumen = d.serviciosAdicionales || [];
+    const totalPriceResumen = d.servicioPrecio + extrasResumen.reduce((sum, s) => sum + Number(s.precio), 0);
+    
+    let extraListText = '';
+    if (extrasResumen.length > 0) {
+      extraListText = '\n✨ **Servicios Adicionales:**\n' + extrasResumen.map(s => `• ${s.nombre} — Bs. ${s.precio}`).join('\n') + '\n';
+    }
+
+    const confirmButtons = [
+      { label: '✅ Confirmar Reserva', value: 'CONFIRMAR_SI' },
+      { label: '❌ Cancelar', value: 'CONFIRMAR_NO' },
+    ];
+
+    const delayHeader = hasDelay ? ' (Con Margen de Demora)' : '';
+
+    return {
+      text: `📋 **Resumen de tu Reserva${delayHeader}:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Deseas confirmar la cita?`,
+      source: 'reservation',
+      buttons: confirmButtons,
+      requestGPS: false,
+    };
+  }
+
+  /**
    * Parsea múltiples formatos de fecha a YYYY-MM-DD
    */
   static _parseDate(input) {
+    if (!input) return null;
+    const clean = String(input).toLowerCase().trim();
+
+    const now = new Date();
+    if (clean.includes('hoy')) {
+      return now.toISOString().split('T')[0];
+    }
+    if (clean.includes('mañana') || clean.includes('manana')) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    }
+    if (clean.includes('pasado mañana') || clean.includes('pasado manana')) {
+      const dayAfter = new Date(now);
+      dayAfter.setDate(dayAfter.getDate() + 2);
+      return dayAfter.toISOString().split('T')[0];
+    }
+
     // Si ya es YYYY-MM-DD (de un botón)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
 
     // DD/MM/YYYY
-    const match1 = input.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    const match1 = clean.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
     if (match1) {
       return `${match1[3]}-${match1[2].padStart(2, '0')}-${match1[1].padStart(2, '0')}`;
     }
 
     // DD/MM (asume año actual)
-    const match2 = input.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
+    const match2 = clean.match(/^(\d{1,2})[\/\-](\d{1,2})$/);
     if (match2) {
-      const year = new Date().getFullYear();
+      const year = now.getFullYear();
       return `${year}-${match2[2].padStart(2, '0')}-${match2[1].padStart(2, '0')}`;
     }
 
@@ -1161,23 +1283,41 @@ export class ChatBotReservationService {
   }
 
   /**
-   * Parsea hora de múltiples formatos a HH:MM
+   * Parsea hora de múltiples formatos a HH:MM (soporta AM/PM y 24h)
    */
   static _parseTime(input) {
-    // HH:MM exacto
-    const match = input.match(/^(\d{1,2}):(\d{2})$/);
-    if (match) {
-      const h = parseInt(match[1]);
-      const m = parseInt(match[2]);
+    if (!input) return null;
+    const clean = String(input).toLowerCase().trim();
+
+    // Check AM/PM with minutes (ej: "8:30am", "1:30 pm", "08:30 AM")
+    const matchAmPm = clean.match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
+    if (matchAmPm) {
+      let h = parseInt(matchAmPm[1], 10);
+      const m = parseInt(matchAmPm[2], 10);
+      const period = matchAmPm[3];
+      if (period === 'pm' && h < 12) h += 12;
+      if (period === 'am' && h === 12) h = 0;
       if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       }
     }
 
-    // Solo hora (ej: "10" → "10:00")
-    const matchSingle = input.match(/^(\d{1,2})$/);
+    // Check AM/PM without minutes (ej: "8am", "1pm", "3 pm")
+    const matchHourAmPm = clean.match(/^(\d{1,2})\s*(am|pm)$/);
+    if (matchHourAmPm) {
+      let h = parseInt(matchHourAmPm[1], 10);
+      const period = matchHourAmPm[2];
+      if (period === 'pm' && h < 12) h += 12;
+      if (period === 'am' && h === 12) h = 0;
+      if (h >= 0 && h <= 23) {
+        return `${String(h).padStart(2, '0')}:00`;
+      }
+    }
+
+    // Solo número (ej: "10" → "10:00")
+    const matchSingle = clean.match(/^(\d{1,2})$/);
     if (matchSingle) {
-      const h = parseInt(matchSingle[1]);
+      const h = parseInt(matchSingle[1], 10);
       if (h >= 0 && h <= 23) {
         return `${String(h).padStart(2, '0')}:00`;
       }

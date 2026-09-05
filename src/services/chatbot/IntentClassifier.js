@@ -17,6 +17,7 @@ export class IntentClassifier {
     { intent: 'motor', keywords: ['lavan motor', 'lavado de motor', 'limpieza de motor', 'lavar motor'] },
     { intent: 'precios', keywords: ['precio', 'precios', 'cuanto cuesta', 'valor', 'costo', 'costos', 'servicios', 'lavado premium', 'lavado exterior'] },
     { intent: 'reservar', keywords: ['reservar', 'reserva', 'cita', 'agenda', 'agendar', 'quiero agendar', 'quiero reservar'] },
+    { intent: 'disponibilidad', keywords: ['espacio', 'tienen espacio', 'hay espacio', 'espacio para un lavado', 'espacio para hoy', 'espacio hoy', 'espacio en la tarde', 'tienen lugar', 'hay lugar', 'cupo', 'cupos', 'disponibilidad', 'disponible hoy', 'tienen libre'] },
     { intent: 'ubicacion', keywords: ['ubicación', 'ubicacion', 'dirección', 'direccion', 'dónde están', 'donde estan', 'mapa', 'donde atienden'] },
     { intent: 'horario', keywords: ['horario', 'horarios', 'a que hora', 'dias', 'domingo', 'feriado', 'abierto'] },
     { intent: 'contacto', keywords: ['contacto', 'teléfono', 'telefono', 'whatsapp', 'correo', 'llamar', 'numero', 'asesor'] },
