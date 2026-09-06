@@ -7,6 +7,19 @@ import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-le
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+// Utility: Check if a point [lat, lng] is inside a polygon (array of [lat, lng] points)
+function pointInPolygon(point, polygon) {
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    const intersect = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -345,7 +358,26 @@ export default function Citas() {
         return;
       }
       
-      const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
+      // Validate that the entered GPS location is within a coverage zone
+const matchLocation = manualForm.ubicacion_gps && manualForm.ubicacion_gps.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+if (!matchLocation) {
+  alert('✋ Por favor ingrese coordenadas GPS válidas para la ubicación.');
+  setIsSubmitting(false);
+  return;
+}
+const lat = parseFloat(matchLocation[1]);
+const lng = parseFloat(matchLocation[2]);
+const insideZone = zonasCobertura.some(z => {
+  if (!z.coordenadas) return false;
+  const poly = z.coordenadas.map(c => [c.lat, c.lng]);
+  return pointInPolygon([lat, lng], poly);
+});
+if (!insideZone) {
+  alert('⚠️ La ubicación ingresada está fuera de la zona de cobertura.');
+  setIsSubmitting(false);
+  return;
+}
+const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
 
       const newReserva = {
         cliente_nombre: manualForm.cliente_nombre,
