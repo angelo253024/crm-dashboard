@@ -683,7 +683,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const formattedHora = horaReserva.length === 5 ? `${horaReserva}:00` : horaReserva;
 
     const trabajadorId = await autoAssignWorker(supabase);
-    const estadoReserva = 'pendiente';
+    const estadoReserva = trabajadorId ? 'asignado' : 'pendiente';
     const newChatSessionId = `chat_${Date.now()}_${Math.floor(Math.random()*1000)}`;
 
     const mainService = validServices[0];
