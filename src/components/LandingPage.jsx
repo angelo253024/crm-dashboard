@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Heart, Droplets, Star, ArrowRight, Moon, Sun, MessageSquare, Shield, Clock, Zap, MapPin, CheckCircle } from 'lucide-react';
+import { WhatsAppIcon } from './ChatBotWidget';
 
 export default function LandingPage({ isDarkMode, toggleTheme }) {
   
@@ -47,6 +48,31 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <a
+            href="https://wa.me/59167750005?text=Hola%20Lavam%C3%B3vil%20Norte%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#25D366',
+              color: '#ffffff',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              textDecoration: 'none',
+              boxShadow: '0 2px 10px rgba(37, 211, 102, 0.3)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            title="WhatsApp Oficial (+591 67750005)"
+          >
+            <WhatsAppIcon size={16} color="#ffffff" />
+            <span>WhatsApp</span>
+          </a>
           <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle theme">
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -106,6 +132,27 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
             <MessageSquare size={20} style={{ marginRight: '8px', color: '#1CA9C9' }} />
             Asistente IA
           </button>
+          <a
+            href="https://wa.me/59167750005?text=Hola%20Lavam%C3%B3vil%20Norte%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-landing-large"
+            style={{ 
+              backgroundColor: '#25D366', 
+              color: '#ffffff', 
+              border: 'none', 
+              padding: '18px 32px', 
+              boxShadow: '0 6px 20px rgba(37, 211, 102, 0.35)', 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              textDecoration: 'none' 
+            }}
+            title="Contactar por WhatsApp (+591 67750005)"
+          >
+            <WhatsAppIcon size={20} color="#ffffff" />
+            WhatsApp
+          </a>
         </div>
 
         {/* Trust Badges */}
