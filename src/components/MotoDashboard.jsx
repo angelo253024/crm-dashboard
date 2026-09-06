@@ -168,6 +168,8 @@ export default function MotoDashboard({ user }) {
   const [selectedReservaForPayment, setSelectedReservaForPayment] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(''); // 'QR' or 'EFECTIVO'
   const [montoRecibido, setMontoRecibido] = useState('');
+  const [hasPropina, setHasPropina] = useState(false);
+  const [propinaMonto, setPropinaMonto] = useState('');
   const [qrUrl, setQrUrl] = useState('');
 
   const getTelefono = (input) => {
@@ -518,6 +520,8 @@ export default function MotoDashboard({ user }) {
     setPaymentModalOpen(true);
     setPaymentMethod('');
     setMontoRecibido('');
+    setHasPropina(false);
+    setPropinaMonto('');
     
     // Fetch QR
     const { data } = await supabase.from('configuraciones_pago').select('qr_image_url').limit(1).single();
@@ -530,11 +534,13 @@ export default function MotoDashboard({ user }) {
       return;
     }
 
-    const total = selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0;
+    const subtotal = Number(selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0);
+    const propinaNum = hasPropina && Number(propinaMonto) > 0 ? Number(propinaMonto) : 0;
+    const totalCobro = subtotal + propinaNum;
 
     if (paymentMethod === 'EFECTIVO') {
-      if (!montoRecibido || Number(montoRecibido) < total) {
-        alert("El monto recibido debe ser mayor o igual al total del servicio.");
+      if (!montoRecibido || Number(montoRecibido) < totalCobro) {
+        alert(`El monto recibido debe ser mayor o igual al total a cobrar (Bs ${totalCobro}).`);
         return;
       }
     }
@@ -544,15 +550,28 @@ export default function MotoDashboard({ user }) {
       payment_method: paymentMethod,
       payment_status: 'PAGADO',
       payment_date: new Date().toISOString(),
-      payment_by: user.id
+      payment_by: user.id,
+      propina: propinaNum
     };
 
     if (paymentMethod === 'EFECTIVO') {
       updates.monto_recibido = Number(montoRecibido);
-      updates.cambio_devuelto = Number(montoRecibido) - total;
+      updates.cambio_devuelto = Number(montoRecibido) - totalCobro;
     }
 
-    await supabase.from('reservas').update(updates).eq('id', selectedReservaForPayment.id);
+    let { error } = await supabase.from('reservas').update(updates).eq('id', selectedReservaForPayment.id);
+
+    // Fallback resiliente si la columna 'propina' aún no existe en Supabase
+    if (error && error.message && error.message.includes('propina')) {
+      delete updates.propina;
+      const retry = await supabase.from('reservas').update(updates).eq('id', selectedReservaForPayment.id);
+      error = retry.error;
+    }
+
+    if (error) {
+      alert("Error al confirmar el pago: " + (error.message || JSON.stringify(error)));
+      return;
+    }
     
     setEstado('disponible');
     estadoRef.current = 'disponible';
@@ -560,6 +579,8 @@ export default function MotoDashboard({ user }) {
     
     setPaymentModalOpen(false);
     setSelectedReservaForPayment(null);
+    setHasPropina(false);
+    setPropinaMonto('');
     fetchReservasAsignadas(true);
   };
 
@@ -1137,6 +1158,30 @@ export default function MotoDashboard({ user }) {
                   </div>
                 );
               })()}
+
+              {/* Referencia o Descripción del Domicilio para el Trabajador */}
+              {(res.descripcion || (res.ubicacion_gps && res.ubicacion_gps.includes('[Ref:'))) && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  marginBottom: '16px',
+                  padding: '12px 14px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '8px'
+                }}>
+                  <span style={{ fontSize: '20px', lineHeight: 1 }}>🏠</span>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Referencia del Domicilio (Para no perderte):
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-main)', marginTop: '2px', fontWeight: '600' }}>
+                      {res.descripcion || res.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}
+                    </div>
+                  </div>
+                </div>
+              )}
               
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {res.estado_reserva === 'asignado' ? (
@@ -1296,6 +1341,30 @@ export default function MotoDashboard({ user }) {
                     </div>
                   </div>
                 )}
+
+                {/* Referencia o Descripción del Domicilio para el Trabajador */}
+                {(res.descripcion || (res.ubicacion_gps && res.ubicacion_gps.includes('[Ref:'))) && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    marginBottom: '16px',
+                    padding: '12px 14px',
+                    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '8px'
+                  }}>
+                    <span style={{ fontSize: '20px', lineHeight: 1 }}>🏠</span>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Referencia del Domicilio (Para no perderte):
+                      </div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-main)', marginTop: '2px', fontWeight: '600' }}>
+                        {res.descripcion || res.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => reclamarReserva(res.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
@@ -1321,74 +1390,159 @@ export default function MotoDashboard({ user }) {
           <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '400px', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-color)' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Banknote size={20} color="#10b981" /> Método de Pago
+                <Banknote size={20} color="#10b981" /> Método de Pago y Cobro
               </h3>
             </div>
             
             <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
-              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>
-                Selecciona cómo pagó el cliente el servicio de <strong>Bs {selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0}</strong>.
-              </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-                <button 
-                  onClick={() => setPaymentMethod('QR')}
-                  style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'QR' ? '2px solid #3b82f6' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'QR' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'QR' ? '#3b82f6' : 'var(--text-main)', transition: 'all 0.2s' }}
-                >
-                  <MapPin size={24} /> 
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Pago por QR</span>
-                </button>
-                <button 
-                  onClick={() => setPaymentMethod('EFECTIVO')}
-                  style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'EFECTIVO' ? '2px solid #10b981' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'EFECTIVO' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'EFECTIVO' ? '#10b981' : 'var(--text-main)', transition: 'all 0.2s' }}
-                >
-                  <Banknote size={24} />
-                  <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Efectivo</span>
-                </button>
-              </div>
+              {(() => {
+                const subtotal = Number(selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0);
+                const propinaNum = hasPropina && Number(propinaMonto) > 0 ? Number(propinaMonto) : 0;
+                const totalCobro = subtotal + propinaNum;
 
-              {paymentMethod === 'QR' && (
-                <div style={{ textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
-                  <p style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '12px' }}>Escanea este código</p>
-                  <div style={{ width: '200px', height: '200px', margin: '0 auto', backgroundColor: '#fff', padding: '8px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-                    {qrUrl ? (
-                      <img src={qrUrl} alt="QR de Pago" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                    ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Cargando QR...</div>
+                return (
+                  <>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>
+                      Monto base del servicio: <strong>Bs {subtotal}</strong>.
+                    </p>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                      <button 
+                        onClick={() => setPaymentMethod('QR')}
+                        style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'QR' ? '2px solid #3b82f6' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'QR' ? 'rgba(59, 130, 246, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'QR' ? '#3b82f6' : 'var(--text-main)', transition: 'all 0.2s' }}
+                      >
+                        <MapPin size={24} /> 
+                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Pago por QR</span>
+                      </button>
+                      <button 
+                        onClick={() => setPaymentMethod('EFECTIVO')}
+                        style={{ padding: '16px', borderRadius: '12px', border: paymentMethod === 'EFECTIVO' ? '2px solid #10b981' : '1px solid var(--border-color)', backgroundColor: paymentMethod === 'EFECTIVO' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-color)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', color: paymentMethod === 'EFECTIVO' ? '#10b981' : 'var(--text-main)', transition: 'all 0.2s' }}
+                      >
+                        <Banknote size={24} /> 
+                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Efectivo</span>
+                      </button>
+                    </div>
+
+                    {/* Sección de Propina Opcional */}
+                    <div style={{ marginBottom: '20px', padding: '14px', borderRadius: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={hasPropina} 
+                            onChange={(e) => {
+                              setHasPropina(e.target.checked);
+                              if (!e.target.checked) setPropinaMonto('');
+                            }}
+                            style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+                          />
+                          🎁 ¿Te dieron propina? (Opcional)
+                        </label>
+                        {hasPropina && (
+                          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                            100% para ti
+                          </span>
+                        )}
+                      </div>
+
+                      {hasPropina && (
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Monto sugerido o ingresa cuánto te dieron:</div>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                            {[5, 10, 15, 20, 50].map(amt => (
+                              <button
+                                key={amt}
+                                type="button"
+                                onClick={() => setPropinaMonto(String(amt))}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: '16px',
+                                  border: Number(propinaMonto) === amt ? '2px solid #10b981' : '1px solid var(--border-color)',
+                                  backgroundColor: Number(propinaMonto) === amt ? 'rgba(16, 185, 129, 0.15)' : 'var(--card-bg)',
+                                  color: Number(propinaMonto) === amt ? '#10b981' : 'var(--text-main)',
+                                  fontWeight: 'bold',
+                                  fontSize: '12px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                + Bs {amt}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
+                            <input 
+                              type="number" 
+                              value={propinaMonto}
+                              onChange={(e) => setPropinaMonto(e.target.value)}
+                              placeholder="Monto de propina (ej. 10)"
+                              min="0"
+                              step="1"
+                              style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '15px', fontWeight: 'bold', outline: 'none' }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {propinaNum > 0 && (
+                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Servicio: Bs {subtotal} + Propina: Bs {propinaNum}</span>
+                          <span style={{ fontWeight: 'bold', color: '#10b981' }}>Total a cobrar: Bs {totalCobro}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {paymentMethod === 'QR' && (
+                      <div style={{ textAlign: 'center', animation: 'fadeIn 0.3s ease-out' }}>
+                        <p style={{ fontWeight: 'bold', fontSize: '15px', marginBottom: '8px' }}>Escanea este código</p>
+                        {propinaNum > 0 && (
+                          <p style={{ fontSize: '13px', color: '#10b981', fontWeight: 'bold', marginBottom: '12px' }}>
+                            Monto a cobrar con propina: Bs {totalCobro}
+                          </p>
+                        )}
+                        <div style={{ width: '200px', height: '200px', margin: '0 auto', backgroundColor: '#fff', padding: '8px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+                          {qrUrl ? (
+                            <img src={qrUrl} alt="QR de Pago" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>Cargando QR...</div>
+                          )}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </div>
-              )}
 
-              {paymentMethod === 'EFECTIVO' && (
-                <div style={{ animation: 'fadeIn 0.3s ease-out', backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Total del servicio:</span>
-                    <span style={{ fontWeight: 'bold' }}>Bs {selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0}</span>
-                  </div>
-                  
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px', color: 'var(--text-main)' }}>Monto recibido:</label>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
-                      <input 
-                        type="number" 
-                        value={montoRecibido}
-                        onChange={(e) => setMontoRecibido(e.target.value)}
-                        placeholder="Ej. 50"
-                        style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
+                    {paymentMethod === 'EFECTIVO' && (
+                      <div style={{ animation: 'fadeIn 0.3s ease-out', backgroundColor: 'var(--bg-color)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Total a cobrar:</span>
+                          <span style={{ fontWeight: 'bold', fontSize: '16px', color: '#10b981' }}>Bs {totalCobro}</span>
+                        </div>
+                        
+                        <div style={{ marginBottom: '16px' }}>
+                          <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '6px', color: 'var(--text-main)' }}>Monto recibido del cliente:</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
+                            <input 
+                              type="number" 
+                              value={montoRecibido}
+                              onChange={(e) => setMontoRecibido(e.target.value)}
+                              placeholder={`Mínimo ${totalCobro}`}
+                              style={{ width: '100%', padding: '12px 12px 12px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
+                            />
+                          </div>
+                        </div>
 
-                  {montoRecibido && Number(montoRecibido) >= (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px dashed #10b981' }}>
-                      <span style={{ fontWeight: 'bold', color: '#10b981' }}>Cambio a devolver:</span>
-                      <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '16px' }}>Bs {Number(montoRecibido) - (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+                        {montoRecibido && Number(montoRecibido) >= totalCobro && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px dashed #10b981' }}>
+                            <span style={{ fontWeight: 'bold', color: '#10b981' }}>Cambio a devolver:</span>
+                            <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '16px' }}>Bs {Number(montoRecibido) - totalCobro}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', backgroundColor: 'var(--bg-color)' }}>
@@ -1398,13 +1552,22 @@ export default function MotoDashboard({ user }) {
               >
                 Cancelar
               </button>
-              <button 
-                onClick={confirmarPago}
-                disabled={!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))}
-                style={{ flex: 2, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: 'bold', cursor: (!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))) ? 'not-allowed' : 'pointer', opacity: (!paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < (selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0)))) ? 0.5 : 1 }}
-              >
-                {paymentMethod === 'QR' ? 'Confirmar Pago QR' : 'Confirmar Pago'}
-              </button>
+              {(() => {
+                const subtotal = Number(selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0);
+                const propinaNum = hasPropina && Number(propinaMonto) > 0 ? Number(propinaMonto) : 0;
+                const totalCobro = subtotal + propinaNum;
+                const isDisabled = !paymentMethod || (paymentMethod === 'EFECTIVO' && (!montoRecibido || Number(montoRecibido) < totalCobro));
+
+                return (
+                  <button 
+                    onClick={confirmarPago}
+                    disabled={isDisabled}
+                    style={{ flex: 2, padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: 'bold', cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.5 : 1 }}
+                  >
+                    {paymentMethod === 'QR' ? `Confirmar Pago QR (Bs ${totalCobro})` : `Confirmar Pago (Bs ${totalCobro})`}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1455,9 +1618,23 @@ export default function MotoDashboard({ user }) {
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Cliente</strong><br/>{res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : ''}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Vehículo</strong><br/>{res.vehiculo}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Servicio</strong><br/>{res.servicio}</div>
-                  <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Generado</strong><br/>Bs {res.precio_total || res.precio || 0}</div>
+                  <div>
+                    <strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Total Generado</strong><br/>
+                    Bs {res.precio_total || res.precio || 0}
+                    {Number(res.propina) > 0 && (
+                      <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                        + Bs {res.propina} propina 🎁
+                      </span>
+                    )}
+                  </div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Fecha/Hora</strong><br/>{res.fecha_reserva} {res.hora_reserva}</div>
                   <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Estado</strong><br/><span style={{ textTransform: 'uppercase', fontSize: '12px', fontWeight: 'bold' }}>{res.estado === 'Cancelado' ? 'CANCELADO' : res.estado_reserva?.replace('_', ' ')}</span></div>
+                  {(res.descripcion || (res.ubicacion_gps && res.ubicacion_gps.includes('[Ref:'))) && (
+                    <div>
+                      <strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Referencia Domicilio</strong><br/>
+                      <span style={{ fontSize: '13px', color: '#3b82f6' }}>{res.descripcion || res.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}</span>
+                    </div>
+                  )}
                   {res.payment_method && (
                     <div><strong style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Método de Pago</strong><br/>{res.payment_method}</div>
                   )}

@@ -194,6 +194,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [clienteTelefono, setClienteTelefono] = useState('');
   const [vehiculo, setVehiculo] = useState('');
   const [ubicacion, setUbicacion] = useState('');
+  const [descripcionDomicilio, setDescripcionDomicilio] = useState('');
   const [fechaReserva, setFechaReserva] = useState('');
   const [horaReserva, setHoraReserva] = useState('');
   const [availableSlots, setAvailableSlots] = useState(null);
@@ -523,15 +524,6 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     };
   }, [activeReservas, showClientChat]);
 
-  const isSecondaryService = (s) => {
-    const isOtros = s.categoria === 'Otros' || s.categoria === 'Lavado Bicis y Motos';
-    const isMenorA40 = Number(s.precio) < 40;
-    const isMotoP = s.nombre?.toLowerCase().includes('moto');
-    const isBici = s.nombre?.toLowerCase().includes('bici');
-    const isLustrado = s.nombre?.toLowerCase().includes('lustrado');
-    return isOtros || isMenorA40 || isMotoP || isBici || isLustrado;
-  };
-
   const fetchServicios = async () => {
     setLoading(true);
     const { data, error } = await supabase.from('servicios').select('*').order('created_at', { ascending: false });
@@ -543,9 +535,10 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       const categoryOrder = {
         'Lavado Clásico': 1,
         'Lavado Premium': 2,
-        'Lavado Bicis y Motos': 3,
-        'Personaliza tu lavado': 4,
-        'Otros': 5
+        'Servicios Extras': 3,
+        'Lavado Bicis y Motos': 4,
+        'Personaliza tu lavado': 5,
+        'Otros': 6
       };
 
       const getSizeOrder = (nombre) => {
@@ -574,9 +567,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       
       setServicios(sortedData);
       
-      // Solo mostrar pestañas para categorías que tienen servicios principales
-      const primaryServicios = sortedData.filter(s => !isSecondaryService(s));
-      const uniqueCats = [...new Set(primaryServicios.map(s => s.categoria).filter(Boolean))];
+      // Mostrar todas las categorías con servicios activos en las pestañas
+      const uniqueCats = [...new Set(sortedData.map(s => s.categoria).filter(Boolean))];
       uniqueCats.sort((a, b) => (categoryOrder[a] || 99) - (categoryOrder[b] || 99));
       
       const cats = ['Todos', ...uniqueCats];
@@ -591,6 +583,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setIsEditing(false);
     setShowNameSuggestions(false);
     setIsAutofilled(false);
+    setDescripcionDomicilio('');
     loadSavedClientProfiles();
     setShowModal(true);
   };
@@ -615,7 +608,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const vehiculoMatch = reservaToEdit.vehiculo ? reservaToEdit.vehiculo.match(/^(.*?)(?:\s*\(Adicionales:\s*(.*)\))?$/) : null;
     setVehiculo(vehiculoMatch ? vehiculoMatch[1] : (reservaToEdit.vehiculo || ''));
     
-    setUbicacion(reservaToEdit.ubicacion_gps || '');
+    const rawUbicacion = reservaToEdit.ubicacion_gps || '';
+    setUbicacion(rawUbicacion.includes(' [Ref:') ? rawUbicacion.split(' [Ref:')[0] : rawUbicacion);
+    setDescripcionDomicilio(
+      reservaToEdit.descripcion || 
+      (rawUbicacion.includes('[Ref:') ? rawUbicacion.split('[Ref:')[1]?.replace(']', '').trim() : '')
+    );
     setFechaReserva(reservaToEdit.fecha_reserva || '');
     setHoraReserva(reservaToEdit.hora_reserva ? reservaToEdit.hora_reserva.slice(0, 5) : '');
     
@@ -676,6 +674,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     const validServices = selectedServices.filter(s => !s.isPlaceholder);
     if (validServices.length === 0) {
       alert("Debes seleccionar al menos un servicio.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!descripcionDomicilio || !descripcionDomicilio.trim()) {
+      alert("⚠️ Por favor ingresa una descripción o referencia de tu domicilio para que el trabajador no se pierda al llegar.");
       setIsSubmitting(false);
       return;
     }
@@ -793,15 +797,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     if (isEditing) {
       const reservaToEdit = activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
-      const { data: updateData, error } = await supabase.from('reservas').update({
+      const updatePayload = {
         cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
         vehiculo: `${vehiculo}${additionalNames}`,
         ubicacion_gps: ubicacion,
+        descripcion: descripcionDomicilio.trim(),
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: mainService.id,
         precio_total: totalPrice,
-      }).eq('id', reservaToEdit.id).select();
+      };
+
+      let { data: updateData, error } = await supabase.from('reservas').update(updatePayload).eq('id', reservaToEdit.id).select();
+
+      if (error && error.message && error.message.includes('descripcion')) {
+        // Fallback resiliente si la columna 'descripcion' aún no existe en Supabase
+        delete updatePayload.descripcion;
+        updatePayload.ubicacion_gps = `${ubicacion} [Ref: ${descripcionDomicilio.trim()}]`;
+        const retry = await supabase.from('reservas').update(updatePayload).eq('id', reservaToEdit.id).select();
+        updateData = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         console.error('Error actualizando reserva:', error);
@@ -817,28 +833,39 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           setShowModal(false);
           setSelectedServices([]);
           setIsEditing(false);
+          setDescripcionDomicilio('');
         }, 2500);
       }
       setIsSubmitting(false);
       return;
     }
 
-    const { data: insertData, error } = await supabase.from('reservas').insert([
-      {
-        cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
-        vehiculo: `${vehiculo}${additionalNames}`,
-        ubicacion_gps: ubicacion,
-        fecha_reserva: fechaReserva,
-        hora_reserva: formattedHora,
-        servicio_id: mainService.id,
-        precio_total: totalPrice,
-        estado: 'Reservado',
-        trabajador_id: trabajadorId,
-        estado_reserva: estadoReserva,
-        chat_session_id: newChatSessionId,
-        servicios_detalle: serviciosDetalleJSON
-      }
-    ]).select();
+    const insertPayload = {
+      cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
+      vehiculo: `${vehiculo}${additionalNames}`,
+      ubicacion_gps: ubicacion,
+      descripcion: descripcionDomicilio.trim(),
+      fecha_reserva: fechaReserva,
+      hora_reserva: formattedHora,
+      servicio_id: mainService.id,
+      precio_total: totalPrice,
+      estado: 'Reservado',
+      trabajador_id: trabajadorId,
+      estado_reserva: estadoReserva,
+      chat_session_id: newChatSessionId,
+      servicios_detalle: serviciosDetalleJSON
+    };
+
+    let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
+
+    if (error && error.message && error.message.includes('descripcion')) {
+      // Fallback resiliente si la columna 'descripcion' aún no existe en Supabase
+      delete insertPayload.descripcion;
+      insertPayload.ubicacion_gps = `${ubicacion} [Ref: ${descripcionDomicilio.trim()}]`;
+      const retry = await supabase.from('reservas').insert([insertPayload]).select();
+      insertData = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Error guardando reserva:', error);
@@ -903,6 +930,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     setConfirmedReserva(null);
     setShowClientChat(false);
     setIsEditing(false);
+    setDescripcionDomicilio('');
   };
 
   const getGPSLocation = () => {
@@ -928,8 +956,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   };
 
   const filteredServicios = categoriaActiva === 'Todos' 
-    ? servicios.filter(s => !isSecondaryService(s))
-    : servicios.filter(s => s.categoria === categoriaActiva && !isSecondaryService(s));
+    ? servicios
+    : servicios.filter(s => s.categoria === categoriaActiva);
 
   return (
     <div className="landing-page" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
@@ -1430,6 +1458,34 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                   <input type="text" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} required placeholder="Ej. Av. Banzer o presiona un botón" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
                 </div>
 
+                {/* Campo Obligatorio de Descripción / Referencia de Domicilio */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    Descripción / Referencia del Domicilio <span style={{ color: '#ef4444', fontWeight: 'bold' }}>* (Obligatorio)</span>
+                  </label>
+                  <textarea 
+                    value={descripcionDomicilio} 
+                    onChange={(e) => setDescripcionDomicilio(e.target.value)} 
+                    required 
+                    rows={2}
+                    placeholder="Ej. Casa blanca de 2 pisos, portón de madera, rejas negras, frente a la tienda Don Pepe..." 
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px', 
+                      borderRadius: '8px', 
+                      border: '1px solid var(--border-color)', 
+                      backgroundColor: 'var(--bg-color)', 
+                      color: 'var(--text-main)', 
+                      resize: 'vertical', 
+                      fontFamily: 'inherit',
+                      fontSize: '14px'
+                    }} 
+                  />
+                  <div style={{ fontSize: '11px', color: 'var(--accent-cyan)', marginTop: '4px' }}>
+                    📍 Indícanos color de casa, rejas, portón o puntos de referencia para que el trabajador llegue directo sin perderse.
+                  </div>
+                </div>
+
                 <div style={{ fontSize: '13px', color: 'var(--accent-cyan)', marginBottom: '12px', textAlign: 'center', backgroundColor: 'rgba(28, 169, 201, 0.1)', padding: '8px', borderRadius: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   <span style={{ fontSize: '14px' }}>⏰</span> Tiempo estimado en llegar 30 min a 40 min
                 </div>
@@ -1564,7 +1620,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             {/* Location */}
             <div style={{ marginBottom: '24px' }}>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Ubicación</div>
-              <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps || 'Cargando...'}</div>
+              <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>{reserva.ubicacion_gps ? reserva.ubicacion_gps.split(' [Ref:')[0] : 'Cargando...'}</div>
+              
+              {(reserva.descripcion || (reserva.ubicacion_gps && reserva.ubicacion_gps.includes('[Ref:'))) && (
+                <div style={{ marginTop: '8px', padding: '10px 12px', backgroundColor: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#3b82f6' }}>🏠 Referencia del Domicilio:</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>
+                    {reserva.descripcion || reserva.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}
+                  </div>
+                </div>
+              )}
+
               {reserva.ubicacion_gps && reserva.ubicacion_gps.includes(',') ? (
                 <div style={{ marginTop: '8px', height: '120px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                   <MapPin size={24} style={{ marginRight: '8px' }} /> Mapa (Ubicación GPS)

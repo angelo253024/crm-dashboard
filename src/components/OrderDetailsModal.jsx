@@ -87,6 +87,15 @@ export default function OrderDetailsModal({ reserva, servicios, onClose }) {
                     );
                   })()}
                </div>
+                {(reserva.descripcion || (reserva.ubicacion_gps && reserva.ubicacion_gps.includes('[Ref:'))) && (
+                  <div style={{ gridColumn: '1 / -1', padding: '10px 12px', backgroundColor: 'rgba(59, 130, 246, 0.08)', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>🏠 Referencia Domicilio:</span>{' '}
+                    <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{reserva.descripcion || reserva.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}</span>
+                  </div>
+                )}
+                {Number(reserva.propina) > 0 && (
+                  <div><span style={{ color: 'var(--text-muted)' }}>Propina Trabajador:</span> <span style={{ fontWeight: 'bold', color: '#10b981' }}>Bs. {reserva.propina} 🎁</span></div>
+                )}
             </div>
           </div>
         </div>

@@ -266,6 +266,7 @@ export default function AdminServicios() {
                   >
                     <option value="Lavado Clásico">Lavado Clásico</option>
                     <option value="Lavado Premium">Lavado Premium</option>
+                    <option value="Servicios Extras">Servicios Extras</option>
                     <option value="Lavado Bicis y Motos">Lavado Bicis y Motos</option>
                     <option value="Personaliza tu lavado">Personaliza tu lavado</option>
                     <option value="Otros">Otros</option>

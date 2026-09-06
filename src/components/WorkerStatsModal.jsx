@@ -92,12 +92,15 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
     });
 
     const sumIngresos = (arr) => arr.reduce((sum, r) => sum + (Number(r.precio_total) || Number(r.precio) || 0), 0);
+    const sumPropinas = (arr) => arr.reduce((sum, r) => sum + (Number(r.propina) || 0), 0);
 
     return {
       todayReservas,
       weekReservas,
       ingresosHoy: sumIngresos(todayReservas),
-      ingresosSemana: sumIngresos(weekReservas)
+      ingresosSemana: sumIngresos(weekReservas),
+      totalPropinas: sumPropinas(reservas),
+      propinasHoy: sumPropinas(todayReservas)
     };
   }, [reservas]);
 
@@ -258,7 +261,14 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                         </span>
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.metodo_pago || '-'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 'bold', textAlign: 'right' }}>Bs {Number(s.precio_total) || Number(s.precio) || 0}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 'bold', textAlign: 'right' }}>
+                        Bs {Number(s.precio_total) || Number(s.precio) || 0}
+                        {Number(s.propina) > 0 && (
+                          <div style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', marginTop: '2px' }}>
+                            + Bs {s.propina} propina 🎁
+                          </div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -438,6 +448,17 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
                     <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '18px', border: '1px solid var(--border-color)' }}>
                       <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Ingresos Generados (Semana)</p>
                       <p style={{ margin: 0, fontSize: '26px', fontWeight: 'bold' }}>Bs {generalStats.ingresosSemana}</p>
+                    </div>
+                    <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', padding: '18px', border: '1px solid var(--border-color)' }}>
+                      <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: 'var(--text-muted)' }}>Propinas Recibidas (Total)</p>
+                      <p style={{ margin: 0, fontSize: '26px', fontWeight: 'bold', color: '#10b981' }}>
+                        Bs {generalStats.totalPropinas}
+                        {generalStats.propinasHoy > 0 && (
+                          <span style={{ fontSize: '13px', color: '#10b981', marginLeft: '8px', fontWeight: '500' }}>
+                            (+Bs {generalStats.propinasHoy} hoy)
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                   {renderGeneralTable(generalStats.todayReservas, searchToday, 'Servicios Completados este Día')}

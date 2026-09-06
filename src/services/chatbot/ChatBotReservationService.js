@@ -127,7 +127,7 @@ export class ChatBotReservationService {
 
     let intro = '¡Perfecto! Vamos a agendar tu cita de lavado. 📅';
     if (presetDate && presetTime) {
-      const isToday = presetDate === new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      const isToday = presetDate === this._getLocalDateStr();
       const dateLabel = isToday ? 'hoy' : presetDate;
       intro = `¡Excelente! Hemos apartado tu turno para **${dateLabel} a las ${presetTime}** ⏰.`;
     }
@@ -723,9 +723,9 @@ export class ChatBotReservationService {
           return { text: 'Formato de fecha no válido. Selecciona uno de los botones o escribe en formato **DD/MM/YYYY** o "Mañana".', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
         }
         
-        const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        const todayStr = this._getLocalDateStr();
         if (parsedDate < todayStr) {
-          return { text: 'No puedes reservar en una fecha pasada. Por favor selecciona una fecha válida o uno de los botones.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
+          return { text: '⚠️ No puedes reservar en una fecha pasada. Por favor selecciona una fecha válida de los botones o escribe una fecha a partir de hoy.', source: 'reservation', buttons: this._getNextDates(), requestGPS: false };
         }
 
         // Obtener disponibilidad real de la fecha solicitada
@@ -830,33 +830,77 @@ export class ChatBotReservationService {
           return { text: 'Formato de hora no válido. Escribe en formato **HH:MM** (ej: 10:30 o 08:30am).', source: 'reservation', buttons: null, requestGPS: false };
         }
 
-        // Validar choque de horario (mínimo 1 hora / 60 min entre reservas)
+        const targetDateStr = _reservationState.data.fechaReserva;
+        const currentTodayStr = this._getLocalDateStr();
+        const now = new Date();
+        const isToday = targetDateStr === currentTodayStr;
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+
+        const parseMin = (tStr) => {
+          if (!tStr) return -1;
+          const parts = String(tStr).split(':');
+          if (parts.length < 2) return -1;
+          return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        };
+
+        const reqMin = parseMin(parsedTime);
+
+        // 1. Validar si la fecha es hoy y la hora ya pasó o no cumple margen mínimo de 30 min
+        if (isToday && reqMin <= currentMin + 30) {
+          const dispo = await this._getSlotsForDate(targetDateStr);
+          if (dispo.validSlots && dispo.validSlots.length > 0) {
+            return {
+              text: `⚠️ La hora **${parsedTime}** ya no está disponible para hoy (ya pasó o no cuenta con los 30 minutos mínimos de anticipación).\n\nPor favor selecciona uno de los siguientes turnos disponibles para hoy o escribe una hora posterior:`,
+              source: 'reservation',
+              buttons: dispo.buttons,
+              requestGPS: false
+            };
+          } else {
+            return {
+              text: `⚠️ Por la hora actual ya no quedan turnos disponibles para hoy.\n\n¿Deseas agendar para otra fecha?`,
+              source: 'reservation',
+              buttons: this._getNextDates(),
+              requestGPS: false
+            };
+          }
+        }
+
+        // Validar choque de horario y límites de atención
         try {
-          const targetDateStr = _reservationState.data.fechaReserva;
-          const parseMin = (tStr) => {
-            if (!tStr) return -1;
-            const parts = String(tStr).split(':');
-            if (parts.length < 2) return -1;
-            return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-          };
-
-          const reqMin = parseMin(parsedTime);
-
-          const { data: existingReservasCheck } = await supabase
-            .from('reservas')
-            .select('hora_reserva, hora, estado')
-            .eq('fecha_reserva', targetDateStr)
-            .neq('estado', 'Cancelado');
-
           const { data: dispoData } = await supabase
             .from('disponibilidad_fechas')
             .select('*')
             .eq('fecha', targetDateStr);
 
+          let startMin = 8 * 60;
+          let endMin = 18 * 60;
           let maxCap = 1;
-          if (dispoData && dispoData.length > 0 && dispoData[0].capacidad_por_slot) {
-            maxCap = parseInt(dispoData[0].capacidad_por_slot, 10) || 1;
+
+          if (dispoData && dispoData.length > 0) {
+            const d = dispoData[0];
+            if (d.hora_inicio) startMin = parseMin(d.hora_inicio);
+            if (d.hora_fin) endMin = parseMin(d.hora_fin);
+            if (d.capacidad_por_slot) maxCap = parseInt(d.capacidad_por_slot, 10) || 1;
           }
+
+          // 2. Validar que la hora esté dentro del horario de atención del día
+          if (reqMin < startMin || reqMin > endMin) {
+            const formatH = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+            const dispo = await this._getSlotsForDate(targetDateStr);
+            return {
+              text: `⚠️ La hora **${parsedTime}** está fuera de nuestro horario de atención para esta fecha (${formatH(startMin)} a ${formatH(endMin)}).\n\nPor favor selecciona uno de los turnos disponibles o escribe otra hora:`,
+              source: 'reservation',
+              buttons: dispo.buttons,
+              requestGPS: false
+            };
+          }
+
+          // 3. Validar choque de horario (mínimo 1 hora / 60 min entre reservas según capacidad)
+          const { data: existingReservasCheck } = await supabase
+            .from('reservas')
+            .select('hora_reserva, hora, estado')
+            .eq('fecha_reserva', targetDateStr)
+            .neq('estado', 'Cancelado');
 
           const conflictingReservas = (existingReservasCheck || []).filter(r => {
             const rMin = parseMin(r.hora_reserva || r.hora);
@@ -880,7 +924,7 @@ export class ChatBotReservationService {
             };
           }
         } catch (e) {
-          console.error("Error al validar choque de horario:", e);
+          console.error("Error al validar horario:", e);
         }
 
         _reservationState.data.horaReserva = parsedTime;
@@ -1163,6 +1207,16 @@ export class ChatBotReservationService {
   }
 
   /**
+   * Obtiene la fecha local en formato YYYY-MM-DD
+   */
+  static _getLocalDateStr(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
    * Genera botones con las próximas fechas disponibles
    */
   static _getNextDates() {
@@ -1176,7 +1230,7 @@ export class ChatBotReservationService {
       if (d.getDay() === 0) continue; // Saltar domingo
       const dayName = i === 0 ? 'Hoy' : i === 1 ? 'Mañana' : dayNames[d.getDay()];
       const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const isoDate = d.toISOString().split('T')[0];
+      const isoDate = this._getLocalDateStr(d);
       dates.push({
         label: `📅 ${dayName} (${formatted})`,
         value: isoDate,
@@ -1274,11 +1328,7 @@ export class ChatBotReservationService {
 
       // Si es hoy, filtrar turnos que ya pasaron
       const now = new Date();
-      const localYear = now.getFullYear();
-      const localMonth = String(now.getMonth() + 1).padStart(2, '0');
-      const localDay = String(now.getDate()).padStart(2, '0');
-      const todayStr = `${localYear}-${localMonth}-${localDay}`;
-      
+      const todayStr = this._getLocalDateStr(now);
       const isToday = dateStr === todayStr;
       const currentMin = now.getHours() * 60 + now.getMinutes();
 
@@ -1355,17 +1405,22 @@ export class ChatBotReservationService {
 
     const now = new Date();
     if (clean.includes('hoy')) {
-      return now.toISOString().split('T')[0];
+      return this._getLocalDateStr(now);
+    }
+    if (clean.includes('ayer')) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return this._getLocalDateStr(yesterday);
     }
     if (clean.includes('mañana') || clean.includes('manana')) {
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
+      return this._getLocalDateStr(tomorrow);
     }
     if (clean.includes('pasado mañana') || clean.includes('pasado manana')) {
       const dayAfter = new Date(now);
       dayAfter.setDate(dayAfter.getDate() + 2);
-      return dayAfter.toISOString().split('T')[0];
+      return this._getLocalDateStr(dayAfter);
     }
 
     // Si ya es YYYY-MM-DD (de un botón)

@@ -691,8 +691,16 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
                           </div>
                         );
                       })()}
+                      {(ev.raw?.descripcion || (ev.raw?.ubicacion_gps && ev.raw.ubicacion_gps.includes('[Ref:'))) && (
+                        <div style={{ gridColumn: '1 / -1', padding: '8px 12px', backgroundColor: 'rgba(59, 130, 246, 0.08)', borderRadius: '6px', border: '1px solid rgba(59, 130, 246, 0.2)', fontSize: '13px' }}>
+                          <span style={{ color: '#3b82f6', fontWeight: 'bold' }}>🏠 Referencia Domicilio:</span>{' '}
+                          <span style={{ color: 'var(--text-main)' }}>{ev.raw.descripcion || ev.raw.ubicacion_gps.split('[Ref:')[1]?.replace(']', '').trim()}</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', gridColumn: '1 / -1', justifyContent: 'flex-end', marginTop: '4px' }}>
-                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>Bs.{ev.price}</span>
+                        <span style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-green)' }}>
+                          Bs.{ev.price} {Number(ev.raw?.propina) > 0 ? `(+ Bs.${ev.raw.propina} propina 🎁)` : ''}
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(ev)}
