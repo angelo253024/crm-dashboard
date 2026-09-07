@@ -678,6 +678,15 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       return;
     }
 
+    // Fase 2.3: Validación robusta de formato de teléfono (WhatsApp)
+    const phoneDigits = (clienteTelefono || '').replace(/\D/g, '');
+    const isPhoneValid = phoneDigits.length === 8 || (phoneDigits.length === 11 && phoneDigits.startsWith('591'));
+    if (!isPhoneValid) {
+      alert("⚠️ Por favor ingresa un número de teléfono celular válido de 8 dígitos para coordinar por WhatsApp (ej. 70012345 o 60012345).");
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!descripcionDomicilio || !descripcionDomicilio.trim()) {
       alert("⚠️ Por favor ingresa una descripción o referencia de tu domicilio para que el trabajador no se pierda al llegar.");
       setIsSubmitting(false);
@@ -1152,7 +1161,27 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
       {/* Grid de Servicios */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Cargando catálogo...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div 
+              key={i} 
+              className="service-glass-card" 
+              style={{ minHeight: '380px', pointerEvents: 'none', display: 'flex', flexDirection: 'column' }}
+            >
+              {/* Shimmer para imagen */}
+              <div className="skeleton-shimmer" style={{ height: '220px', width: '100%' }} />
+              {/* Shimmer para info */}
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '14px' }}>
+                <div className="skeleton-shimmer" style={{ height: '20px', width: '75%', borderRadius: '6px' }} />
+                <div className="skeleton-shimmer" style={{ height: '14px', width: '45%', borderRadius: '4px' }} />
+                <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px' }}>
+                  <div className="skeleton-shimmer" style={{ height: '28px', width: '70px', borderRadius: '6px' }} />
+                  <div className="skeleton-shimmer" style={{ height: '38px', width: '90px', borderRadius: '8px' }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : filteredServicios.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No hay servicios disponibles en esta categoría.</div>
       ) : (
@@ -1160,7 +1189,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           {filteredServicios.map(servicio => (
             <div 
               key={servicio.id} 
-              className="service-glass-card"
+              className="service-glass-card" 
               style={{
                 opacity: servicio.disponible !== false ? 1 : 0.6,
                 cursor: servicio.disponible !== false ? 'pointer' : 'default',
@@ -1172,7 +1201,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               {/* Imagen del Servicio */}
               <div style={{ height: '220px', backgroundColor: 'var(--bg-color)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
                 {servicio.imagen_url ? (
-                  <img src={servicio.imagen_url} alt={servicio.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={servicio.imagen_url} alt={servicio.nombre} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--text-muted)' }}>
                     <ImageIcon size={48} style={{ marginBottom: '8px' }} />
@@ -1418,8 +1447,44 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
                 </div>
                 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '6px' }}>Teléfono (WhatsApp)</label>
-                  <input type="tel" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} required placeholder="Ej. 70012345" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Teléfono (WhatsApp)</label>
+                    {clienteTelefono && (() => {
+                      const digits = clienteTelefono.replace(/\D/g, '');
+                      const valid = digits.length === 8 || (digits.length === 11 && digits.startsWith('591'));
+                      return (
+                        <span style={{ fontSize: '11px', color: valid ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
+                          {valid ? '✓ Teléfono válido' : '⚠️ Debe tener 8 dígitos'}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <input 
+                    type="tel" 
+                    value={clienteTelefono} 
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9+\s-]/g, '');
+                      setClienteTelefono(val);
+                    }} 
+                    required 
+                    placeholder="Ej. 70012345" 
+                    maxLength={16}
+                    style={{ 
+                      width: '100%', 
+                      padding: '12px', 
+                      borderRadius: '8px', 
+                      border: clienteTelefono && !((clienteTelefono.replace(/\D/g, '').length === 8) || (clienteTelefono.replace(/\D/g, '').length === 11 && clienteTelefono.replace(/\D/g, '').startsWith('591')))
+                        ? '1px solid #f59e0b'
+                        : '1px solid var(--border-color)', 
+                      backgroundColor: 'var(--bg-color)', 
+                      color: 'var(--text-main)',
+                      outline: 'none',
+                      transition: 'border-color 0.2s'
+                    }} 
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
+                    Ingresa un número de 8 dígitos para coordinar por WhatsApp.
+                  </span>
                 </div>
                 
                 <div>
