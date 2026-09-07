@@ -110,25 +110,59 @@ function ClientChat({ sessionId, onClose }) {
     }
   };
 
+  const [notifEnabled, setNotifEnabled] = useState(() => {
+    try {
+      return (typeof OneSignal !== 'undefined' && OneSignal.Notifications?.permission) || (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Auto-sincronizar suscripción en cuanto se abre el chat si ya hay permisos
+  useEffect(() => {
+    const autoSync = async () => {
+      try {
+        if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) {
+          const onesignalId = OneSignal.User.PushSubscription.id;
+          const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
+          let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
+          if (reservaId) query = query.eq('id', reservaId);
+          else query = query.eq('chat_session_id', sessionId);
+          await query;
+          setNotifEnabled(true);
+        }
+      } catch (e) {}
+    };
+    autoSync();
+  }, [sessionId]);
+
   const requestNotifPermission = async () => {
     try {
-      if (OneSignal.Notifications) {
+      if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
         await OneSignal.Notifications.requestPermission();
         if (OneSignal.Notifications.permission) {
-          const onesignalId = OneSignal.User.PushSubscription.id;
+          setNotifEnabled(true);
+          const onesignalId = OneSignal.User?.PushSubscription?.id;
           if (onesignalId) {
             const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
             let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
             if (reservaId) query = query.eq('id', reservaId);
             else query = query.eq('chat_session_id', sessionId);
-            
             await query;
-            alert("¡Notificaciones activadas! Te avisaremos cuando el trabajador responda.");
+            alert("¡Notificaciones Push activadas con éxito! Te avisaremos cuando el trabajador responda aunque cierres la pestaña.");
+          } else {
+            alert("¡Notificaciones activadas!");
           }
+        }
+      } else if ('Notification' in window) {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          setNotifEnabled(true);
+          alert("¡Notificaciones del navegador activadas!");
         }
       }
     } catch (e) {
-      console.error("Error con OneSignal:", e);
+      console.error("Error con notificaciones:", e);
     }
   };
 
@@ -137,8 +171,26 @@ function ClientChat({ sessionId, onClose }) {
       <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1E4C9A', color: '#fff', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold' }}>Chat con el Trabajador</h4>
-          <button type="button" onClick={requestNotifPermission} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', marginTop: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content' }}>
-            <Bell size={12} /> Activar Notificaciones
+          <button 
+            type="button" 
+            onClick={requestNotifPermission} 
+            style={{ 
+              background: notifEnabled ? 'rgba(46, 204, 113, 0.3)' : 'rgba(255,255,255,0.2)', 
+              border: notifEnabled ? '1px solid rgba(46, 204, 113, 0.6)' : 'none', 
+              color: '#fff', 
+              padding: '4px 8px', 
+              borderRadius: '4px', 
+              fontSize: '11px', 
+              marginTop: '6px', 
+              cursor: 'pointer', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              width: 'fit-content' 
+            }}
+          >
+            {notifEnabled ? <CheckCircle size={12} /> : <Bell size={12} />} 
+            {notifEnabled ? 'Notificaciones activas' : 'Activar Notificaciones Push'}
           </button>
         </div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', alignSelf: 'flex-start' }}><X size={18} /></button>
@@ -204,6 +256,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [success, setSuccess] = useState(false);
   const [confirmedReserva, setConfirmedReserva] = useState(null);
   const [showClientChat, setShowClientChat] = useState(false);
+  const [activeChatSessionId, setActiveChatSessionId] = useState(null);
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapPosition, setMapPosition] = useState({ lat: -17.783, lng: -63.180 }); // Centro de Santa Cruz
   const [zonasCobertura, setZonasCobertura] = useState([]);
@@ -276,15 +329,64 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const chatAudioRef = useRef(new Audio('/aternos-notification.mp3'));
 
-  const requestBrowserNotificationPermission = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      try {
-        await Notification.requestPermission();
-      } catch (e) {
-        console.warn('Error solicitando permisos de notificacion:', e);
-      }
+  const syncPushSubscriptionToReservas = async (pushId, ids) => {
+    if (!pushId || !ids || ids.length === 0) return;
+    try {
+      await supabase
+        .from('reservas')
+        .update({ cliente_onesignal_id: pushId })
+        .in('id', ids);
+    } catch (e) {
+      console.warn('Error syncing cliente_onesignal_id:', e);
     }
   };
+
+  const requestBrowserNotificationPermission = async () => {
+    try {
+      if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
+        if (!OneSignal.Notifications.permission) {
+          await OneSignal.Notifications.requestPermission();
+        }
+        const pushId = OneSignal.User?.PushSubscription?.id;
+        if (pushId && activeReservasIdsRef.current && activeReservasIdsRef.current.length > 0) {
+          syncPushSubscriptionToReservas(pushId, activeReservasIdsRef.current);
+        }
+      } else if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    } catch (e) {
+      console.warn('Error solicitando permisos de notificacion:', e);
+    }
+  };
+
+  // Sincronizar automáticamente el pushSubscription ID con las reservas activas
+  useEffect(() => {
+    const handlePushChange = () => {
+      try {
+        const pushId = OneSignal.User?.PushSubscription?.id;
+        if (pushId && activeReservasIdsRef.current && activeReservasIdsRef.current.length > 0) {
+          syncPushSubscriptionToReservas(pushId, activeReservasIdsRef.current);
+        }
+      } catch (err) {
+        console.warn('Error on push subscription change:', err);
+      }
+    };
+
+    try {
+      if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription) {
+        OneSignal.User.PushSubscription.addEventListener('change', handlePushChange);
+        handlePushChange();
+      }
+    } catch (e) {}
+
+    return () => {
+      try {
+        if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription) {
+          OneSignal.User.PushSubscription.removeEventListener('change', handlePushChange);
+        }
+      } catch (e) {}
+    };
+  }, []);
 
   // Generador de slots en intervalos de 30 min para el horario comercial (08:30 a 18:00)
   const generateBusinessTimeSlots = (startStr = '08:30', endStr = '18:00') => {
@@ -448,6 +550,50 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       if (!selectedReservaId) setSelectedReservaId(initialReservas[0].id);
       checkReservaStatus(initialReservas.map(r => r.id));
     }
+
+    // Escuchar parámetros de URL para abrir chat directamente desde la notificación push (?chat=...)
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const chatParam = searchParams.get('chat');
+      if (chatParam) {
+        setActiveChatSessionId(chatParam);
+        setShowClientChat(true);
+
+        const isFallback = chatParam.startsWith('fallback_');
+        const rId = isFallback ? chatParam.replace('fallback_', '') : null;
+        let q = supabase.from('reservas').select('*');
+        if (rId) q = q.eq('id', rId);
+        else q = q.eq('chat_session_id', chatParam);
+
+        q.maybeSingle().then(({ data, error }) => {
+          if (!error && data) {
+            setActiveReservas(prev => {
+              if (prev.some(r => r.id === data.id)) return prev;
+              const updated = [data, ...prev];
+              localStorage.setItem('active_reservas_list_v2', JSON.stringify(updated));
+              return updated;
+            });
+            setSelectedReservaId(data.id);
+          }
+        }).catch(err => console.warn('Error buscando reserva del chat:', err));
+
+        // Limpiar suavemente de la URL para que no quede el query string
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    } catch (e) {
+      console.warn('Error procesando parámetro ?chat:', e);
+    }
+
+    const handleOpenClientChat = (e) => {
+      const sid = e?.detail?.sessionId;
+      if (sid) {
+        setActiveChatSessionId(sid);
+        setShowClientChat(true);
+      }
+    };
+    window.addEventListener('open-client-chat', handleOpenClientChat);
+    return () => window.removeEventListener('open-client-chat', handleOpenClientChat);
   }, []);
 
   const activeReservasIdsRef = useRef([]);
@@ -473,6 +619,16 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     if (!error && data) {
       setActiveReservas(data);
       localStorage.setItem('active_reservas_list_v2', JSON.stringify(data));
+      // Auto-sincronizar cliente_onesignal_id si ya hay suscripción activa en el navegador
+      try {
+        const pushId = (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) ? OneSignal.User.PushSubscription.id : null;
+        if (pushId) {
+          const needsSync = data.filter(r => !r.cliente_onesignal_id || r.cliente_onesignal_id !== pushId).map(r => r.id);
+          if (needsSync.length > 0) {
+            syncPushSubscriptionToReservas(pushId, needsSync);
+          }
+        }
+      } catch (e) {}
     }
   };
 
@@ -505,11 +661,16 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
             // Notificación nativa del navegador / sistema operativo
             if ('Notification' in window && Notification.permission === 'granted') {
               try {
-                new Notification('Lavamóvil Norte - Mensaje del Lavador 🛵💬', {
+                const notif = new Notification('Lavamóvil Norte - Mensaje del Lavador 🛵💬', {
                   body: payload.new.contenido || 'Tienes un nuevo mensaje sobre tu lavado.',
                   icon: '/logo.png',
                   tag: 'chat-msg-' + payload.new.id
                 });
+                notif.onclick = () => {
+                  window.focus();
+                  setActiveChatSessionId(payload.new.session_id);
+                  setShowClientChat(true);
+                };
               } catch (err) {
                 console.log('Error triggering Notification:', err);
               }
@@ -849,6 +1010,8 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       return;
     }
 
+    const pushSubId = (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) ? OneSignal.User.PushSubscription.id : null;
+
     const insertPayload = {
       cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
       vehiculo: `${vehiculo}${additionalNames}`,
@@ -862,15 +1025,21 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       trabajador_id: trabajadorId,
       estado_reserva: estadoReserva,
       chat_session_id: newChatSessionId,
-      servicios_detalle: serviciosDetalleJSON
+      servicios_detalle: serviciosDetalleJSON,
+      cliente_onesignal_id: pushSubId
     };
 
     let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
 
-    if (error && error.message && error.message.includes('descripcion')) {
-      // Fallback resiliente si la columna 'descripcion' aún no existe en Supabase
-      delete insertPayload.descripcion;
-      insertPayload.ubicacion_gps = `${ubicacion} [Ref: ${descripcionDomicilio.trim()}]`;
+    if (error && error.message && (error.message.includes('descripcion') || error.message.includes('cliente_onesignal_id'))) {
+      // Fallback resiliente si la columna aún no existe en Supabase
+      if (error.message.includes('cliente_onesignal_id')) {
+        delete insertPayload.cliente_onesignal_id;
+      }
+      if (error.message.includes('descripcion')) {
+        delete insertPayload.descripcion;
+        insertPayload.ubicacion_gps = `${ubicacion} [Ref: ${descripcionDomicilio.trim()}]`;
+      }
       const retry = await supabase.from('reservas').insert([insertPayload]).select();
       insertData = retry.data;
       error = retry.error;
@@ -888,6 +1057,25 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         localStorage.setItem('active_reservas_list_v2', JSON.stringify(updatedArr));
       }
       setSuccess(true);
+
+      // Solicitar o sincronizar suscripción push en segundo plano para avisar al cliente si cierra la pestaña
+      try {
+        if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
+          if (!OneSignal.Notifications.permission) {
+            OneSignal.Notifications.requestPermission().then(() => {
+              const freshPushId = OneSignal.User?.PushSubscription?.id;
+              if (freshPushId && insertData && insertData[0]?.id) {
+                supabase.from('reservas').update({ cliente_onesignal_id: freshPushId }).eq('id', insertData[0].id).then();
+              }
+            }).catch(() => {});
+          } else if (insertData && insertData[0]?.id) {
+            const freshPushId = OneSignal.User?.PushSubscription?.id;
+            if (freshPushId && !insertData[0].cliente_onesignal_id) {
+              supabase.from('reservas').update({ cliente_onesignal_id: freshPushId }).eq('id', insertData[0].id).then();
+            }
+          }
+        }
+      } catch (err) {}
       
       // Guardar perfil de cliente registrado (SOLO Nombre, Teléfono y Vehículo - NO ubicación)
       if (recordarCliente && clienteNombre && clienteTelefono) {
@@ -1823,12 +2011,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       )}
 
       {/* Floating Chat For Client */}
-      {showClientChat && (confirmedReserva || activeReservas.length > 0) && (() => {
+      {showClientChat && (activeChatSessionId || confirmedReserva || activeReservas.length > 0) && (() => {
         const chatReserva = confirmedReserva || activeReservas.find(r => r.id === selectedReservaId) || activeReservas[0];
+        const targetSessionId = activeChatSessionId || (chatReserva ? (chatReserva.chat_session_id || `fallback_${chatReserva.id}`) : null);
+        if (!targetSessionId) return null;
         return (
           <ClientChat 
-            sessionId={chatReserva.chat_session_id || `fallback_${chatReserva.id}`} 
-            onClose={() => setShowClientChat(false)} 
+            sessionId={targetSessionId} 
+            onClose={() => {
+              setShowClientChat(false);
+              setActiveChatSessionId(null);
+            }} 
           />
         );
       })()}

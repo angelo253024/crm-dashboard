@@ -83,6 +83,24 @@ function App() {
             enable: false, // Deshabilitado para no molestar a los clientes con la campanita
           },
         });
+
+        // Escuchar clics en notificaciones Push para abrir el chat del cliente directamente
+        if (OneSignal.Notifications) {
+          OneSignal.Notifications.addEventListener('click', (event) => {
+            try {
+              const data = event?.notification?.additionalData;
+              const sessionId = data?.session_id || data?.chat_session_id;
+              if (sessionId) {
+                window.dispatchEvent(new CustomEvent('open-client-chat', { detail: { sessionId } }));
+                if (!window.location.pathname.startsWith('/reservar')) {
+                  window.location.href = `/reservar?chat=${encodeURIComponent(sessionId)}`;
+                }
+              }
+            } catch (e) {
+              console.log('Error handling OneSignal notification click:', e);
+            }
+          });
+        }
       } catch (error) {
         console.error("Error al inicializar OneSignal:", error);
       }
