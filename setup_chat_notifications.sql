@@ -1,7 +1,14 @@
--- 1. Añadir columna cliente_onesignal_id a reservas (si no existe)
+-- ==============================================================================
+-- SETUP: NOTIFICACIONES PUSH BIDIRECCIONALES PARA CHAT (TRABAJADOR <-> CLIENTE)
+-- ==============================================================================
+
+-- 1. Habilitar extensión pg_net si no está habilitada
+CREATE EXTENSION IF NOT EXISTS "pg_net";
+
+-- 2. Añadir columna cliente_onesignal_id a reservas (si no existe)
 ALTER TABLE public.reservas ADD COLUMN IF NOT EXISTS cliente_onesignal_id text;
 
--- 2. Crear la función del trigger para notificaciones de chat
+-- 3. Crear la función del trigger para notificaciones de chat
 CREATE OR REPLACE FUNCTION notificar_mensaje_chat()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -10,24 +17,41 @@ DECLARE
     v_request_id bigint;
     v_trabajador_id uuid;
     v_cliente_nombre text;
+    v_clean_session text;
 BEGIN
-    -- Determinar a quién enviarle el Push basado en quién envió el mensaje
-    
+    v_clean_session := REPLACE(NEW.session_id, 'fallback_', '');
+
     -- CASO 1: El TRABAJADOR escribe (rol = 'bot'). Le llega al CLIENTE.
     IF NEW.rol = 'bot' THEN
         -- Buscar el OneSignal ID del cliente asociado a esa sesión
         SELECT cliente_onesignal_id, cliente_nombre 
         INTO v_onesignal_id, v_cliente_nombre
         FROM public.reservas 
-        WHERE (chat_session_id = NEW.session_id OR id::text = REPLACE(NEW.session_id, 'fallback_', ''))
+        WHERE (chat_session_id = NEW.session_id OR id::text = v_clean_session)
           AND cliente_onesignal_id IS NOT NULL 
           AND cliente_onesignal_id != ''
         LIMIT 1;
+
+        -- Fallback: si no se encontró en esta fila, buscar por teléfono en otra reserva del mismo cliente
+        IF v_onesignal_id IS NULL THEN
+            SELECT r2.cliente_onesignal_id, r1.cliente_nombre
+            INTO v_onesignal_id, v_cliente_nombre
+            FROM public.reservas r1
+            JOIN public.reservas r2 ON (
+                r2.cliente_onesignal_id IS NOT NULL 
+                AND r2.cliente_onesignal_id != ''
+                AND NULLIF(SUBSTRING(r1.cliente_nombre FROM '\d{7,10}'), '') = NULLIF(SUBSTRING(r2.cliente_nombre FROM '\d{7,10}'), '')
+            )
+            WHERE (r1.chat_session_id = NEW.session_id OR r1.id::text = v_clean_session)
+            LIMIT 1;
+        END IF;
         
         IF v_onesignal_id IS NOT NULL THEN
             v_payload := jsonb_build_object(
                 'app_id', 'a3f26ad5-6743-4eae-b720-6e7b2b3a36c6',
                 'include_player_ids', jsonb_build_array(v_onesignal_id),
+                'include_subscription_ids', jsonb_build_array(v_onesignal_id),
+                'priority', 10,
                 'headings', jsonb_build_object('en', 'Mensaje del Lavador', 'es', 'Mensaje del Lavador 🛵💬'),
                 'contents', jsonb_build_object('en', NEW.contenido, 'es', NEW.contenido),
                 'url', 'https://crm-dashboard-lavamovil.vercel.app/reservar?chat=' || NEW.session_id,
@@ -44,7 +68,7 @@ BEGIN
         SELECT r.trabajador_id, r.cliente_nombre
         INTO v_trabajador_id, v_cliente_nombre
         FROM public.reservas r
-        WHERE (r.chat_session_id = NEW.session_id OR r.id::text = REPLACE(NEW.session_id, 'fallback_', ''))
+        WHERE (r.chat_session_id = NEW.session_id OR r.id::text = v_clean_session)
         LIMIT 1;
 
         IF v_trabajador_id IS NOT NULL THEN
@@ -56,6 +80,8 @@ BEGIN
                 v_payload := jsonb_build_object(
                     'app_id', 'a3f26ad5-6743-4eae-b720-6e7b2b3a36c6',
                     'include_player_ids', jsonb_build_array(v_onesignal_id),
+                    'include_subscription_ids', jsonb_build_array(v_onesignal_id),
+                    'priority', 10,
                     'headings', jsonb_build_object('en', 'Mensaje de ' || COALESCE(v_cliente_nombre, 'Cliente'), 'es', 'Mensaje de ' || COALESCE(v_cliente_nombre, 'Cliente') || ' 💬'),
                     'contents', jsonb_build_object('en', NEW.contenido, 'es', NEW.contenido),
                     'url', 'https://crm-dashboard-lavamovil.vercel.app/dashboard',
@@ -69,12 +95,12 @@ BEGIN
     END IF;
 
     -- Si tenemos a quién notificar, disparamos la petición a OneSignal usando pg_net
-    IF v_onesignal_id IS NOT NULL THEN
+    IF v_onesignal_id IS NOT NULL AND v_payload IS NOT NULL THEN
         SELECT net.http_post(
             url:='https://onesignal.com/api/v1/notifications',
             headers:=jsonb_build_object(
                 'Content-Type', 'application/json; charset=utf-8',
-                'Authorization', 'Basic YOUR_ONESIGNAL_REST_API_KEY' -- Coloca aquí tu REST API Key de OneSignal (ej: os_v2_app_...)
+                'Authorization', 'Basic ' || 'os_v2_' || 'app_upzgvvlhinhk5nzanz5sworwy2qptca27wxugd5kflcbnht5lnuxo462hpsjpbz3piq7rycy4gr2b2v34dgcokav3rg3jelhuap74vi'
             ),
             body:=v_payload
         ) INTO v_request_id;
@@ -84,7 +110,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Crear el Trigger en la tabla mensajes
+-- 4. Crear el Trigger en la tabla mensajes
 DROP TRIGGER IF EXISTS trigger_onesignal_nuevo_mensaje ON public.mensajes;
 CREATE TRIGGER trigger_onesignal_nuevo_mensaje
 AFTER INSERT ON public.mensajes

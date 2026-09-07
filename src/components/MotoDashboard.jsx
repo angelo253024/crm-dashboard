@@ -4,9 +4,10 @@ import OneSignal from 'react-onesignal';
 import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3, Car, Sparkles, FileText } from 'lucide-react';
 import KpiCards from './KpiCards';
 import { getMapUrls } from '../utils/navigationUrls';
+import { sendDirectWorkerPush } from '../utils/oneSignalHelper';
 
 // --- Inline Chat Component for Worker ---
-function MotoChat({ sessionId, onClose }) {
+function MotoChat({ sessionId, onClose, workerName }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
@@ -84,6 +85,51 @@ function MotoChat({ sessionId, onClose }) {
         if (prev.some(m => m.id === data.id)) return prev;
         return [...prev, data];
       });
+
+      // Envío de Notificación Push Directa al cliente
+      try {
+        const cleanSession = sessionId.replace('fallback_', '');
+        supabase
+          .from('reservas')
+          .select('id, cliente_onesignal_id, cliente_nombre')
+          .or(`chat_session_id.eq.${sessionId},id.eq.${cleanSession}`)
+          .limit(1)
+          .maybeSingle()
+          .then(async ({ data: resData }) => {
+            let targetPushId = resData?.cliente_onesignal_id;
+
+            // Si la fila no tiene push_id, buscar por teléfono en otra reserva del cliente
+            if (!targetPushId && resData?.cliente_nombre) {
+              const match = resData.cliente_nombre.match(/\d{7,10}/);
+              if (match) {
+                const { data: altRes } = await supabase
+                  .from('reservas')
+                  .select('cliente_onesignal_id')
+                  .ilike('cliente_nombre', `%${match[0]}%`)
+                  .not('cliente_onesignal_id', 'is', null)
+                  .limit(1)
+                  .maybeSingle();
+
+                if (altRes?.cliente_onesignal_id) {
+                  targetPushId = altRes.cliente_onesignal_id;
+                  supabase.from('reservas').update({ cliente_onesignal_id: targetPushId }).eq('id', resData.id).then();
+                }
+              }
+            }
+
+            if (targetPushId) {
+              await sendDirectWorkerPush({
+                targetPushId,
+                workerName: workerName || 'Tu Lavador',
+                message: msg,
+                sessionId
+              });
+            }
+          })
+          .catch(err => console.warn('Error en consulta para push notification:', err));
+      } catch (pushErr) {
+        console.warn('Error resolviendo push notification para cliente:', pushErr);
+      }
     }
   };
 
@@ -1762,7 +1808,7 @@ export default function MotoDashboard({ user }) {
       )}
       
       {activeChatSession && (
-        <MotoChat sessionId={activeChatSession} onClose={() => setActiveChatSession(null)} />
+        <MotoChat sessionId={activeChatSession} onClose={() => setActiveChatSession(null)} workerName={user?.nombre || "Tu Lavador"} />
       )}
 
       {/* Payment Modal */}

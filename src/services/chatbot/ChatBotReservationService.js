@@ -3,6 +3,7 @@ import { GeminiService } from './GeminiService';
 import { geofencingService } from '../geofencing/GeofencingService';
 import { VehicleClassifier } from './VehicleClassifier';
 import { autoAssignWorker } from '../../utils/autoAssignWorker';
+import { getPushSubscriptionId, syncPushIdToReservas } from '../../utils/oneSignalHelper';
 
 /**
  * ChatBotReservationService — Máquina de estados para reservas guiadas desde el chatbot.
@@ -1178,12 +1179,7 @@ export class ChatBotReservationService {
       const additionalNames = extras.length > 0 ? ` (Adicionales: ${extras.map(s => s.nombre).join(', ')})` : '';
       const finalVehiculo = `${d.vehiculo}${additionalNames}`;
 
-      let pushSubId = null;
-      try {
-        if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) {
-          pushSubId = OneSignal.User.PushSubscription.id;
-        }
-      } catch(e) {}
+      let pushSubId = getPushSubscriptionId();
 
       const insertPayload = {
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
@@ -1240,6 +1236,11 @@ export class ChatBotReservationService {
           if (!currentIds.includes(createdReserva.id)) {
             currentIds = [createdReserva.id, ...currentIds];
             localStorage.setItem('active_reservation_ids', JSON.stringify(currentIds));
+          }
+
+          // Si hay pushSubId, asegurar sincronización en todas las reservas del cliente
+          if (pushSubId) {
+            syncPushIdToReservas(pushSubId, d.clienteTelefono, [createdReserva.id]);
           }
 
           window.dispatchEvent(new CustomEvent('nueva-reserva-activa', { detail: createdReserva }));

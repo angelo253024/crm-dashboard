@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageSquare, X, Send, Trash2, Loader2, Sparkles, Database, Bot, MapPin } from 'lucide-react';
 import { HybridAIService } from '../services/chatbot/HybridAIService';
 import { geofencingService } from '../services/geofencing/GeofencingService';
+import { requestPushPermission } from '../utils/oneSignalHelper';
 import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -163,6 +164,9 @@ export default function ChatBotWidget() {
       window.open(reply.url, '_blank');
       return;
     }
+    if (reply.intent === 'reservar' || (reply.label && reply.label.toLowerCase().includes('reservar'))) {
+      requestPushPermission().catch(() => {});
+    }
     setMessages(prev => [...prev, { id: Date.now(), text: reply.label, sender: 'user', source: null }]);
     await sendMessageToService(reply.intent);
   };
@@ -171,6 +175,9 @@ export default function ChatBotWidget() {
     if (btn.isLink) {
       window.open(btn.url, '_blank');
       return;
+    }
+    if (btn.label && (btn.label.toLowerCase().includes('confirmar') || btn.label.toLowerCase().includes('reservar'))) {
+      requestPushPermission().catch(() => {});
     }
     setMessages(prev => [...prev, { id: Date.now(), text: btn.label, sender: 'user', source: null }]);
     await sendMessageToService(btn.value || btn.label);

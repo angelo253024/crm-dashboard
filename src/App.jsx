@@ -72,17 +72,37 @@ function App() {
     return false; // Default to light mode as requested
   });
 
-  // Inicializar OneSignal
+  // Inicializar OneSignal y sincronización global de notificaciones
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.OneSignal = OneSignal;
+    }
+
     const initOneSignal = async () => {
       try {
         await OneSignal.init({
           appId: "a3f26ad5-6743-4eae-b720-6e7b2b3a36c6",
           allowLocalhostAsSecureOrigin: true,
+          serviceWorkerPath: "/OneSignalSDKWorker.js",
+          serviceWorkerParam: { scope: "/" },
           notifyButton: {
-            enable: false, // Deshabilitado para no molestar a los clientes con la campanita
+            enable: false, // Controlado por nuestra UI personalizada
           },
         });
+
+        // Capturar y almacenar localmente el Push Subscription ID tan pronto esté disponible
+        const handlePushIdSync = () => {
+          const pushId = OneSignal.User?.PushSubscription?.id;
+          if (pushId) {
+            localStorage.setItem('onesignal_push_id', pushId);
+            window.dispatchEvent(new CustomEvent('onesignal-push-ready', { detail: { pushId } }));
+          }
+        };
+
+        handlePushIdSync();
+        if (OneSignal.User?.PushSubscription) {
+          OneSignal.User.PushSubscription.addEventListener('change', handlePushIdSync);
+        }
 
         // Escuchar clics en notificaciones Push para abrir el chat del cliente directamente
         if (OneSignal.Notifications) {
@@ -108,28 +128,25 @@ function App() {
     initOneSignal();
   }, []);
 
-  // Sincronizar usuario con OneSignal
+  // Sincronizar usuario con OneSignal (para trabajadores logueados)
   useEffect(() => {
     if (user && user.id && user.id !== 'local-demo') {
       try {
-        // Enlazar el dispositivo actual con el ID del trabajador
         if (OneSignal.User) {
           OneSignal.login(user.id);
           
-          // Opcional: Obtener el push subscription ID para guardarlo en BD si se requiere
           const handlePushSubscription = async () => {
-             if (OneSignal.User.PushSubscription.id) {
+             const pushId = OneSignal.User?.PushSubscription?.id || localStorage.getItem('onesignal_push_id');
+             if (pushId) {
                  const { supabase } = await import('./supabase');
                  await supabase
                      .from('trabajadores')
-                     .update({ onesignal_id: OneSignal.User.PushSubscription.id })
+                     .update({ onesignal_id: pushId })
                      .eq('id', user.id);
              }
           };
           
-          // Escuchar cambios de suscripción
           OneSignal.User.PushSubscription.addEventListener('change', handlePushSubscription);
-          // Ejecutar por si ya estaba suscrito
           handlePushSubscription();
         }
       } catch (e) {

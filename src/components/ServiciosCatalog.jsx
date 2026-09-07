@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Image as ImageIcon, Droplets, CheckCircle, X, Moon, Sun, Send, MessageSquare, MapPin, Bell } from 'lucide-react';
 import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
+import { getPushSubscriptionId, requestPushPermission, syncPushIdToReservas } from '../utils/oneSignalHelper';
 import { geofencingService } from '../services/geofencing/GeofencingService';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
@@ -122,8 +123,8 @@ function ClientChat({ sessionId, onClose }) {
   useEffect(() => {
     const autoSync = async () => {
       try {
-        if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) {
-          const onesignalId = OneSignal.User.PushSubscription.id;
+        const onesignalId = getPushSubscriptionId();
+        if (onesignalId) {
           const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
           let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
           if (reservaId) query = query.eq('id', reservaId);
@@ -138,27 +139,19 @@ function ClientChat({ sessionId, onClose }) {
 
   const requestNotifPermission = async () => {
     try {
-      if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
-        await OneSignal.Notifications.requestPermission();
-        if (OneSignal.Notifications.permission) {
-          setNotifEnabled(true);
-          const onesignalId = OneSignal.User?.PushSubscription?.id;
-          if (onesignalId) {
-            const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
-            let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
-            if (reservaId) query = query.eq('id', reservaId);
-            else query = query.eq('chat_session_id', sessionId);
-            await query;
-            alert("¡Notificaciones Push activadas con éxito! Te avisaremos cuando el trabajador responda aunque cierres la pestaña.");
-          } else {
-            alert("¡Notificaciones activadas!");
-          }
-        }
-      } else if ('Notification' in window) {
-        const perm = await Notification.requestPermission();
-        if (perm === 'granted') {
-          setNotifEnabled(true);
-          alert("¡Notificaciones del navegador activadas!");
+      const { granted, pushId } = await requestPushPermission();
+      if (granted) {
+        setNotifEnabled(true);
+        const onesignalId = pushId || getPushSubscriptionId();
+        if (onesignalId) {
+          const reservaId = sessionId.startsWith('fallback_') ? sessionId.replace('fallback_', '') : null;
+          let query = supabase.from('reservas').update({ cliente_onesignal_id: onesignalId });
+          if (reservaId) query = query.eq('id', reservaId);
+          else query = query.eq('chat_session_id', sessionId);
+          await query;
+          alert("¡Notificaciones Push activadas con éxito! Te avisaremos cuando el trabajador responda aunque cierres la pestaña.");
+        } else {
+          alert("¡Notificaciones activadas!");
         }
       }
     } catch (e) {
@@ -327,59 +320,58 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   const [activeReservas, setActiveReservas] = useState([]);
   const [selectedReservaId, setSelectedReservaId] = useState(null);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [pushSubscriptionActive, setPushSubscriptionActive] = useState(() => {
+    return typeof Notification !== 'undefined' && Notification.permission === 'granted' && !!getPushSubscriptionId();
+  });
   const chatAudioRef = useRef(new Audio('/aternos-notification.mp3'));
 
-  const syncPushSubscriptionToReservas = async (pushId, ids) => {
-    if (!pushId || !ids || ids.length === 0) return;
+  const handleEnablePush = async () => {
     try {
-      await supabase
-        .from('reservas')
-        .update({ cliente_onesignal_id: pushId })
-        .in('id', ids);
-    } catch (e) {
-      console.warn('Error syncing cliente_onesignal_id:', e);
-    }
-  };
-
-  const requestBrowserNotificationPermission = async () => {
-    try {
-      if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
-        if (!OneSignal.Notifications.permission) {
-          await OneSignal.Notifications.requestPermission();
+      const { granted, pushId } = await requestPushPermission();
+      if (granted) {
+        setPushSubscriptionActive(true);
+        const pId = pushId || getPushSubscriptionId();
+        if (pId) {
+          const ids = activeReservas.map(r => r.id);
+          let phone = clienteTelefono;
+          try {
+            const prof = JSON.parse(localStorage.getItem('lavamovil_client_profile') || '{}');
+            if (!phone && prof.telefono) phone = prof.telefono;
+          } catch (e) {}
+          await syncPushIdToReservas(pId, phone, ids);
+          alert("¡Notificaciones Push activadas con éxito! Te avisaremos cuando el trabajador responda aunque cierres la pestaña.");
+        } else {
+          alert("¡Notificaciones activadas!");
         }
-        const pushId = OneSignal.User?.PushSubscription?.id;
-        if (pushId && activeReservasIdsRef.current && activeReservasIdsRef.current.length > 0) {
-          syncPushSubscriptionToReservas(pushId, activeReservasIdsRef.current);
-        }
-      } else if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
       }
-    } catch (e) {
-      console.warn('Error solicitando permisos de notificacion:', e);
+    } catch (err) {
+      console.warn('Error al activar notificaciones:', err);
     }
   };
 
   // Sincronizar automáticamente el pushSubscription ID con las reservas activas
   useEffect(() => {
     const handlePushChange = () => {
-      try {
-        const pushId = OneSignal.User?.PushSubscription?.id;
-        if (pushId && activeReservasIdsRef.current && activeReservasIdsRef.current.length > 0) {
-          syncPushSubscriptionToReservas(pushId, activeReservasIdsRef.current);
+      const pushId = getPushSubscriptionId();
+      if (pushId) {
+        setPushSubscriptionActive(true);
+        if (activeReservasIdsRef.current && activeReservasIdsRef.current.length > 0) {
+          syncPushIdToReservas(pushId, null, activeReservasIdsRef.current);
         }
-      } catch (err) {
-        console.warn('Error on push subscription change:', err);
       }
     };
 
+    window.addEventListener('onesignal-push-ready', handlePushChange);
     try {
       if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription) {
         OneSignal.User.PushSubscription.addEventListener('change', handlePushChange);
-        handlePushChange();
       }
     } catch (e) {}
 
+    handlePushChange();
+
     return () => {
+      window.removeEventListener('onesignal-push-ready', handlePushChange);
       try {
         if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription) {
           OneSignal.User.PushSubscription.removeEventListener('change', handlePushChange);
@@ -601,6 +593,13 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         const idsArray = Array.from(idsSet);
         localStorage.setItem('active_reservation_ids', JSON.stringify(idsArray));
         checkReservaStatus(idsArray);
+
+        // Si ya hay un push ID en este dispositivo, sincronizarlo inmediatamente con estas reservas
+        const currentPushId = getPushSubscriptionId();
+        if (currentPushId) {
+          setPushSubscriptionActive(true);
+          knownPhones.forEach(phone => syncPushIdToReservas(currentPushId, phone, idsArray));
+        }
       }
     };
 
@@ -717,11 +716,12 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       localStorage.setItem('active_reservas_list_v2', JSON.stringify(data));
       // Auto-sincronizar cliente_onesignal_id si ya hay suscripción activa en el navegador
       try {
-        const pushId = (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) ? OneSignal.User.PushSubscription.id : null;
+        const pushId = getPushSubscriptionId();
         if (pushId) {
+          setPushSubscriptionActive(true);
           const needsSync = data.filter(r => !r.cliente_onesignal_id || r.cliente_onesignal_id !== pushId).map(r => r.id);
           if (needsSync.length > 0) {
-            syncPushSubscriptionToReservas(pushId, needsSync);
+            syncPushIdToReservas(pushId, null, needsSync);
           }
         }
       } catch (e) {}
@@ -731,8 +731,6 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
   // Listener global en segundo plano para mensajes del trabajador dirigidos al cliente
   useEffect(() => {
     if (!activeReservas || activeReservas.length === 0) return;
-
-    requestBrowserNotificationPermission();
 
     const sessionIds = activeReservas.map(r => r.chat_session_id || `fallback_${r.id}`);
 
@@ -1107,7 +1105,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       return;
     }
 
-    const pushSubId = (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) ? OneSignal.User.PushSubscription.id : null;
+    const pushSubId = getPushSubscriptionId();
 
     const insertPayload = {
       cliente_nombre: `${clienteNombre} - Tel: ${clienteTelefono}`,
@@ -1159,22 +1157,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }
       setSuccess(true);
 
-      // Solicitar o sincronizar suscripción push en segundo plano para avisar al cliente si cierra la pestaña
+      // Sincronizar o solicitar suscripción push para avisar al cliente si cierra la pestaña
       try {
-        if (typeof OneSignal !== 'undefined' && OneSignal.Notifications) {
-          if (!OneSignal.Notifications.permission) {
-            OneSignal.Notifications.requestPermission().then(() => {
-              const freshPushId = OneSignal.User?.PushSubscription?.id;
-              if (freshPushId && insertData && insertData[0]?.id) {
-                supabase.from('reservas').update({ cliente_onesignal_id: freshPushId }).eq('id', insertData[0].id).then();
-              }
-            }).catch(() => {});
-          } else if (insertData && insertData[0]?.id) {
-            const freshPushId = OneSignal.User?.PushSubscription?.id;
-            if (freshPushId && !insertData[0].cliente_onesignal_id) {
-              supabase.from('reservas').update({ cliente_onesignal_id: freshPushId }).eq('id', insertData[0].id).then();
+        if (pushSubId && insertData && insertData[0]?.id) {
+          syncPushIdToReservas(pushSubId, clienteTelefono, [insertData[0].id]);
+        } else if (insertData && insertData[0]?.id) {
+          requestPushPermission().then(({ granted, pushId }) => {
+            if (granted && pushId) {
+              setPushSubscriptionActive(true);
+              syncPushIdToReservas(pushId, clienteTelefono, [insertData[0].id]);
             }
-          }
+          }).catch(() => {});
         }
       } catch (err) {}
       
@@ -1392,7 +1385,73 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </div>
             </div>
             
-            <div style={{ display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap' }}>
+            {/* Banner de Estado de Notificaciones Push */}
+            {pushSubscriptionActive || (typeof Notification !== 'undefined' && Notification.permission === 'granted') ? (
+              <div style={{
+                marginTop: '16px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle size={15} /> Notificaciones en segundo plano activas en este celular 📲
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Te avisaremos si el lavador te escribe</span>
+              </div>
+            ) : (
+              <div style={{
+                marginTop: '16px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(28, 169, 201, 0.12) 0%, rgba(30, 76, 154, 0.12) 100%)',
+                border: '1.5px solid #1CA9C9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Bell size={22} color="#1CA9C9" />
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: 'var(--text-main)' }}>
+                      ¿Quieres recibir avisos cuando el lavador te escriba?
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Te avisamos incluso con el navegador cerrado o pantalla bloqueada.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleEnablePush}
+                  style={{
+                    backgroundColor: '#1CA9C9',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(28, 169, 201, 0.4)'
+                  }}
+                >
+                  <Bell size={14} /> Activar Notificaciones 📲
+                </button>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => {
                   setUnreadChatCount(0);
