@@ -32,21 +32,26 @@ export class HybridAIService {
       // ========== PRIORIDAD 0: ¿Hay una reserva en curso? ==========
       if (ChatBotReservationService.isActive()) {
         const lowerMsg = userMessage.toLowerCase().trim();
-        const isCancelPhrase = (
-          ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lowerMsg) ||
-          lowerMsg.includes('cancelar') ||
-          lowerMsg.includes('consultar') ||
-          lowerMsg.includes('pregunta') ||
-          lowerMsg.includes('otra cosa') ||
-          lowerMsg.includes('otra duda') ||
-          lowerMsg.includes('quiero saber') ||
-          lowerMsg.includes('no quiero') ||
-          lowerMsg.includes('después') ||
-          lowerMsg.includes('luego') ||
-          lowerMsg.includes('espera')
-        );
+        const currentStep = ChatBotReservationService.getStep();
+        const isFreeTextStep = ['ASKING_DESCRIPTION', 'ASKING_LOCATION', 'ASKING_NAME', 'ASKING_VEHICLE'].includes(currentStep);
 
-        const intentPreCheck = await IntentClassifier.classify(userMessage);
+        const isCancelPhrase = isFreeTextStep
+          ? (['cancelar', 'salir', 'cancel', 'abortar', 'cancelar reserva', 'menu', 'volver'].includes(lowerMsg) || lowerMsg === 'cancelar')
+          : (
+            ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lowerMsg) ||
+            lowerMsg.includes('cancelar') ||
+            lowerMsg.includes('consultar') ||
+            lowerMsg.includes('pregunta') ||
+            lowerMsg.includes('otra cosa') ||
+            lowerMsg.includes('otra duda') ||
+            lowerMsg.includes('quiero saber') ||
+            lowerMsg.includes('no quiero') ||
+            lowerMsg.includes('después') ||
+            lowerMsg.includes('luego') ||
+            lowerMsg.includes('espera')
+          );
+
+        const intentPreCheck = isFreeTextStep ? 'UNKNOWN' : await IntentClassifier.classify(userMessage);
         
         // Si el usuario cancela o hace otra consulta conocida, cancelamos la reserva
         if (isCancelPhrase || (intentPreCheck !== 'UNKNOWN' && intentPreCheck !== 'reservar')) {

@@ -27,6 +27,7 @@ const STEPS = {
   ASKING_ADDITIONAL_PROMPT: 'ASKING_ADDITIONAL_PROMPT',
   ASKING_ADDITIONAL_SERVICE: 'ASKING_ADDITIONAL_SERVICE',
   ASKING_LOCATION: 'ASKING_LOCATION',
+  ASKING_DESCRIPTION: 'ASKING_DESCRIPTION',
   ASKING_DATE: 'ASKING_DATE',
   ASKING_TIME: 'ASKING_TIME',
   CONFIRM_DELAY: 'CONFIRM_DELAY',
@@ -35,6 +36,13 @@ const STEPS = {
 };
 
 export class ChatBotReservationService {
+
+  /**
+   * Obtiene el paso actual de la reserva
+   */
+  static getStep() {
+    return _reservationState ? _reservationState.step : STEPS.IDLE;
+  }
 
   /**
    * Verifica si hay una reserva en progreso
@@ -120,6 +128,7 @@ export class ChatBotReservationService {
         serviciosAdicionales: [],
         ubicacion: '',
         ubicacion_gps: '',
+        descripcion: '',
         fechaReserva: presetDate || '',
         horaReserva: presetTime || '',
       }
@@ -164,20 +173,23 @@ export class ChatBotReservationService {
     const input = userInput.trim();
     const lower = input.toLowerCase();
 
-    // Cancelar en cualquier momento si el usuario lo solicita o expresa otra intención
-    const isCancelExpression = (
-      ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lower) ||
-      lower.includes('cancelar') ||
-      lower.includes('consultar') ||
-      lower.includes('pregunta') ||
-      lower.includes('otra cosa') ||
-      lower.includes('otra duda') ||
-      lower.includes('quiero saber') ||
-      lower.includes('no quiero') ||
-      lower.includes('después') ||
-      lower.includes('luego') ||
-      lower.includes('espera')
-    );
+    // Cancelar en cualquier momento si el usuario lo solicita explícitamente
+    const isFreeTextStep = [STEPS.ASKING_DESCRIPTION, STEPS.ASKING_LOCATION, STEPS.ASKING_NAME, STEPS.ASKING_VEHICLE].includes(_reservationState.step);
+    const isCancelExpression = isFreeTextStep
+      ? (['cancelar', 'salir', 'cancel', 'abortar', 'cancelar reserva', 'menu', 'volver'].includes(lower) || lower === 'cancelar' || lower === 'cancelar reserva')
+      : (
+          ['cancelar', 'salir', 'no', 'cancelar reserva', 'cancel', 'abortar', 'pausar', 'parar', 'menu', 'atras', 'atrás', 'volver'].includes(lower) ||
+          lower.includes('cancelar') ||
+          lower.includes('consultar') ||
+          lower.includes('pregunta') ||
+          lower.includes('otra cosa') ||
+          lower.includes('otra duda') ||
+          lower.includes('quiero saber') ||
+          lower.includes('no quiero') ||
+          lower.includes('después') ||
+          lower.includes('luego') ||
+          lower.includes('espera')
+        );
 
     if (isCancelExpression) {
       return this.cancel();
@@ -677,6 +689,31 @@ export class ChatBotReservationService {
         _reservationState.data.ubicacion = locInfo.cleanAddress;
         _reservationState.data.ubicacion_gps = locInfo.cleanCoordinates || locInfo.cleanAddress;
 
+        _reservationState.step = STEPS.ASKING_DESCRIPTION;
+        const locConfirmHeader = locInfo.isGPS 
+          ? '📍 ¡Ubicación GPS registrada correctamente!\n\n' 
+          : '📍 Dirección registrada correctamente.\n\n';
+
+        return {
+          text: `${locConfirmHeader}🏠 **Por favor, indícanos la descripción o referencia de tu domicilio:**\n*(Es obligatorio para que el lavador llegue directamente sin perderse)*\n\n💡 **Ejemplos:**\n• *Nro. de casa / Condominio:* Ej. Condominio Sevilla Norte, Mza. 4, Casa 12\n• *Color de casa o portón:* Ej. Casa blanca de 2 pisos, portón negro con rejas\n• *Punto de referencia:* Ej. Al lado de la tienda Don Pepe, portón café`,
+          source: 'reservation',
+          buttons: null,
+          requestGPS: false,
+        };
+
+      case STEPS.ASKING_DESCRIPTION:
+        const cleanDesc = (typeof input === 'string' ? input : '').trim();
+        if (cleanDesc.length < 4) {
+          return {
+            text: '⚠️ **La descripción del lugar es obligatoria.**\n\nPor favor, indícanos detalles de tu domicilio para facilitar la llegada del lavador.\n\n💡 **Ejemplos:**\n• Nro. de casa o condominio (ej. *Condominio Las Palmas, Casa 8*)\n• Color de fachada o portón (ej. *Casa blanca, portón café*)\n• Referencias cercanas (ej. *Frente al parque, al lado de la farmacia*)',
+            source: 'reservation',
+            buttons: null,
+            requestGPS: false,
+          };
+        }
+
+        _reservationState.data.descripcion = cleanDesc;
+
         // Si la fecha y hora ya vienen fijadas por el Cierre Rápido (Punto 2)
         if (_reservationState.data.fechaReserva && _reservationState.data.horaReserva) {
           _reservationState.step = STEPS.CONFIRMING;
@@ -688,9 +725,7 @@ export class ChatBotReservationService {
         // Generar botones con fechas próximas
         const dateButtons = this._getNextDates();
         return {
-          text: locInfo.isGPS 
-            ? '📍 ¡Ubicación GPS registrada correctamente!\n\n📅 ¿Para qué **fecha** deseas el servicio?' 
-            : '📅 ¿Para qué **fecha** deseas el servicio?',
+          text: `✅ Referencia guardada: *"${cleanDesc}"*\n\n📅 ¿Para qué **fecha** deseas el servicio?`,
           source: 'reservation',
           buttons: dateButtons,
           requestGPS: false,
@@ -1016,7 +1051,7 @@ export class ChatBotReservationService {
             
             // Ficha formal y estructurada de cierre de cita (Punto 5)
             return {
-              text: `🎉 **¡Tu reserva está confirmada con éxito!**\n\n📋 **Ficha de tu Servicio:**\n━━━━━━━━━━━━━━━━━━━━━━\n👤 **Cliente:** ${reserva.clienteNombre}\n📱 **WhatsApp:** ${reserva.clienteTelefono}\n🚗 **Vehículo:** ${reserva.vehiculo}\n🧼 **Servicio:** ${reserva.servicioNombre}${extrasList}\n💰 **Total a Pagar:** Bs. ${reserva.servicioPrecio}\n📅 **Fecha:** ${fechaLegible}\n🕐 **Hora programada:** ${reserva.horaReserva}\n📍 **Ubicación:** ${ubicacionLimpia}${demoraMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🛵 **Estado:** Confirmada y en cola de despacho.\n🔔 Te notificaremos en cuanto tu lavador asignado vaya en camino hacia tu ubicación.\n\n¡Muchas gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
+              text: `🎉 **¡Tu reserva está confirmada con éxito!**\n\n📋 **Ficha de tu Servicio:**\n━━━━━━━━━━━━━━━━━━━━━━\n👤 **Cliente:** ${reserva.clienteNombre}\n📱 **WhatsApp:** ${reserva.clienteTelefono}\n🚗 **Vehículo:** ${reserva.vehiculo}\n🧼 **Servicio:** ${reserva.servicioNombre}${extrasList}\n💰 **Total a Pagar:** Bs. ${reserva.servicioPrecio}\n📅 **Fecha:** ${fechaLegible}\n🕐 **Hora programada:** ${reserva.horaReserva}\n📍 **Ubicación:** ${ubicacionLimpia}${reserva.descripcion ? `\n🏠 **Referencia:** ${reserva.descripcion}` : ''}${demoraMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🛵 **Estado:** Confirmada y en cola de despacho.\n🔔 Te notificaremos en cuanto tu lavador asignado vaya en camino hacia tu ubicación.\n\n¡Muchas gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
@@ -1141,10 +1176,11 @@ export class ChatBotReservationService {
       const additionalNames = extras.length > 0 ? ` (Adicionales: ${extras.map(s => s.nombre).join(', ')})` : '';
       const finalVehiculo = `${d.vehiculo}${additionalNames}`;
 
-      const { data: insertData, error } = await supabase.from('reservas').insert([{
+      const insertPayload = {
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
         vehiculo: finalVehiculo,
         ubicacion_gps: d.ubicacion_gps || d.ubicacion,
+        descripcion: (d.descripcion || '').trim(),
         fecha_reserva: d.fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: d.servicioId,
@@ -1154,7 +1190,18 @@ export class ChatBotReservationService {
         estado_reserva: estadoReserva,
         chat_session_id: newChatSessionId,
         servicios_detalle: serviciosDetalleJSON
-      }]).select();
+      };
+
+      let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
+
+      if (error && error.message && error.message.includes('descripcion')) {
+        // Fallback resiliente si la columna 'descripcion' aún no existe en Supabase
+        delete insertPayload.descripcion;
+        insertPayload.ubicacion_gps = `${d.ubicacion_gps || d.ubicacion} [Ref: ${(d.descripcion || '').trim()}]`;
+        const retry = await supabase.from('reservas').insert([insertPayload]).select();
+        insertData = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         return { success: false, error: error.message };
@@ -1389,7 +1436,7 @@ export class ChatBotReservationService {
     const delayHeader = hasDelay ? ' (Con Margen de Demora)' : '';
 
     return {
-      text: `📋 **Resumen de tu Reserva${delayHeader}:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Deseas confirmar la cita?`,
+      text: `📋 **Resumen de tu Reserva${delayHeader}:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}${d.descripcion ? `\n🏠 **Referencia / Domicilio:** ${d.descripcion}` : ''}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Deseas confirmar la cita?`,
       source: 'reservation',
       buttons: confirmButtons,
       requestGPS: false,
