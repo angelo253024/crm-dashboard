@@ -525,31 +525,86 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     fetchServicios();
     loadSavedClientProfiles();
     
-    // Check local storage for active reservations
-    const savedReservas = localStorage.getItem('active_reservas_list_v2');
-    let initialReservas = [];
-    if (savedReservas) {
-      try {
-        initialReservas = JSON.parse(savedReservas);
-      } catch (e) {
-        console.error(e);
-      }
-    } else {
-      // Migración de la versión anterior
-      const oldReserva = localStorage.getItem('active_reserva_lavamovil');
-      if (oldReserva) {
+    // Cargar y sincronizar todas las reservas activas del cliente (manuales y chatbot)
+    const syncActiveClientReservations = async () => {
+      const savedReservas = localStorage.getItem('active_reservas_list_v2');
+      let initialReservas = [];
+      if (savedReservas) {
         try {
-          initialReservas = [JSON.parse(oldReserva)];
-          localStorage.setItem('active_reservas_list_v2', JSON.stringify(initialReservas));
-        } catch (e) {}
+          initialReservas = JSON.parse(savedReservas);
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        const oldReserva = localStorage.getItem('active_reserva_lavamovil');
+        if (oldReserva) {
+          try {
+            initialReservas = [JSON.parse(oldReserva)];
+            localStorage.setItem('active_reservas_list_v2', JSON.stringify(initialReservas));
+          } catch (e) {}
+        }
       }
-    }
-    
-    if (initialReservas.length > 0) {
-      setActiveReservas(initialReservas);
-      if (!selectedReservaId) setSelectedReservaId(initialReservas[0].id);
-      checkReservaStatus(initialReservas.map(r => r.id));
-    }
+      
+      const idsSet = new Set(initialReservas.map(r => r.id).filter(Boolean));
+
+      // Leer también active_reservation_ids
+      try {
+        const storedIdsStr = localStorage.getItem('active_reservation_ids');
+        if (storedIdsStr) {
+          const storedIds = JSON.parse(storedIdsStr);
+          if (Array.isArray(storedIds)) storedIds.forEach(id => idsSet.add(id));
+        }
+      } catch (e) {}
+
+      // Extraer teléfonos conocidos del cliente en este dispositivo
+      const knownPhones = new Set();
+      try {
+        const profileStr = localStorage.getItem('lavamovil_client_profile');
+        if (profileStr) {
+          const prof = JSON.parse(profileStr);
+          if (prof.telefono) knownPhones.add(prof.telefono.replace(/\D/g, ''));
+        }
+        const savedListStr = localStorage.getItem('lavamovil_saved_clients');
+        if (savedListStr) {
+          const sList = JSON.parse(savedListStr);
+          if (Array.isArray(sList)) sList.forEach(c => c?.telefono && knownPhones.add(c.telefono.replace(/\D/g, '')));
+        }
+      } catch (e) {}
+
+      // Extraer teléfono de las reservas ya guardadas
+      initialReservas.forEach(r => {
+        const match = (r.cliente_nombre || '').match(/Tel:\s*(\d+)/i);
+        if (match && match[1]) knownPhones.add(match[1]);
+      });
+
+      // Si tenemos teléfonos conocidos, consultar reservas activas recientes directamente en Supabase
+      for (const phone of knownPhones) {
+        if (phone.length >= 7) {
+          try {
+            const { data: dbRes } = await supabase
+              .from('reservas')
+              .select('*')
+              .ilike('cliente_nombre', `%${phone}%`)
+              .in('estado_reserva', ['pendiente', 'asignado', 'en_camino', 'en_proceso'])
+              .order('created_at', { ascending: false });
+
+            if (dbRes && dbRes.length > 0) {
+              dbRes.forEach(r => idsSet.add(r.id));
+            }
+          } catch (err) {
+            console.warn('Error sincronizando reservas por teléfono:', err);
+          }
+        }
+      }
+
+      if (idsSet.size > 0) {
+        const idsArray = Array.from(idsSet);
+        localStorage.setItem('active_reservation_ids', JSON.stringify(idsArray));
+        checkReservaStatus(idsArray);
+      }
+    };
+
+    syncActiveClientReservations();
 
     // Escuchar parámetros de URL para abrir chat directamente desde la notificación push (?chat=...)
     try {
@@ -1259,27 +1314,43 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         return (
           <div className="service-glass-card" style={{ maxWidth: '800px', margin: '0 auto 48px auto', padding: '24px', animation: 'fadeUp 0.8s ease-out 0.2s forwards' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle size={24} color="#1CA9C9" /> {activeReservas.length === 1 ? 'Mi Reserva Activa' : 'Mis Reservas Activas'}
+                  <CheckCircle size={24} color="#1CA9C9" /> {activeReservas.length === 1 ? 'Mi Reserva Activa' : `Mis Reservas Activas (${activeReservas.length})`}
                 </h2>
                 
                 {activeReservas.length > 1 && (
-                  <select 
-                    value={selectedReservaId || ''} 
-                    onChange={(e) => setSelectedReservaId(e.target.value)}
-                    style={{
-                      padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(28, 169, 201, 0.3)',
-                      backgroundColor: 'rgba(28, 169, 201, 0.1)', color: 'var(--text-main)', outline: 'none',
-                      fontWeight: 'bold', cursor: 'pointer'
-                    }}
-                  >
-                    {activeReservas.map((r, i) => (
-                      <option key={r.id} value={r.id} style={{ color: '#000' }}>
-                        Reserva {i + 1} - {r.vehiculo ? r.vehiculo.split(' (')[0] : 'Cargando...'}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {activeReservas.map((r, i) => {
+                      const isSelected = r.id === (selectedReservaId || activeReservas[0]?.id);
+                      const vehiculoCorto = (r.vehiculo || 'Vehículo').split(' (')[0];
+                      const servCorto = (r.servicio || (Array.isArray(r.servicios_detalle) && r.servicios_detalle[0]?.nombre) || 'Lavado').split('+')[0].trim();
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setSelectedReservaId(r.id)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            border: isSelected ? '2px solid #1CA9C9' : '1px solid var(--border-color)',
+                            backgroundColor: isSelected ? 'rgba(28, 169, 201, 0.2)' : 'var(--bg-color)',
+                            color: isSelected ? '#1CA9C9' : 'var(--text-muted)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <span>🚗 {vehiculoCorto}</span>
+                          <span style={{ fontSize: '11px', opacity: 0.8 }}>({servCorto})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               <div style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
@@ -1300,17 +1371,23 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </div>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Vehículo</p>
                 <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.vehiculo || 'Cargando información...'}</p>
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Servicio</p>
+                <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                  {reserva.servicio || (Array.isArray(reserva.servicios_detalle) && reserva.servicios_detalle[0]?.nombre) || 'Servicio de Lavado'}
+                </p>
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Fecha y Hora</p>
                 <p style={{ margin: '4px 0 0 0', fontWeight: 'bold' }}>{reserva.fecha_reserva || '---'} a las {reserva.hora_reserva || '---'}</p>
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio</p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Precio Total</p>
                 <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', color: '#1CA9C9' }}>Bs. {reserva.precio_total || '0'}</p>
               </div>
             </div>
