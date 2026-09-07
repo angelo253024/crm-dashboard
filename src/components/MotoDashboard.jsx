@@ -1814,14 +1814,20 @@ export default function MotoDashboard({ user }) {
       {/* Payment Modal */}
       {paymentModalOpen && selectedReservaForPayment && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '400px', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-color)' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', width: '100%', maxWidth: '420px', maxHeight: '90vh', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-color)', flexShrink: 0 }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Banknote size={20} color="#10b981" /> Método de Pago y Cobro
               </h3>
+              <button 
+                onClick={() => setPaymentModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={20} />
+              </button>
             </div>
             
-            <div style={{ padding: '24px', flex: 1, overflowY: 'auto' }}>
+            <div className="custom-scrollbar" style={{ padding: '20px', flex: 1, overflowY: 'auto', minHeight: 0, overscrollBehavior: 'contain' }}>
               {(() => {
                 const subtotal = Number(selectedReservaForPayment.precio_total || selectedReservaForPayment.precio || 0);
                 const propinaNum = hasPropina && Number(propinaMonto) > 0 ? Number(propinaMonto) : 0;
@@ -2018,7 +2024,7 @@ export default function MotoDashboard({ user }) {
               })()}
             </div>
 
-            <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', backgroundColor: 'var(--bg-color)' }}>
+            <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '12px', backgroundColor: 'var(--bg-color)', flexShrink: 0 }}>
               <button 
                 onClick={() => setPaymentModalOpen(false)}
                 style={{ flex: 1, padding: '14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', color: 'var(--text-main)', fontWeight: 'bold', cursor: 'pointer' }}
