@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3, Car, Sparkles } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3, Car, Sparkles, FileText } from 'lucide-react';
 import KpiCards from './KpiCards';
 import { getMapUrls } from '../utils/navigationUrls';
 
@@ -187,7 +187,7 @@ export default function MotoDashboard({ user }) {
   };
 
   const getReservaServicioInfo = (res) => {
-    if (!res) return { principal: 'Servicio de Lavado', extras: [], precioTotal: 0 };
+    if (!res) return { principal: 'Servicio de Lavado', extras: [], extrasDetalle: [], precioPrincipal: 0, precioTotal: 0, detalles: [] };
 
     // 1. Si hay servicios_detalle como array o JSON parseable
     let detalles = [];
@@ -199,49 +199,97 @@ export default function MotoDashboard({ user }) {
       } catch (e) {}
     }
 
-    if (detalles && detalles.length > 0) {
-      const principal = detalles[0]?.nombre || '';
-      const extras = detalles.slice(1).map(d => d.nombre);
-      return {
-        principal: principal || res.servicio || 'Servicio de Lavado',
-        extras: extras,
-        precioTotal: res.precio_total || res.precio || detalles.reduce((sum, d) => sum + Number(d.precio || 0), 0)
-      };
-    }
-
-    // 2. Si res.servicio existe directamente y no es el genérico "Servicio Personalizado"
-    if (res.servicio && res.servicio.trim() && res.servicio.trim().toLowerCase() !== 'servicio personalizado') {
-      const extrasMatch = (res.vehiculo || '').match(/\(Adicionales:\s*(.*?)\)/i);
-      const extras = extrasMatch ? extrasMatch[1].split(',').map(s => s.trim()) : [];
-      return {
-        principal: res.servicio,
-        extras: extras,
-        precioTotal: res.precio_total || res.precio || 0
-      };
-    }
-
-    // 3. Si tiene servicio_id, buscar en serviciosCatalogo
-    if (res.servicio_id && serviciosCatalogo && serviciosCatalogo.length > 0) {
-      const found = serviciosCatalogo.find(s => s.id === res.servicio_id);
-      if (found) {
-        const extrasMatch = (res.vehiculo || '').match(/\(Adicionales:\s*(.*?)\)/i);
-        const extras = extrasMatch ? extrasMatch[1].split(',').map(s => s.trim()) : [];
-        return {
-          principal: found.nombre,
-          extras: extras,
-          precioTotal: res.precio_total || res.precio || found.precio
-        };
+    // 2. Extraer extras que puedan venir escritos en res.servicio (ej: "Lavado Clásico + Encerado (Bs 50)")
+    let servicioStrExtras = [];
+    let baseServicioStr = res.servicio || '';
+    if (baseServicioStr && baseServicioStr.includes('+')) {
+      const parts = baseServicioStr.split('+').map(p => p.trim()).filter(Boolean);
+      if (parts.length > 1) {
+        baseServicioStr = parts[0];
+        servicioStrExtras = parts.slice(1);
       }
     }
 
-    // 4. Si res.vehiculo tiene anotados los adicionales
-    const extrasMatch = (res.vehiculo || '').match(/\(Adicionales:\s*(.*?)\)/i);
-    const extras = extrasMatch ? extrasMatch[1].split(',').map(s => s.trim()) : [];
+    // 3. Extraer extras que puedan venir en vehiculo (ej: "Toyota (Adicionales: Encerado, Aspirado)")
+    const vehiculoExtrasMatch = (res.vehiculo || '').match(/\(Adicionales:\s*(.*?)\)/i);
+    const vehiculoExtras = vehiculoExtrasMatch ? vehiculoExtrasMatch[1].split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    let principal = '';
+    let precioPrincipal = null;
+    let extrasDetalle = [];
+
+    if (detalles && detalles.length > 0) {
+      principal = detalles[0]?.nombre || '';
+      precioPrincipal = detalles[0]?.precio != null ? Number(detalles[0].precio) : null;
+      for (let i = 1; i < detalles.length; i++) {
+        const d = detalles[i];
+        if (d && d.nombre) {
+          extrasDetalle.push({
+            nombre: d.nombre,
+            precio: d.precio != null ? Number(d.precio) : null
+          });
+        }
+      }
+    }
+
+    if (!principal || principal.toLowerCase() === 'servicio personalizado') {
+      if (baseServicioStr && baseServicioStr.toLowerCase() !== 'servicio personalizado') {
+        principal = baseServicioStr;
+      } else if (res.servicio_id && serviciosCatalogo && serviciosCatalogo.length > 0) {
+        const found = serviciosCatalogo.find(s => s.id === res.servicio_id);
+        if (found) principal = found.nombre;
+      }
+    }
+
+    if (!principal) {
+      principal = (res.servicio && res.servicio.trim()) ? res.servicio : 'Servicio de Lavado';
+    }
+
+    // Incorporar extras de servicioStrExtras que no estén ya en extrasDetalle
+    servicioStrExtras.forEach(extStr => {
+      const matchMonto = extStr.match(/^(.*?)(?:\s*\(?(?:Bs\.?|Bs\s*)?(\d+)\)?)?$/i);
+      const nombreLimpio = matchMonto && matchMonto[1] ? matchMonto[1].trim() : extStr.trim();
+      const precioExt = matchMonto && matchMonto[2] ? Number(matchMonto[2]) : null;
+      
+      const exists = extrasDetalle.some(ed => ed.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+      if (!exists && nombreLimpio.toLowerCase() !== principal.toLowerCase()) {
+        extrasDetalle.push({ nombre: nombreLimpio, precio: precioExt });
+      }
+    });
+
+    // Incorporar extras de vehiculoExtras
+    vehiculoExtras.forEach(extStr => {
+      const matchMonto = extStr.match(/^(.*?)(?:\s*\(?(?:Bs\.?|Bs\s*)?(\d+)\)?)?$/i);
+      const nombreLimpio = matchMonto && matchMonto[1] ? matchMonto[1].trim() : extStr.trim();
+      const precioExt = matchMonto && matchMonto[2] ? Number(matchMonto[2]) : null;
+
+      const exists = extrasDetalle.some(ed => ed.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+      if (!exists && nombreLimpio.toLowerCase() !== principal.toLowerCase()) {
+        extrasDetalle.push({ nombre: nombreLimpio, precio: precioExt });
+      }
+    });
+
+    // Calcular precio total
+    let precioTotal = Number(res.precio_total || res.precio || 0);
+    if (!precioTotal && detalles.length > 0) {
+      precioTotal = detalles.reduce((sum, d) => sum + Number(d.precio || 0), 0);
+    }
+    if (precioPrincipal === null && precioTotal > 0 && extrasDetalle.length > 0) {
+      const extrasSuma = extrasDetalle.reduce((sum, ed) => sum + Number(ed.precio || 0), 0);
+      precioPrincipal = Math.max(0, precioTotal - extrasSuma);
+    } else if (precioPrincipal === null) {
+      precioPrincipal = precioTotal;
+    }
+
+    const finalExtras = extrasDetalle.map(ed => ed.precio ? `${ed.nombre} (Bs ${ed.precio})` : ed.nombre);
 
     return {
-      principal: (res.servicio && res.servicio.trim()) ? res.servicio : (extras.length > 0 ? 'Lavado Completo' : 'Servicio de Lavado'),
-      extras: extras,
-      precioTotal: res.precio_total || res.precio || 0
+      principal: principal,
+      precioPrincipal: precioPrincipal,
+      extras: finalExtras,
+      extrasDetalle: extrasDetalle,
+      precioTotal: precioTotal,
+      detalles: detalles
     };
   };
 
@@ -723,24 +771,70 @@ export default function MotoDashboard({ user }) {
     const reserva = reservas.find(r => r.id === resId);
     if(!reserva) return;
     
-    const nuevoServicioStr = reserva.servicio ? `${reserva.servicio} + ${extraServicioDesc}` : extraServicioDesc;
-    const nuevoPrecio = Number(reserva.precio_total || reserva.precio || 0) + Number(extraServicioMonto);
-    
-    const { error } = await supabase.from('reservas').update({
+    const servInfo = getReservaServicioInfo(reserva);
+    const principalName = servInfo.principal || reserva.servicio || 'Servicio de Lavado';
+    const extraPrice = Number(extraServicioMonto);
+
+    // Obtener lista de servicios_detalle actual
+    let currentDetalles = [];
+    if (Array.isArray(reserva.servicios_detalle)) {
+      currentDetalles = [...reserva.servicios_detalle];
+    } else if (typeof reserva.servicios_detalle === 'string' && reserva.servicios_detalle.startsWith('[')) {
+      try {
+        currentDetalles = JSON.parse(reserva.servicios_detalle);
+      } catch (e) {}
+    }
+
+    if (currentDetalles.length === 0) {
+      currentDetalles.push({
+        id: reserva.servicio_id || null,
+        nombre: principalName,
+        categoria: 'Lavado',
+        precio: Number(servInfo.precioPrincipal || reserva.precio_total || reserva.precio || 0)
+      });
+    }
+
+    // Agregar el nuevo extra a la lista detallada
+    currentDetalles.push({
+      id: null,
+      nombre: extraServicioDesc.trim(),
+      categoria: 'Servicios Extras',
+      precio: extraPrice
+    });
+
+    const baseStr = (reserva.servicio && reserva.servicio.trim() && reserva.servicio.toLowerCase() !== 'servicio personalizado')
+      ? reserva.servicio
+      : principalName;
+    const nuevoServicioStr = `${baseStr} + ${extraServicioDesc.trim()} (Bs ${extraPrice})`;
+    const nuevoPrecio = Number(reserva.precio_total || reserva.precio || 0) + extraPrice;
+
+    const updatePayload = {
       servicio: nuevoServicioStr,
+      servicios_detalle: currentDetalles,
       precio_total: nuevoPrecio
-    }).eq('id', resId);
+    };
+
+    // Actualización optimista inmediata en la interfaz
+    setReservas(prev => prev.map(r => r.id === resId ? { ...r, ...updatePayload } : r));
+
+    let { error } = await supabase.from('reservas').update(updatePayload).eq('id', resId);
+    if (error && error.message && error.message.includes('servicios_detalle')) {
+      delete updatePayload.servicios_detalle;
+      const retry = await supabase.from('reservas').update(updatePayload).eq('id', resId);
+      error = retry.error;
+    }
     
     if (error) {
-      console.error("Error updating reserva:", error);
+      console.error("Error updating reserva with extra:", error);
       alert("Hubo un error al guardar el extra. Intenta de nuevo.");
+      fetchReservasAsignadas(false);
       return;
     }
     
     setShowExtraService(null);
     setExtraServicioDesc('');
     setExtraServicioMonto('');
-    fetchReservasAsignadas();
+    fetchReservasAsignadas(false);
   };
 
   const handleUpdateMainService = async (resId, newService) => {
@@ -1173,7 +1267,7 @@ export default function MotoDashboard({ user }) {
                   const servInfo = getReservaServicioInfo(res);
                   const vehiculoLimpio = getVehiculoLimpio(res.vehiculo);
                   return (
-                    <div>
+                    <div style={{ flex: 1, minWidth: '240px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                         <h3 style={{ fontSize: '17px', fontWeight: 'bold', margin: 0, color: 'var(--text-main)' }}>
                           {servInfo.principal}
@@ -1202,27 +1296,79 @@ export default function MotoDashboard({ user }) {
                         <span style={{ color: 'var(--text-main)', fontWeight: '700' }}>{vehiculoLimpio}</span>
                       </div>
 
-                      {/* Extras o adicionales si los hay */}
-                      {servInfo.extras && servInfo.extras.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', margin: '2px 0 6px 0' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Sparkles size={13} /> Extras:
+                      {/* Desglose Detallado de Trabajos y Extras Solicitados */}
+                      <div style={{
+                        marginTop: '8px',
+                        marginBottom: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(15, 23, 42, 0.35)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        maxWidth: '500px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <FileText size={13} color="#3b82f6" /> Trabajos Solicitados:
                           </span>
-                          {servInfo.extras.map((ext, idx) => (
-                            <span key={idx} style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                              color: '#8b5cf6',
-                              fontWeight: '600',
-                              border: '1px solid rgba(139, 92, 246, 0.3)'
-                            }}>
-                              +{ext}
-                            </span>
-                          ))}
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#10b981' }}>
+                            Total: Bs {servInfo.precioTotal}
+                          </span>
                         </div>
-                      )}
+
+                        {/* Servicio Base */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', padding: '2px 0' }}>
+                          <span style={{ color: 'var(--text-main)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0 }}></span>
+                            {servInfo.principal}
+                          </span>
+                          <span style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '12px' }}>
+                            {servInfo.precioPrincipal ? `Bs ${servInfo.precioPrincipal}` : ''}
+                          </span>
+                        </div>
+
+                        {/* Extras Agregados */}
+                        {servInfo.extrasDetalle && servInfo.extrasDetalle.length > 0 && servInfo.extrasDetalle.map((ext, idx) => (
+                          <div key={idx} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                            border: '1px solid rgba(139, 92, 246, 0.25)',
+                            fontSize: '12px'
+                          }}>
+                            <span style={{ color: '#c084fc', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <Sparkles size={12} color="#c084fc" /> + {ext.nombre}
+                            </span>
+                            <span style={{ color: '#a855f7', fontWeight: '800' }}>
+                              {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
+                            </span>
+                          </div>
+                        ))}
+
+                        {/* Total Destacado si hay extras */}
+                        {servInfo.extrasDetalle && servInfo.extrasDetalle.length > 0 && (
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            paddingTop: '6px',
+                            marginTop: '2px',
+                            borderTop: '1px dashed rgba(255,255,255,0.12)'
+                          }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                              💰 Monto Total a Cobrar:
+                            </span>
+                            <span style={{ fontSize: '15px', fontWeight: '900', color: '#10b981' }}>
+                              Bs {servInfo.precioTotal}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
                       <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '14px' }}>
                         <strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}
@@ -1457,26 +1603,79 @@ export default function MotoDashboard({ user }) {
                         <span style={{ color: 'var(--text-main)', fontWeight: '700' }}>{vehiculoLimpio}</span>
                       </div>
 
-                      {servInfo.extras && servInfo.extras.length > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', margin: '2px 0 6px 0' }}>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Sparkles size={13} /> Extras:
+                      {/* Desglose Detallado de Trabajos y Extras Solicitados */}
+                      <div style={{
+                        marginTop: '8px',
+                        marginBottom: '10px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'rgba(15, 23, 42, 0.35)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        maxWidth: '500px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '4px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <FileText size={13} color="#3b82f6" /> Trabajos Solicitados:
                           </span>
-                          {servInfo.extras.map((ext, idx) => (
-                            <span key={idx} style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                              color: '#8b5cf6',
-                              fontWeight: '600',
-                              border: '1px solid rgba(139, 92, 246, 0.3)'
-                            }}>
-                              +{ext}
-                            </span>
-                          ))}
+                          <span style={{ fontSize: '12px', fontWeight: '800', color: '#10b981' }}>
+                            Total: Bs {servInfo.precioTotal}
+                          </span>
                         </div>
-                      )}
+
+                        {/* Servicio Base */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', padding: '2px 0' }}>
+                          <span style={{ color: 'var(--text-main)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#3b82f6', flexShrink: 0 }}></span>
+                            {servInfo.principal}
+                          </span>
+                          <span style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '12px' }}>
+                            {servInfo.precioPrincipal ? `Bs ${servInfo.precioPrincipal}` : ''}
+                          </span>
+                        </div>
+
+                        {/* Extras Agregados */}
+                        {servInfo.extrasDetalle && servInfo.extrasDetalle.length > 0 && servInfo.extrasDetalle.map((ext, idx) => (
+                          <div key={idx} style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: 'rgba(139, 92, 246, 0.12)',
+                            border: '1px solid rgba(139, 92, 246, 0.25)',
+                            fontSize: '12px'
+                          }}>
+                            <span style={{ color: '#c084fc', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <Sparkles size={12} color="#c084fc" /> + {ext.nombre}
+                            </span>
+                            <span style={{ color: '#a855f7', fontWeight: '800' }}>
+                              {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
+                            </span>
+                          </div>
+                        ))}
+
+                        {/* Total Destacado si hay extras */}
+                        {servInfo.extrasDetalle && servInfo.extrasDetalle.length > 0 && (
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            paddingTop: '6px',
+                            marginTop: '2px',
+                            borderTop: '1px dashed rgba(255,255,255,0.12)'
+                          }}>
+                            <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                              💰 Monto Total a Cobrar:
+                            </span>
+                            <span style={{ fontSize: '15px', fontWeight: '900', color: '#10b981' }}>
+                              Bs {servInfo.precioTotal}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
                       <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
                         <strong>Cliente:</strong> {res.cliente_nombre ? res.cliente_nombre.split(' - Tel: ')[0] : 'No especificado'}
@@ -1581,17 +1780,39 @@ export default function MotoDashboard({ user }) {
 
                 return (
                   <>
-                    <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '15px', color: 'var(--text-main)' }}>
-                        {getReservaServicioInfo(selectedReservaForPayment).principal}
-                      </div>
-                      <div style={{ fontSize: '13px', color: '#3b82f6', marginTop: '3px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Car size={14} color="#3b82f6" /> {getVehiculoLimpio(selectedReservaForPayment.vehiculo)}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                        Monto base: <strong style={{ color: '#10b981' }}>Bs {subtotal}</strong>
-                      </div>
-                    </div>
+                    {(() => {
+                      const payInfo = getReservaServicioInfo(selectedReservaForPayment);
+                      return (
+                        <div style={{ marginBottom: '16px', padding: '14px', backgroundColor: 'var(--bg-color)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                          <div style={{ fontWeight: 'bold', fontSize: '15px', color: 'var(--text-main)' }}>
+                            {payInfo.principal}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#3b82f6', marginTop: '4px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Car size={14} color="#3b82f6" /> {getVehiculoLimpio(selectedReservaForPayment.vehiculo)}
+                          </div>
+
+                          {payInfo.extrasDetalle && payInfo.extrasDetalle.length > 0 && (
+                            <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{payInfo.principal}:</span>
+                                <span>Bs {payInfo.precioPrincipal}</span>
+                              </div>
+                              {payInfo.extrasDetalle.map((ext, idx) => (
+                                <div key={idx} style={{ fontSize: '12px', color: '#c084fc', fontWeight: '600', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span>+ {ext.nombre}:</span>
+                                  <span>{ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 'bold' }}>Subtotal Servicios:</span>
+                            <strong style={{ color: '#10b981', fontSize: '16px' }}>Bs {subtotal}</strong>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
                       <button 
