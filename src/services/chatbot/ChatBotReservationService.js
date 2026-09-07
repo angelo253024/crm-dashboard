@@ -1051,12 +1051,14 @@ export class ChatBotReservationService {
             
             // Ficha formal y estructurada de cierre de cita (Punto 5)
             return {
+              success: true,
               text: `🎉 **¡Tu reserva está confirmada con éxito!**\n\n📋 **Ficha de tu Servicio:**\n━━━━━━━━━━━━━━━━━━━━━━\n👤 **Cliente:** ${reserva.clienteNombre}\n📱 **WhatsApp:** ${reserva.clienteTelefono}\n🚗 **Vehículo:** ${reserva.vehiculo}\n🧼 **Servicio:** ${reserva.servicioNombre}${extrasList}\n💰 **Total a Pagar:** Bs. ${reserva.servicioPrecio}\n📅 **Fecha:** ${fechaLegible}\n🕐 **Hora programada:** ${reserva.horaReserva}\n📍 **Ubicación:** ${ubicacionLimpia}${reserva.descripcion ? `\n🏠 **Referencia:** ${reserva.descripcion}` : ''}${demoraMsg}\n━━━━━━━━━━━━━━━━━━━━━━\n🛵 **Estado:** Confirmada y en cola de despacho.\n🔔 Te notificaremos en cuanto tu lavador asignado vaya en camino hacia tu ubicación.\n\n¡Muchas gracias por confiar en **Lavamóvil Norte**! 🚗✨`,
               source: 'reservation-done',
               buttons: null,
               requestGPS: false,
               chatSessionId: result.chatSessionId,
               reservaId: result.reservaId,
+              reservaData: result.reservaData || result.data
             };
           } else {
             _reservationState = null;
@@ -1176,6 +1178,13 @@ export class ChatBotReservationService {
       const additionalNames = extras.length > 0 ? ` (Adicionales: ${extras.map(s => s.nombre).join(', ')})` : '';
       const finalVehiculo = `${d.vehiculo}${additionalNames}`;
 
+      let pushSubId = null;
+      try {
+        if (typeof OneSignal !== 'undefined' && OneSignal.User?.PushSubscription?.id) {
+          pushSubId = OneSignal.User.PushSubscription.id;
+        }
+      } catch(e) {}
+
       const insertPayload = {
         cliente_nombre: `${d.clienteNombre} - Tel: ${d.clienteTelefono}`,
         vehiculo: finalVehiculo,
@@ -1190,14 +1199,17 @@ export class ChatBotReservationService {
         trabajador_id: trabajadorId,
         estado_reserva: estadoReserva,
         chat_session_id: newChatSessionId,
-        servicios_detalle: serviciosDetalleJSON
+        servicios_detalle: serviciosDetalleJSON,
+        cliente_onesignal_id: pushSubId
       };
 
       let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
 
-      if (error && error.message && (error.message.includes('descripcion') || error.message.includes('servicio'))) {
-        // Fallback resiliente si alguna columna no existe aún
-        if (error.message.includes('servicio')) delete insertPayload.servicio;
+      if (error && error.message && (error.message.includes('descripcion') || error.message.includes('cliente_onesignal_id'))) {
+        // Fallback resiliente si alguna columna opcional no existe
+        if (error.message.includes('cliente_onesignal_id')) {
+          delete insertPayload.cliente_onesignal_id;
+        }
         if (error.message.includes('descripcion')) {
           delete insertPayload.descripcion;
           insertPayload.ubicacion_gps = `${d.ubicacion_gps || d.ubicacion} [Ref: ${(d.descripcion || '').trim()}]`;
@@ -1211,28 +1223,30 @@ export class ChatBotReservationService {
         return { success: false, error: error.message };
       }
 
-      // (Eliminado) No guardar perfil de cliente automáticamente sin permiso
-      /*
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('lavamovil_client_profile', JSON.stringify({
-            nombre: d.clienteNombre,
-            telefono: d.clienteTelefono,
-            vehiculo: d.vehiculo ? d.vehiculo.split(' (Adicionales:')[0] : '',
-            ubicacion: d.ubicacion
-          }));
-        }
+      const createdReserva = insertData?.[0];
 
-        await supabase.from('clientes').upsert([{
-          nombre: d.clienteNombre,
-          telefono: d.clienteTelefono,
-          vehiculo: d.vehiculo ? d.vehiculo.split(' (Adicionales:')[0] : '',
-          direccion: d.ubicacion
-        }], { onConflict: 'telefono' });
-      } catch(err) {
-        // Ignorar si la tabla de clientes aún no está creada
+      // Sincronizar reserva en localStorage del cliente y notificar en vivo a ServiciosCatalog
+      if (createdReserva && typeof window !== 'undefined') {
+        try {
+          const existingListStr = localStorage.getItem('active_reservas_list_v2');
+          let currentList = existingListStr ? JSON.parse(existingListStr) : [];
+          if (!currentList.some(r => r.id === createdReserva.id)) {
+            currentList = [createdReserva, ...currentList];
+            localStorage.setItem('active_reservas_list_v2', JSON.stringify(currentList));
+          }
+
+          const existingIdsStr = localStorage.getItem('active_reservation_ids');
+          let currentIds = existingIdsStr ? JSON.parse(existingIdsStr) : [];
+          if (!currentIds.includes(createdReserva.id)) {
+            currentIds = [createdReserva.id, ...currentIds];
+            localStorage.setItem('active_reservation_ids', JSON.stringify(currentIds));
+          }
+
+          window.dispatchEvent(new CustomEvent('nueva-reserva-activa', { detail: createdReserva }));
+        } catch (storageErr) {
+          console.warn('Error guardando reserva en localStorage:', storageErr);
+        }
       }
-      */
 
       // Notificación
       const extrasStr = extras.length > 0 ? ` (+ ${extras.length} extras)` : '';
@@ -1249,6 +1263,7 @@ export class ChatBotReservationService {
         },
         reservaId: insertData?.[0]?.id,
         chatSessionId: newChatSessionId,
+        reservaData: createdReserva
       };
 
     } catch (e) {

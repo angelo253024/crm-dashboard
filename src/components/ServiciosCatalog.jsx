@@ -593,7 +593,28 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       }
     };
     window.addEventListener('open-client-chat', handleOpenClientChat);
-    return () => window.removeEventListener('open-client-chat', handleOpenClientChat);
+
+    const handleNuevaReserva = (e) => {
+      const nuevaReserva = e.detail;
+      if (!nuevaReserva || !nuevaReserva.id) return;
+      
+      setActiveReservas(prev => {
+        if (prev.some(r => r.id === nuevaReserva.id)) return prev;
+        const updated = [nuevaReserva, ...prev];
+        localStorage.setItem('active_reservas_list_v2', JSON.stringify(updated));
+        localStorage.setItem('active_reservation_ids', JSON.stringify(updated.map(r => r.id)));
+        return updated;
+      });
+      setSelectedReservaId(nuevaReserva.id);
+      checkReservaStatus([nuevaReserva.id]);
+    };
+
+    window.addEventListener('nueva-reserva-activa', handleNuevaReserva);
+
+    return () => {
+      window.removeEventListener('open-client-chat', handleOpenClientChat);
+      window.removeEventListener('nueva-reserva-activa', handleNuevaReserva);
+    };
   }, []);
 
   const activeReservasIdsRef = useRef([]);
@@ -602,14 +623,24 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     activeReservasIdsRef.current = activeReservas.map(r => r.id);
   }, [activeReservas]);
 
-  // Poll for status changes every 15 seconds safely
+  // Poll for status changes every 10 seconds safely
   useEffect(() => {
     let interval = setInterval(() => {
-      const ids = activeReservasIdsRef.current;
+      let ids = activeReservasIdsRef.current || [];
+      try {
+        const storedIdsStr = localStorage.getItem('active_reservation_ids');
+        if (storedIdsStr) {
+          const storedIds = JSON.parse(storedIdsStr);
+          if (Array.isArray(storedIds) && storedIds.length > 0) {
+            ids = Array.from(new Set([...ids, ...storedIds]));
+          }
+        }
+      } catch (e) {}
+
       if (ids && ids.length > 0) {
         checkReservaStatus(ids);
       }
-    }, 15000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -617,7 +648,17 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
     if (!ids || ids.length === 0) return;
     const { data, error } = await supabase.from('reservas').select('*').in('id', ids);
     if (!error && data) {
-      setActiveReservas(data);
+      setActiveReservas(prev => {
+        // Combinar datos frescos de la BD manteniendo cualquier reserva activa reciente
+        const idMap = new Map();
+        data.forEach(item => idMap.set(item.id, item));
+        prev.forEach(item => {
+          if (!idMap.has(item.id)) idMap.set(item.id, item);
+        });
+        const combined = Array.from(idMap.values());
+        localStorage.setItem('active_reservas_list_v2', JSON.stringify(combined));
+        return combined;
+      });
       localStorage.setItem('active_reservas_list_v2', JSON.stringify(data));
       // Auto-sincronizar cliente_onesignal_id si ya hay suscripción activa en el navegador
       try {

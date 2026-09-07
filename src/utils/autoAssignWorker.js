@@ -2,21 +2,22 @@ export async function autoAssignWorker(supabase, existingTrabajadorId = null) {
   if (existingTrabajadorId) return existingTrabajadorId;
   
   try {
-    // 1. Obtener todos los trabajadores que están activos en la plataforma
-    const { data: activeWorkers, error } = await supabase
+    // 1. Obtener todos los trabajadores de la plataforma
+    const { data: allWorkers, error } = await supabase
       .from('trabajadores')
-      .select('id, nombre, estado, estado_disponibilidad, rol')
-      .eq('estado', 'Activo');
+      .select('id, nombre, estado, estado_disponibilidad, rol');
       
-    if (error || !activeWorkers || activeWorkers.length === 0) {
+    if (error || !allWorkers || allWorkers.length === 0) {
       return null;
     }
 
     // Filtrar trabajadores disponibles para recibir servicios
-    const availableWorkers = activeWorkers.filter(w => {
+    const availableWorkers = allWorkers.filter(w => {
       const isTrabajador = !w.rol || w.rol.toLowerCase().includes('trabajador') || w.rol.toLowerCase().includes('lavador');
-      const isDisponible = !w.estado_disponibilidad || w.estado_disponibilidad === 'disponible';
-      return isTrabajador && isDisponible;
+      // Está disponible si marcó 'disponible' en su panel, o si está 'Activo' sin estar inactivo/ocupado
+      const isDisponible = w.estado_disponibilidad === 'disponible' || (w.estado === 'Activo' && (!w.estado_disponibilidad || w.estado_disponibilidad === 'disponible'));
+      const notUnavailable = w.estado_disponibilidad !== 'inactivo' && w.estado_disponibilidad !== 'ocupado';
+      return isTrabajador && isDisponible && notUnavailable;
     });
 
     if (availableWorkers.length === 0) {
@@ -41,8 +42,8 @@ export async function autoAssignWorker(supabase, existingTrabajadorId = null) {
       return chosenWorker.id;
     }
 
-    // Si todos tienen algún servicio activo, no forzar asignación: queda pendiente
-    return null;
+    // Si todos los trabajadores disponibles tienen algún servicio en proceso, asignar al primer disponible
+    return availableWorkers[0]?.id || null;
   } catch (err) {
     console.error("Error auto-assigning worker:", err);
     return null;

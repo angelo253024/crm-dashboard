@@ -97,22 +97,41 @@ export default function ChatBotWidget() {
       );
 
       if (response.reservaExtra) {
-        // Guardar la reserva activa en localStorage para que ServiciosCatalog y el cliente la reconozcan
-        const savedData = {
-          id: response.reservaExtra.reservaId,
-          chat_session_id: response.reservaExtra.chatSessionId,
-          estado_reserva: 'pendiente',
-          estado: 'Reservado'
-        };
-        
-        // Compatible con la nueva lógica de múltiples reservas
         try {
+          const rId = response.reservaExtra.reservaId;
+          const rSession = response.reservaExtra.chatSessionId;
+          const rData = response.reservaExtra.reservaData || {};
+          
+          const savedData = {
+            id: rId,
+            chat_session_id: rSession,
+            estado_reserva: rData.estado_reserva || 'asignado',
+            estado: 'Reservado',
+            vehiculo: rData.vehiculo || 'Vehículo registrado',
+            fecha_reserva: rData.fecha_reserva || rData.fechaReserva,
+            hora_reserva: rData.hora_reserva || rData.horaReserva,
+            precio_total: rData.precio_total || rData.servicioPrecio,
+            cliente_nombre: rData.cliente_nombre || rData.clienteNombre,
+            ...rData
+          };
+
           const existingStr = localStorage.getItem('active_reservas_list_v2');
           let reservasArray = existingStr ? JSON.parse(existingStr) : [];
-          reservasArray = [savedData, ...reservasArray];
-          localStorage.setItem('active_reservas_list_v2', JSON.stringify(reservasArray));
+          if (!reservasArray.some(r => r.id === rId)) {
+            reservasArray = [savedData, ...reservasArray];
+            localStorage.setItem('active_reservas_list_v2', JSON.stringify(reservasArray));
+          }
+
+          const idsStr = localStorage.getItem('active_reservation_ids');
+          let idsArr = idsStr ? JSON.parse(idsStr) : [];
+          if (!idsArr.includes(rId)) {
+            idsArr = [rId, ...idsArr];
+            localStorage.setItem('active_reservation_ids', JSON.stringify(idsArr));
+          }
+
+          window.dispatchEvent(new CustomEvent('nueva-reserva-activa', { detail: savedData }));
         } catch(e) {
-          localStorage.setItem('active_reservas_list_v2', JSON.stringify([savedData]));
+          console.warn("Error guardando reserva en ChatBotWidget:", e);
         }
       }
 

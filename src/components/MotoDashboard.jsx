@@ -586,7 +586,10 @@ export default function MotoDashboard({ user }) {
   const changeEstado = async (nuevoEstado) => {
     setEstado(nuevoEstado);
     estadoRef.current = nuevoEstado;
-    await supabase.from('trabajadores').update({ estado_disponibilidad: nuevoEstado }).eq('id', user.id);
+    await supabase.from('trabajadores').update({ 
+      estado_disponibilidad: nuevoEstado,
+      estado: 'Activo'
+    }).eq('id', user.id);
     
     // Forzar petición de permisos de GPS activamente tras la interacción del usuario
     if (nuevoEstado !== 'inactivo' && navigator.geolocation) {

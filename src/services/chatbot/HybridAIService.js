@@ -74,7 +74,7 @@ export class HybridAIService {
             buttons = result.buttons || null;
             requestGPS = result.requestGPS || false;
             if (result.chatSessionId) {
-              reservaExtra = { chatSessionId: result.chatSessionId, reservaId: result.reservaId };
+              reservaExtra = { chatSessionId: result.chatSessionId, reservaId: result.reservaId, reservaData: result.reservaData };
             }
           } else {
             finalResponse = "Algo salió mal con la reserva. Intenta de nuevo.";
