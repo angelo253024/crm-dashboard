@@ -404,14 +404,14 @@ export default function MotoDashboard({ user }) {
 
         if (resCompletadas && resCompletadas.length > 0) {
           comisionesList = resCompletadas.map(r => {
-            const precio = Number(r.precio_total || r.precio || 0);
+            const precioBase = Math.max(0, Number(r.precio_total || r.precio || 0) - (Number(r.propina) || 0));
             return {
               id: r.id,
               created_at: r.created_at || r.fecha_reserva,
               servicio_nombre: r.servicio || 'Servicio de Lavado',
               tipo: 'Lavado',
-              precio: precio,
-              monto_comision: precio * 0.5
+              precio: precioBase,
+              monto_comision: precioBase * 0.5
             };
           });
         }
@@ -551,7 +551,8 @@ export default function MotoDashboard({ user }) {
       payment_status: 'PAGADO',
       payment_date: new Date().toISOString(),
       payment_by: user.id,
-      propina: propinaNum
+      propina: propinaNum,
+      precio_total: totalCobro
     };
 
     if (paymentMethod === 'EFECTIVO') {
@@ -1423,72 +1424,88 @@ export default function MotoDashboard({ user }) {
                       </button>
                     </div>
 
-                    {/* Sección de Propina Opcional */}
-                    <div style={{ marginBottom: '20px', padding: '14px', borderRadius: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>
-                          <input 
-                            type="checkbox" 
-                            checked={hasPropina} 
-                            onChange={(e) => {
-                              setHasPropina(e.target.checked);
-                              if (!e.target.checked) setPropinaMonto('');
-                            }}
-                            style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
-                          />
-                          🎁 ¿Te dieron propina? (Opcional)
-                        </label>
-                        {hasPropina && (
-                          <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
-                            100% para ti
-                          </span>
-                        )}
+                    {/* Sección de Botones de Propina Opcional */}
+                    <div style={{ marginBottom: '20px', padding: '16px', borderRadius: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', fontSize: '14px', color: 'var(--text-main)' }}>
+                          <span>🎁</span>
+                          <span>Propina para el Trabajador</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'normal' }}>(Opcional)</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '10px' }}>
+                          100% para ti
+                        </span>
                       </div>
 
-                      {hasPropina && (
-                        <div style={{ marginTop: '12px' }}>
-                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Monto sugerido o ingresa cuánto te dieron:</div>
-                          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-                            {[5, 10, 15, 20, 50].map(amt => (
-                              <button
-                                key={amt}
-                                type="button"
-                                onClick={() => setPropinaMonto(String(amt))}
-                                style={{
-                                  padding: '6px 12px',
-                                  borderRadius: '16px',
-                                  border: Number(propinaMonto) === amt ? '2px solid #10b981' : '1px solid var(--border-color)',
-                                  backgroundColor: Number(propinaMonto) === amt ? 'rgba(16, 185, 129, 0.15)' : 'var(--card-bg)',
-                                  color: Number(propinaMonto) === amt ? '#10b981' : 'var(--text-main)',
-                                  fontWeight: 'bold',
-                                  fontSize: '12px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                + Bs {amt}
-                              </button>
-                            ))}
-                          </div>
-                          
-                          <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
-                            <input 
-                              type="number" 
-                              value={propinaMonto}
-                              onChange={(e) => setPropinaMonto(e.target.value)}
-                              placeholder="Monto de propina (ej. 10)"
-                              min="0"
-                              step="1"
-                              style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '15px', fontWeight: 'bold', outline: 'none' }}
-                            />
-                          </div>
-                        </div>
-                      )}
+                      {/* Botones rápidos de propina */}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHasPropina(false);
+                            setPropinaMonto('');
+                          }}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '20px',
+                            border: (!hasPropina || Number(propinaMonto) === 0) ? '2px solid #6b7280' : '1px solid var(--border-color)',
+                            backgroundColor: (!hasPropina || Number(propinaMonto) === 0) ? 'rgba(107, 114, 128, 0.15)' : 'var(--card-bg)',
+                            color: (!hasPropina || Number(propinaMonto) === 0) ? 'var(--text-main)' : 'var(--text-muted)',
+                            fontWeight: 'bold',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          Sin propina
+                        </button>
+                        {[5, 10, 15, 20, 50].map(amt => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => {
+                              setHasPropina(true);
+                              setPropinaMonto(String(amt));
+                            }}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '20px',
+                              border: (hasPropina && Number(propinaMonto) === amt) ? '2px solid #10b981' : '1px solid var(--border-color)',
+                              backgroundColor: (hasPropina && Number(propinaMonto) === amt) ? 'rgba(16, 185, 129, 0.15)' : 'var(--card-bg)',
+                              color: (hasPropina && Number(propinaMonto) === amt) ? '#10b981' : 'var(--text-main)',
+                              fontWeight: 'bold',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            + Bs {amt}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Input manual de propina */}
+                      <div style={{ position: 'relative', marginBottom: propinaNum > 0 ? '12px' : '0' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 'bold', color: 'var(--text-muted)' }}>Bs</span>
+                        <input 
+                          type="number" 
+                          value={propinaMonto}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPropinaMonto(val);
+                            setHasPropina(Number(val) > 0);
+                          }}
+                          placeholder="O ingresa otro monto de propina"
+                          min="0"
+                          step="1"
+                          style={{ width: '100%', padding: '10px 12px 10px 40px', borderRadius: '8px', border: hasPropina && propinaNum > 0 ? '1px solid #10b981' : '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '14px', fontWeight: 'bold', outline: 'none' }}
+                        />
+                      </div>
 
                       {propinaNum > 0 && (
-                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <div style={{ paddingTop: '10px', borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                           <span style={{ color: 'var(--text-muted)' }}>Servicio: Bs {subtotal} + Propina: Bs {propinaNum}</span>
-                          <span style={{ fontWeight: 'bold', color: '#10b981' }}>Total a cobrar: Bs {totalCobro}</span>
+                          <span style={{ fontWeight: 'bold', color: '#10b981', fontSize: '14px' }}>Total a cobrar: Bs {totalCobro}</span>
                         </div>
                       )}
                     </div>
@@ -1623,7 +1640,7 @@ export default function MotoDashboard({ user }) {
                     Bs {res.precio_total || res.precio || 0}
                     {Number(res.propina) > 0 && (
                       <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '11px', color: '#10b981', fontWeight: 'bold', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                        + Bs {res.propina} propina 🎁
+                        (incluye Bs {res.propina} propina 🎁)
                       </span>
                     )}
                   </div>
