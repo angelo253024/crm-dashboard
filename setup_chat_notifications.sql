@@ -54,11 +54,11 @@ BEGIN
                 'priority', 10,
                 'headings', jsonb_build_object('en', 'Mensaje del Lavador', 'es', 'Mensaje del Lavador 🛵💬'),
                 'contents', jsonb_build_object('en', NEW.contenido, 'es', NEW.contenido),
-                'url', 'https://crm-dashboard-lavamovil.vercel.app/reservar?chat=' || NEW.session_id,
-                'web_url', 'https://crm-dashboard-lavamovil.vercel.app/reservar?chat=' || NEW.session_id,
+                'url', 'https://lavamovilnorte.vercel.app/reservar?chat=' || NEW.session_id,
+                'web_url', 'https://lavamovilnorte.vercel.app/reservar?chat=' || NEW.session_id,
                 'data', jsonb_build_object('session_id', NEW.session_id, 'open_chat', true),
-                'chrome_web_icon', 'https://crm-dashboard-lavamovil.vercel.app/logo.png',
-                'chrome_web_badge', 'https://crm-dashboard-lavamovil.vercel.app/favicon-32x32.png'
+                'chrome_web_icon', 'https://lavamovilnorte.vercel.app/logo.png',
+                'chrome_web_badge', 'https://lavamovilnorte.vercel.app/favicon-32x32.png'
             );
         END IF;
 
@@ -84,11 +84,11 @@ BEGIN
                     'priority', 10,
                     'headings', jsonb_build_object('en', 'Mensaje de ' || COALESCE(v_cliente_nombre, 'Cliente'), 'es', 'Mensaje de ' || COALESCE(v_cliente_nombre, 'Cliente') || ' 💬'),
                     'contents', jsonb_build_object('en', NEW.contenido, 'es', NEW.contenido),
-                    'url', 'https://crm-dashboard-lavamovil.vercel.app/dashboard',
-                    'web_url', 'https://crm-dashboard-lavamovil.vercel.app/dashboard',
+                    'url', 'https://lavamovilnorte.vercel.app/dashboard',
+                    'web_url', 'https://lavamovilnorte.vercel.app/dashboard',
                     'data', jsonb_build_object('session_id', NEW.session_id, 'open_chat', true),
-                    'chrome_web_icon', 'https://crm-dashboard-lavamovil.vercel.app/logo.png',
-                    'chrome_web_badge', 'https://crm-dashboard-lavamovil.vercel.app/favicon-32x32.png'
+                    'chrome_web_icon', 'https://lavamovilnorte.vercel.app/logo.png',
+                    'chrome_web_badge', 'https://lavamovilnorte.vercel.app/favicon-32x32.png'
                 );
             END IF;
         END IF;

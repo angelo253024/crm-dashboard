@@ -100,7 +100,7 @@ export const sendDirectWorkerPush = async ({ targetPushId, workerName = 'Tu Lava
 
   try {
     const cleanSession = (sessionId || '').trim();
-    const chatUrl = `https://crm-dashboard-lavamovil.vercel.app/reservar?chat=${encodeURIComponent(cleanSession)}`;
+    const chatUrl = `https://lavamovilnorte.vercel.app/reservar?chat=${encodeURIComponent(cleanSession)}`;
 
     const payload = {
       app_id: ONESIGNAL_APP_ID,
@@ -120,8 +120,8 @@ export const sendDirectWorkerPush = async ({ targetPushId, workerName = 'Tu Lava
         session_id: cleanSession,
         open_chat: true
       },
-      chrome_web_icon: 'https://crm-dashboard-lavamovil.vercel.app/logo.png',
-      chrome_web_badge: 'https://crm-dashboard-lavamovil.vercel.app/favicon-32x32.png',
+      chrome_web_icon: 'https://lavamovilnorte.vercel.app/logo.png',
+      chrome_web_badge: 'https://lavamovilnorte.vercel.app/favicon-32x32.png',
       priority: 10,
       ttl: 86400
     };
