@@ -1184,6 +1184,7 @@ export class ChatBotReservationService {
         fecha_reserva: d.fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: d.servicioId,
+        servicio: d.servicioNombre || (serviciosDetalleJSON[0]?.nombre) || 'Servicio de Lavado',
         precio_total: totalPrice,
         estado: 'Reservado',
         trabajador_id: trabajadorId,
@@ -1194,10 +1195,13 @@ export class ChatBotReservationService {
 
       let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
 
-      if (error && error.message && error.message.includes('descripcion')) {
-        // Fallback resiliente si la columna 'descripcion' aún no existe en Supabase
-        delete insertPayload.descripcion;
-        insertPayload.ubicacion_gps = `${d.ubicacion_gps || d.ubicacion} [Ref: ${(d.descripcion || '').trim()}]`;
+      if (error && error.message && (error.message.includes('descripcion') || error.message.includes('servicio'))) {
+        // Fallback resiliente si alguna columna no existe aún
+        if (error.message.includes('servicio')) delete insertPayload.servicio;
+        if (error.message.includes('descripcion')) {
+          delete insertPayload.descripcion;
+          insertPayload.ubicacion_gps = `${d.ubicacion_gps || d.ubicacion} [Ref: ${(d.descripcion || '').trim()}]`;
+        }
         const retry = await supabase.from('reservas').insert([insertPayload]).select();
         insertData = retry.data;
         error = retry.error;

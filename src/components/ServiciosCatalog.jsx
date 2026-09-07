@@ -975,6 +975,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
         fecha_reserva: fechaReserva,
         hora_reserva: formattedHora,
         servicio_id: mainService.id,
+        servicio: mainService.nombre,
         precio_total: totalPrice,
       };
 
@@ -1020,6 +1021,7 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
       fecha_reserva: fechaReserva,
       hora_reserva: formattedHora,
       servicio_id: mainService.id,
+      servicio: mainService.nombre,
       precio_total: totalPrice,
       estado: 'Reservado',
       trabajador_id: trabajadorId,
@@ -1031,8 +1033,11 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
 
     let { data: insertData, error } = await supabase.from('reservas').insert([insertPayload]).select();
 
-    if (error && error.message && (error.message.includes('descripcion') || error.message.includes('cliente_onesignal_id'))) {
+    if (error && error.message && (error.message.includes('descripcion') || error.message.includes('cliente_onesignal_id') || error.message.includes('servicio'))) {
       // Fallback resiliente si la columna aún no existe en Supabase
+      if (error.message.includes('servicio')) {
+        delete insertPayload.servicio;
+      }
       if (error.message.includes('cliente_onesignal_id')) {
         delete insertPayload.cliente_onesignal_id;
       }
