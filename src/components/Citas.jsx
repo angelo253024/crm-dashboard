@@ -590,12 +590,12 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
       </div>
 
       {selectedDateStr && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '24px' }}>
-          <div style={{ backgroundColor: 'var(--card-bg)', padding: '24px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto', boxShadow: 'var(--shadow-soft)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+          <div style={{ backgroundColor: 'var(--card-bg)', padding: '20px', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-soft)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
               <div>
                 <h2 className="text-h2">Agenda del Día</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
                   <p className="text-muted">
                     {new Date(`${selectedDateStr}T12:00:00`).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
@@ -643,7 +643,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
                       </div>
                     </div>
                     
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <MapPin size={16} color="var(--text-muted)" />
                         <span className="text-body">{ev.title}</span>
@@ -664,7 +664,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
                         const mapInfo = getMapUrls(ev.raw.ubicacion_gps || ev.raw.ubicacion);
                         return (
                           <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--card-bg)', padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border-color)', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                               <MapPin size={15} color="#ef4444" />
                               <span style={{ color: 'var(--text-muted)' }}>{ev.raw.ubicacion_gps || ev.raw.ubicacion}</span>
                             </div>
@@ -1050,7 +1050,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
               </div>
 
               {/* Fecha y Hora */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                 <div>
                   <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
                     📅 Fecha de la Cita
@@ -1109,7 +1109,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
               </div>
 
               {/* Precio Total y Trabajador */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                 <div>
                   <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>
                     💰 Precio Total (Bs.)

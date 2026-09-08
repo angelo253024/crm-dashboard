@@ -1613,6 +1613,16 @@ body:not(.dark) .skeleton-shimmer {
     flex-shrink: 0;
   }
 
+  .header-dropdown-menu {
+    position: fixed !important;
+    top: 72px !important;
+    right: 12px !important;
+    left: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    z-index: 10000 !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
+  }
+
   .user-profile-role {
     display: none;
   }

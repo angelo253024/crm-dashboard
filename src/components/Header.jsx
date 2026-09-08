@@ -431,7 +431,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           </button>
 
           {isWorkersMenuOpen && (
-            <div style={{
+            <div className="header-dropdown-menu" style={{
               position: 'absolute',
               top: '100%',
               right: 0,
@@ -500,7 +500,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
           </button>
 
           {isNotifMenuOpen && (
-            <div style={{
+            <div className="header-dropdown-menu" style={{
               position: 'absolute',
               top: '100%',
               right: 0,
@@ -589,7 +589,7 @@ export default function Header({ isDarkMode, toggleTheme, user, setUser, onLogou
 
           {/* Menú Desplegable del Perfil */}
           {isProfileMenuOpen && (
-            <div style={{
+            <div className="header-dropdown-menu" style={{
               position: 'absolute',
               top: '100%',
               right: 0,
