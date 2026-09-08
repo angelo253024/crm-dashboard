@@ -167,7 +167,7 @@ export default function AdminServicios() {
             <h2 className="text-h2">Administración de Servicios</h2>
             <p className="text-muted text-small">Gestiona los servicios que aparecerán en el catálogo público.</p>
           </div>
-          <button className="btn-primary" onClick={openNewModal}>
+          <button className="btn-primary" onClick={openNewModal} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
             <Plus size={16} /> Nuevo Servicio
           </button>
         </div>

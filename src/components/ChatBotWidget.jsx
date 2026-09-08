@@ -437,6 +437,7 @@ export default function ChatBotWidget() {
         href="https://wa.me/59167750005?text=Hola%20Lavam%C3%B3vil%20Norte%2C%20quisiera%20hacer%20una%20consulta"
         target="_blank"
         rel="noopener noreferrer"
+        className="whatsapp-float-btn"
         style={{
           position: 'fixed',
           bottom: '96px',
@@ -467,6 +468,7 @@ export default function ChatBotWidget() {
       {/* Botón Flotante Chatbot */}
       <button 
         onClick={() => setIsOpen(true)}
+        className="chatbot-float-btn"
         style={{
           position: 'fixed',
           bottom: '24px',

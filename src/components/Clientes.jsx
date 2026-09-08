@@ -141,11 +141,11 @@ export default function Clientes() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="deslizable-toolbar" style={{ display: 'flex', gap: '12px', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch', paddingBottom: '4px' }}>
           <button 
             onClick={() => setShowModal(true)} 
             className="btn-glass-primary"
-            style={{ padding: '10px 18px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ padding: '10px 18px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}
           >
             <Plus size={18} /> Registrar Nuevo Cliente
           </button>
@@ -198,7 +198,7 @@ export default function Clientes() {
       </div>
 
       {/* Table Section */}
-      <div className="service-glass-card" style={{ padding: '20px', overflowX: 'auto' }}>
+      <div className="service-glass-card table-responsive" style={{ padding: '20px', overflowX: 'auto', paddingBottom: '8px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Cargando clientes...</div>
         ) : filteredClientes.length === 0 ? (
@@ -206,7 +206,7 @@ export default function Clientes() {
             No se encontraron clientes registrados.
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
+          <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '13px' }}>
                 <th style={{ padding: '12px' }}>Cliente</th>

@@ -139,8 +139,8 @@ export default function Trabajadores() {
   const [activeTab, setActiveTab] = useState('directorio');
 
   const renderDirectorio = () => (
-    <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
-      <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
+    <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto', paddingBottom: '6px' }}>
+      <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
           <tr>
             <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>ID</th>
@@ -222,8 +222,8 @@ export default function Trabajadores() {
         <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Asigna horarios de trabajo a tus empleados y revisa si están pendientes o en servicio.</p>
       </div>
 
-      <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
-        <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto', paddingBottom: '6px' }}>
+        <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ backgroundColor: 'var(--bg-color)', borderBottom: '1px solid var(--border-color)' }}>
             <tr>
               <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Trabajador</th>

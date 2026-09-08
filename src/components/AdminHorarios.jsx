@@ -92,7 +92,7 @@ export default function AdminHorarios({ user }) {
           </p>
         </div>
         
-        <button onClick={fetchHorarios} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px' }}>
+        <button onClick={fetchHorarios} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', flexShrink: 0, whiteSpace: 'nowrap' }}>
           <RefreshCw size={16} /> Refrescar
         </button>
       </div>

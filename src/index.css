@@ -487,11 +487,83 @@ body {
   flex-shrink: 0;
 }
 
-/* Responsive Table container utility */
-.table-responsive {
+/* Responsive Table and Deslizable Container utilities */
+.table-responsive,
+.table-container,
+.deslizable-container {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  padding-bottom: 6px;
+}
+
+/* Modern Sleek Scrollbars ("Barras Deslizables") */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-cyan, #1ca9c9);
+  opacity: 0.7;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-green, #10b981);
+}
+
+/* Thin scrollbars for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-cyan, #1ca9c9) rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Deslizable Toolbar Utility */
+.deslizable-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  padding-bottom: 4px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.deslizable-toolbar > * {
+  flex-shrink: 0;
+}
+
+/* Data Table utility for AdminHorarios and general tables */
+.data-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.data-table th {
+  background-color: var(--bg-color);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 
@@ -1527,9 +1599,18 @@ body:not(.dark) .skeleton-shimmer {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    padding-bottom: 6px;
+    padding-top: 2px;
+  }
+
+  .header-actions > * {
+    flex-shrink: 0;
   }
 
   .user-profile-role {
@@ -1627,22 +1708,41 @@ body:not(.dark) .skeleton-shimmer {
   }
 
   .header-btn-text {
-    display: none;
+    display: inline-block;
+    white-space: nowrap;
   }
 
   .header-btn-action,
   .header-btn-chat,
   .header-btn-workers {
-    padding: 8px 12px !important;
-    gap: 0;
+    padding: 8px 16px !important;
+    gap: 8px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .user-profile {
     gap: 6px;
+    flex-shrink: 0;
   }
 
   .user-profile-chevron {
     display: none;
+  }
+
+  /* Mobile floating widgets optimization */
+  .chatbot-float-btn,
+  .whatsapp-float-btn {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 24px !important;
+    right: 16px !important;
+  }
+  .whatsapp-float-btn {
+    bottom: 74px !important;
+  }
+  .chatbot-float-btn {
+    bottom: 16px !important;
   }
 }
 

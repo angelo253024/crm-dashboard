@@ -480,18 +480,18 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-             <button className="btn-primary" onClick={() => setShowManualModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="deslizable-toolbar" style={{ display: 'flex', gap: '12px', alignItems: 'center', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', maxWidth: '100%' }}>
+             <button className="btn-primary" onClick={() => setShowManualModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, whiteSpace: 'nowrap' }}>
                <Plus size={16} /> Agregar Cita Manual
              </button>
              {events.length === 0 && !loading && (
-               <button className="btn-secondary" onClick={seedReservas}>
+               <button className="btn-secondary" onClick={seedReservas} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>
                  <Database size={16} /> Poblar Reservas
                </button>
              )}
-             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#3b82f6'}}></div> Reservado</span>
-             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#f59e0b'}}></div> En Proceso</span>
-             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#10b981'}}></div> Finalizado</span>
+             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, whiteSpace: 'nowrap' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#3b82f6'}}></div> Reservado</span>
+             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, whiteSpace: 'nowrap' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#f59e0b'}}></div> En Proceso</span>
+             <span style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, whiteSpace: 'nowrap' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#10b981'}}></div> Finalizado</span>
           </div>
         </div>
 
@@ -499,7 +499,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
           <p style={{ textAlign: 'center', padding: '40px' }}>Cargando agenda...</p>
         ) : (
           <div className="table-responsive" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-            <div style={{ minWidth: '640px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ minWidth: '860px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
                 {days.map(day => (
                   <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>

@@ -239,8 +239,8 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
           {filtered.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay servicios para mostrar.</div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ overflowX: 'auto', paddingBottom: '6px' }}>
+              <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>
@@ -316,8 +316,8 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
           {filteredComisiones.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No hay comisiones para el filtro seleccionado.</div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ overflowX: 'auto', paddingBottom: '6px' }}>
+              <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</th>
@@ -358,8 +358,8 @@ export default function WorkerStatsModal({ worker, currentUser, onClose }) {
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>Anticipos Descontados (Aún no liquidados)</h3>
         <div className="table-responsive" style={{ backgroundColor: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflowX: 'auto' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto', paddingBottom: '6px' }}>
+            <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                 <tr>
                   <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Fecha</th>

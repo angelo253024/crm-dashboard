@@ -422,8 +422,8 @@ export default function Dashboard() {
                     Servicios Completados {filtroActivo === 'dia' ? 'este Día' : filtroActivo === 'semana' ? 'esta Semana' : 'este Mes'}
                   </h3>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px' }}>
+                  <div className="deslizable-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', overflowX: 'auto', whiteSpace: 'nowrap', WebkitOverflowScrolling: 'touch', paddingBottom: '4px', maxWidth: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', flexShrink: 0 }}>
                       <Search size={14} className="text-muted" />
                       <input 
                         type="text" 
@@ -449,7 +449,9 @@ export default function Dashboard() {
                         gap: '6px',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)'
+                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                       }}
                       title="Descargar todos los servicios e ingresos del mes en formato Excel"
                       onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#059669'; }}
@@ -460,8 +462,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <div className="table-responsive" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflowX: 'auto', paddingBottom: '6px' }}>
+                  <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)' }}>
                       <tr>
                         <th style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>Hora</th>

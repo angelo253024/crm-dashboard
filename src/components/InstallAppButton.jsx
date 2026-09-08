@@ -67,23 +67,27 @@ export default function InstallAppButton() {
     <button 
       onClick={handleInstallClick} 
       disabled={!isInstallable}
-      className={`btn-landing-large ${isInstallable ? 'pulse-glow' : ''}`}
+      className={`header-btn-action ${isInstallable ? 'pulse-glow' : ''}`}
       style={{ 
         backgroundColor: isInstallable ? 'var(--accent-green)' : 'transparent', 
         color: isInstallable ? '#fff' : 'var(--text-muted)', 
         border: isInstallable ? 'none' : '1px solid var(--border-color)', 
-        padding: '12px 24px', 
+        padding: '8px 16px', 
+        borderRadius: '30px',
+        fontSize: '14px',
         boxShadow: 'none',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         opacity: 1,
-        cursor: 'pointer'
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        flexShrink: 0
       }}
       title={isInstallable ? "Descargar Lavamóvil App" : "Instalación nativa no disponible en este navegador o dispositivo"}
     >
-      <Download size={20} />
-      Descargar App
+      <Download size={16} />
+      <span className="header-btn-text">Descargar App</span>
     </button>
   );
 }
