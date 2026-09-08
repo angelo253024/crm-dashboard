@@ -11,13 +11,12 @@ export async function autoAssignWorker(supabase, existingTrabajadorId = null) {
       return null;
     }
 
-    // Filtrar trabajadores disponibles para recibir servicios
+    // Filtrar trabajadores disponibles: DEBEN tener sesión activa ('Activo') y estar en 'disponible'
     const availableWorkers = allWorkers.filter(w => {
       const isTrabajador = !w.rol || w.rol.toLowerCase().includes('trabajador') || w.rol.toLowerCase().includes('lavador');
-      // Está disponible si marcó 'disponible' en su panel, o si está 'Activo' sin estar inactivo/ocupado
-      const isDisponible = w.estado_disponibilidad === 'disponible' || (w.estado === 'Activo' && (!w.estado_disponibilidad || w.estado_disponibilidad === 'disponible'));
-      const notUnavailable = w.estado_disponibilidad !== 'inactivo' && w.estado_disponibilidad !== 'ocupado';
-      return isTrabajador && isDisponible && notUnavailable;
+      const hasActiveSession = w.estado === 'Activo';
+      const isDisponible = w.estado_disponibilidad === 'disponible';
+      return isTrabajador && hasActiveSession && isDisponible;
     });
 
     if (availableWorkers.length === 0) {

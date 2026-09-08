@@ -104,8 +104,12 @@ export default function Login({ onLogin }) {
     } else {
       if (data.id !== 'local-demo') {
         try {
-          await supabase.from('trabajadores').update({ estado: 'Activo' }).eq('id', data.id);
+          await supabase.from('trabajadores').update({ 
+            estado: 'Activo',
+            estado_disponibilidad: 'disponible'
+          }).eq('id', data.id);
           data.estado = 'Activo';
+          data.estado_disponibilidad = 'disponible';
 
           // Registrar ingreso en trabajador_horarios si no existe para hoy
           const today = new Date().toISOString().split('T')[0];

@@ -50,7 +50,10 @@ function App() {
     if (user && user.id !== 'local-demo') {
       try {
         const { supabase } = await import('./supabase');
-        await supabase.from('trabajadores').update({ estado: 'Inactivo' }).eq('id', user.id);
+        await supabase.from('trabajadores').update({ 
+          estado: 'Inactivo',
+          estado_disponibilidad: 'inactivo'
+        }).eq('id', user.id);
         const today = new Date().toISOString().split('T')[0];
         await supabase
           .from('trabajador_horarios')
