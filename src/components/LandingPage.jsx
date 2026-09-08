@@ -155,6 +155,30 @@ export default function LandingPage({ isDarkMode, toggleTheme }) {
           </a>
         </div>
 
+        {/* Requisitos Card */}
+        <div style={{
+          maxWidth: '340px',
+          margin: '0 auto 28px auto',
+          backgroundColor: '#064e3b',
+          border: '1px solid #059669',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          textAlign: 'left',
+          boxShadow: '0 4px 14px rgba(6, 78, 59, 0.25)'
+        }}>
+          <span style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.3px' }}>Requisitos:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <span>🔌</span> <span>Enchufe disponible</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <span>🚿</span> <span>Toma de agua</span>
+          </div>
+        </div>
+
         {/* Trust Badges */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', flexWrap: 'wrap', animation: 'fadeUp 0.8s ease-out 1.2s forwards', opacity: 0, fontSize: '14px', color: 'var(--text-muted)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>

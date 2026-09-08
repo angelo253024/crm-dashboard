@@ -143,7 +143,7 @@ export class ChatBotReservationService {
     }
 
     return {
-      text: `${intro}\n\nPara empezar, por favor indícame tu número de **WhatsApp**:`,
+      text: `${intro}\n\n📋 **Requisitos:**\n🔌 Enchufe disponible\n🚿 Toma de agua\n\nPara empezar, por favor indícame tu número de **WhatsApp**:`,
       source: 'reservation',
       buttons: [
         { label: '❌ Cancelar / Consultar otra cosa', value: 'cancelar' }
@@ -356,7 +356,7 @@ export class ChatBotReservationService {
         // Si es automóvil (P, M, L, XL)
         _reservationState.step = STEPS.ASKING_PACKAGE;
         return {
-          text: `🚙 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\nPor sus características, corresponde al tamaño de servicio **${clasificacion.tamanoServicio}**.\n\nSelecciona el tipo de paquete que deseas:`,
+          text: `🚙 Detecté que tu vehículo es un **${vehiculoIdentificado}**.\n\nPor sus características, corresponde al tamaño de servicio **${clasificacion.tamanoServicio}**.\n\n📋 **Requisitos:**\n🔌 Enchufe disponible\n🚿 Toma de agua\n\nSelecciona el tipo de paquete que deseas:`,
           source: 'reservation',
           buttons: [
             { label: '🟦 Lavado Clásico', value: 'CLASICO' },
@@ -1456,7 +1456,7 @@ export class ChatBotReservationService {
     const delayHeader = hasDelay ? ' (Con Margen de Demora)' : '';
 
     return {
-      text: `📋 **Resumen de tu Reserva${delayHeader}:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}${d.descripcion ? `\n🏠 **Referencia / Domicilio:** ${d.descripcion}` : ''}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n¿Deseas confirmar la cita?`,
+      text: `📋 **Resumen de tu Reserva${delayHeader}:**\n\n👤 **Nombre:** ${d.clienteNombre}\n📱 **WhatsApp:** ${d.clienteTelefono}\n🚗 **Vehículo:** ${d.vehiculo}\n🧼 **Servicio Principal:** ${d.servicioNombre} — Bs. ${d.servicioPrecio}\n${extraListText}💰 **Precio Total:** Bs. ${totalPriceResumen}\n📍 **Ubicación:** ${d.ubicacion}${d.descripcion ? `\n🏠 **Referencia / Domicilio:** ${d.descripcion}` : ''}\n📅 **Fecha:** ${d.fechaReserva}\n🕐 **Hora:** ${d.horaReserva}\n\n📋 **Requisitos:**\n🔌 Enchufe disponible\n🚿 Toma de agua\n\n¿Deseas confirmar la cita?`,
       source: 'reservation',
       buttons: confirmButtons,
       requestGPS: false,

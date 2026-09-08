@@ -746,6 +746,26 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
             </div>
             
             <form onSubmit={handleManualSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Banner de Requisitos del Pedido */}
+              <div style={{
+                backgroundColor: '#064e3b',
+                border: '1px solid #059669',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                color: '#ffffff',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.3px' }}>Requisitos:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                  <span>🔌</span> <span>Enchufe disponible</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                  <span>🚿</span> <span>Toma de agua</span>
+                </div>
+              </div>
+
               <div>
                 <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Nombre del Cliente</label>
                 <input type="text" required className="form-input" value={manualForm.cliente_nombre} onChange={e => setManualForm({...manualForm, cliente_nombre: e.target.value})} style={{ width: '100%' }} />
@@ -1012,6 +1032,26 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
             </div>
             
             <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Banner de Requisitos del Pedido */}
+              <div style={{
+                backgroundColor: '#064e3b',
+                border: '1px solid #059669',
+                borderRadius: '10px',
+                padding: '12px 16px',
+                color: '#ffffff',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}>
+                <span style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.3px' }}>Requisitos:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                  <span>🔌</span> <span>Enchufe disponible</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                  <span>🚿</span> <span>Toma de agua</span>
+                </div>
+              </div>
+
               {/* Servicio */}
               <div>
                 <label className="text-body" style={{ display: 'block', marginBottom: '6px', fontWeight: '600' }}>

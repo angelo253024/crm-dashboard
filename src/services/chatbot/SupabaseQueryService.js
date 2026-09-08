@@ -41,7 +41,7 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'requisitos' || intent === 'autonomia') {
-        return "💧 **¿Cómo funciona nuestro servicio a domicilio?**\n\nVamos directamente hasta tu casa, condominio u oficina con todo nuestro equipamiento profesional.\n\n**Solo necesitamos de tu parte:**\n• **1 toma de agua (grifo o canilla)** 🚰\n• **1 toma de corriente o enchufe disponible** 🔌\n\nNosotros llevamos extensiones largas, mangueras, hidrolavadoras de alta presión, aspiradoras industriales y todos los insumos de alta gama. ¡Tú solo relájate mientras dejamos tu vehículo impecable!";
+        return "💧 **¿Cómo funciona nuestro servicio a domicilio?**\n\nVamos directamente hasta tu casa, condominio u oficina con todo nuestro equipamiento profesional.\n\n📋 **Requisitos:**\n🔌 Enchufe disponible\n🚿 Toma de agua\n\nNosotros llevamos extensiones largas, mangueras, hidrolavadoras de alta presión, aspiradoras industriales y todos los insumos de alta gama. ¡Tú solo relájate mientras dejamos tu vehículo impecable!";
       }
 
       if (intent === 'insumos') {
@@ -57,7 +57,7 @@ export class SupabaseQueryService {
       }
 
       if (intent === 'reservar') {
-        return "¡Excelente! Con gusto agendaremos tu cita para dejar tu vehículo impecable. **[RESERVAR_CITA]**";
+        return "¡Excelente! Con gusto agendaremos tu cita para dejar tu vehículo impecable.\n\n📋 **Requisitos:**\n🔌 Enchufe disponible\n🚿 Toma de agua\n\n**[RESERVAR_CITA]**";
       }
 
       if (intent === 'disponibilidad') {

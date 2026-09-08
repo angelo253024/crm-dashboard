@@ -1294,9 +1294,33 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
           </div>
           <span style={{ fontSize: '42px', color: '#1E4C9A' }}>Reserva tu <span style={{ color: '#1CA9C9' }}>Lavado</span></span>
         </div>
-        <p className="landing-text" style={{ margin: '0 auto', fontSize: '16px', maxWidth: '500px' }}>
+        <p className="landing-text" style={{ margin: '0 auto 20px auto', fontSize: '16px', maxWidth: '500px' }}>
           Selecciona el paquete de lavado ideal para tu vehículo. Agendaremos tu servicio a domicilio.
         </p>
+
+        {/* Banner Requisitos del Servicio */}
+        <div style={{
+          maxWidth: '380px',
+          margin: '0 auto',
+          backgroundColor: '#064e3b',
+          border: '1px solid #059669',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+          textAlign: 'left',
+          boxShadow: '0 4px 14px rgba(6, 78, 59, 0.25)'
+        }}>
+          <span style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.3px' }}>Requisitos:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <span>🔌</span> <span>Enchufe disponible</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+            <span>🚿</span> <span>Toma de agua</span>
+          </div>
+        </div>
       </div>
 
       {/* Apartado Reserva Pendiente / Activa */}
@@ -1651,7 +1675,26 @@ export default function ServiciosCatalog({ isDarkMode, toggleTheme }) {
               </div>
             ) : (
               <form onSubmit={submitReservation} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                
+                {/* Banner de Requisitos del Pedido */}
+                <div style={{
+                  backgroundColor: '#064e3b',
+                  border: '1px solid #059669',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  color: '#ffffff',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.3px' }}>Requisitos:</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                    <span>🔌</span> <span>Enchufe disponible</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
+                    <span>🚿</span> <span>Toma de agua</span>
+                  </div>
+                </div>
+
                 {/* Lista de Servicios */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
                   {selectedServices.map((srv, index) => {

@@ -78,7 +78,7 @@ export default function ChatBotWidget() {
     { label: '✨ Paquetes y Precios', intent: 'precios' },
     { label: '📅 Reservar Cita', intent: 'reservar' },
     { label: '🗓️ Ver Disponibilidad', intent: 'disponibilidad' },
-    { label: '💧 ¿Cómo funciona?', intent: 'requisitos' },
+    { label: '💧 Requisitos (🔌 y 🚿)', intent: 'requisitos' },
     { label: '🧼 Tapicería y Asientos', intent: 'tapiceria' },
     { label: '⚙️ Lavado de Motor', intent: 'motor' },
     { label: '🚙 Zonas de Cobertura', intent: 'cobertura' },
