@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus, Edit3 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, X, MapPin, Car, User, UserCheck, Database, ChevronLeft, ChevronRight, Plus, Edit3, Trash2 } from 'lucide-react';
 import { supabase } from '../supabase';
 import { autoAssignWorker } from '../utils/autoAssignWorker';
 import { getMapUrls } from '../utils/navigationUrls';
@@ -53,11 +53,24 @@ export default function Citas() {
     cliente_nombre: '',
     vehiculo: '',
     servicio_id: '',
+    servicios_adicionales: [],
     trabajador_id: '',
     fecha_reserva: '',
     hora_reserva: '',
     ubicacion_gps: ''
   });
+
+  const calculateManualTotal = useMemo(() => {
+    const mainS = serviciosList.find(s => s.id === manualForm.servicio_id);
+    let total = mainS ? Number(mainS.precio) || 0 : 0;
+    if (Array.isArray(manualForm.servicios_adicionales)) {
+      manualForm.servicios_adicionales.forEach(extraId => {
+        const extraS = serviciosList.find(s => s.id === extraId);
+        if (extraS) total += Number(extraS.precio) || 0;
+      });
+    }
+    return total;
+  }, [manualForm.servicio_id, manualForm.servicios_adicionales, serviciosList]);
   const [disponibilidadFechas, setDisponibilidadFechas] = useState([]);
   const [showDispoModal, setShowDispoModal] = useState(false);
   const [dispoForm, setDispoForm] = useState({
@@ -134,7 +147,11 @@ export default function Citas() {
         }
 
         let serviceName = 'Servicio Personalizado';
-        if (res.servicios && res.servicios.nombre) {
+        if (res.servicio) {
+          serviceName = res.servicio;
+        } else if (res.servicios_detalle && Array.isArray(res.servicios_detalle) && res.servicios_detalle.length > 0) {
+          serviceName = res.servicios_detalle.map(s => s.nombre).join(' + ');
+        } else if (res.servicios && res.servicios.nombre) {
           serviceName = res.servicios.nombre;
         } else if (res.servicio_id) {
           const s = sList.find(s => s.id === res.servicio_id);
@@ -350,41 +367,61 @@ export default function Citas() {
     setIsSubmitting(true);
     try {
       const selectedService = serviciosList.find(s => s.id === manualForm.servicio_id);
-      const totalPrice = selectedService ? (selectedService.precio || 0) : 0;
+      const additionalServices = (manualForm.servicios_adicionales || [])
+        .map(id => serviciosList.find(s => s.id === id))
+        .filter(Boolean);
+
+      const allSelected = [selectedService, ...additionalServices].filter(Boolean);
+      const totalPrice = allSelected.reduce((sum, s) => sum + (Number(s.precio) || 0), 0);
 
       if (totalPrice < 100) {
-        alert(`⚠️ El monto mínimo para agendar una reserva es de 100 Bs. El servicio seleccionado cuesta Bs. ${totalPrice}.`);
+        alert(`⚠️ El monto mínimo para agendar una reserva es de 100 Bs. El total actual es de Bs. ${totalPrice}. Agrega otro servicio o selecciona un paquete mayor.`);
         setIsSubmitting(false);
         return;
       }
       
       // Validate that the entered GPS location is within a coverage zone
-const matchLocation = manualForm.ubicacion_gps && manualForm.ubicacion_gps.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
-if (!matchLocation) {
-  alert('✋ Por favor ingrese coordenadas GPS válidas para la ubicación.');
-  setIsSubmitting(false);
-  return;
-}
-const lat = parseFloat(matchLocation[1]);
-const lng = parseFloat(matchLocation[2]);
-const insideZone = zonasCobertura.some(z => {
-  if (!z.coordenadas) return false;
-  const poly = z.coordenadas.map(c => [c.lat, c.lng]);
-  return pointInPolygon([lat, lng], poly);
-});
-if (!insideZone) {
-  alert('⚠️ La ubicación ingresada está fuera de la zona de cobertura.');
-  setIsSubmitting(false);
-  return;
-}
-const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
+      const matchLocation = manualForm.ubicacion_gps && manualForm.ubicacion_gps.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+      if (!matchLocation) {
+        alert('✋ Por favor ingrese coordenadas GPS válidas para la ubicación.');
+        setIsSubmitting(false);
+        return;
+      }
+      const lat = parseFloat(matchLocation[1]);
+      const lng = parseFloat(matchLocation[2]);
+      const insideZone = zonasCobertura.some(z => {
+        if (!z.coordenadas) return false;
+        const poly = z.coordenadas.map(c => [c.lat, c.lng]);
+        return pointInPolygon([lat, lng], poly);
+      });
+      if (!insideZone) {
+        alert('⚠️ La ubicación ingresada está fuera de la zona de cobertura.');
+        setIsSubmitting(false);
+        return;
+      }
+      const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador_id);
+
+      const serviciosDetalleJSON = allSelected.map(s => ({
+        id: s.id,
+        nombre: s.nombre,
+        precio: s.precio,
+        categoria: s.categoria
+      }));
+
+      const combinedServiceName = allSelected.map(s => s.nombre).join(' + ');
+
+      const formattedHora = manualForm.hora_reserva.length === 5 
+        ? manualForm.hora_reserva + ':00' 
+        : manualForm.hora_reserva;
 
       const newReserva = {
         cliente_nombre: manualForm.cliente_nombre,
         vehiculo: manualForm.vehiculo,
         fecha_reserva: manualForm.fecha_reserva,
-        hora_reserva: manualForm.hora_reserva + ':00',
-        servicio_id: manualForm.servicio_id,
+        hora_reserva: formattedHora,
+        servicio_id: selectedService?.id || allSelected[0]?.id || manualForm.servicio_id,
+        servicio: combinedServiceName,
+        servicios_detalle: serviciosDetalleJSON,
         trabajador_id: finalTrabajadorId,
         ubicacion_gps: manualForm.ubicacion_gps,
         estado: 'Reservado',
@@ -392,7 +429,13 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
         precio_total: totalPrice,
       };
       
-      const { error } = await supabase.from('reservas').insert([newReserva]);
+      let { error } = await supabase.from('reservas').insert([newReserva]);
+      if (error && error.message && (error.message.includes('servicios_detalle') || error.message.includes('servicio'))) {
+        delete newReserva.servicios_detalle;
+        delete newReserva.servicio;
+        const retry = await supabase.from('reservas').insert([newReserva]);
+        error = retry.error;
+      }
       if (error) throw error;
       
       alert('Cita agregada exitosamente');
@@ -401,6 +444,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
         cliente_nombre: '',
         vehiculo: '',
         servicio_id: '',
+        servicios_adicionales: [],
         trabajador_id: '',
         fecha_reserva: '',
         hora_reserva: '',
@@ -409,7 +453,7 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
       fetchReservas();
     } catch (error) {
       console.error('Error adding manual appointment:', error);
-      alert('Error al agregar cita manual');
+      alert('Error al agregar cita manual: ' + (error.message || error));
     } finally {
       setIsSubmitting(false);
     }
@@ -776,14 +820,131 @@ const finalTrabajadorId = await autoAssignWorker(supabase, manualForm.trabajador
                 <input type="text" required className="form-input" value={manualForm.vehiculo} onChange={e => setManualForm({...manualForm, vehiculo: e.target.value})} style={{ width: '100%' }} />
               </div>
               
-              <div>
-                <label className="text-body" style={{ display: 'block', marginBottom: '4px' }}>Servicio</label>
-                <select required className="form-input" value={manualForm.servicio_id} onChange={e => setManualForm({...manualForm, servicio_id: e.target.value})} style={{ width: '100%' }}>
-                  <option value="">Seleccione un servicio</option>
+              {/* Sección de Servicios Múltiples */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label className="text-body" style={{ display: 'block', fontWeight: '600' }}>
+                  🧼 Servicio Principal
+                </label>
+                <select 
+                  required 
+                  className="form-input" 
+                  value={manualForm.servicio_id} 
+                  onChange={e => setManualForm({...manualForm, servicio_id: e.target.value})} 
+                  style={{ width: '100%' }}
+                >
+                  <option value="">Seleccione un servicio principal</option>
                   {serviciosList.map(s => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} — Bs. {s.precio}
+                    </option>
                   ))}
                 </select>
+
+                {/* Servicios Adicionales */}
+                {(manualForm.servicios_adicionales || []).map((extraId, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                    <select
+                      className="form-input"
+                      value={extraId}
+                      onChange={e => {
+                        const updated = [...manualForm.servicios_adicionales];
+                        updated[idx] = e.target.value;
+                        setManualForm({ ...manualForm, servicios_adicionales: updated });
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      <option value="">Seleccione servicio adicional...</option>
+                      {serviciosList.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.nombre} — Bs. {s.precio}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = manualForm.servicios_adicionales.filter((_, i) => i !== idx);
+                        setManualForm({ ...manualForm, servicios_adicionales: updated });
+                      }}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        color: '#ef4444',
+                        borderRadius: '8px',
+                        padding: '8px 10px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                      title="Eliminar este servicio"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+
+                {/* Botón para Adicionar más servicios */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setManualForm(prev => ({
+                      ...prev,
+                      servicios_adicionales: [...(prev.servicios_adicionales || []), '']
+                    }));
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px dashed var(--accent-cyan)',
+                    backgroundColor: 'rgba(28, 169, 201, 0.08)',
+                    color: 'var(--accent-cyan)',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    marginTop: '4px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.16)'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(28, 169, 201, 0.08)'}
+                >
+                  <Plus size={16} /> + Adicionar otro servicio
+                </button>
+
+                {/* Resumen de Total */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: 'var(--bg-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  marginTop: '4px'
+                }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    Total Servicios:
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {calculateManualTotal < 100 && (
+                      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>
+                        (Mínimo 100 Bs)
+                      </span>
+                    )}
+                    <span style={{
+                      fontWeight: 'bold',
+                      fontSize: '15px',
+                      color: calculateManualTotal >= 100 ? 'var(--accent-green)' : '#f59e0b'
+                    }}>
+                      Bs. {calculateManualTotal}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div>
