@@ -530,15 +530,15 @@ export default function Citas() {
         ) : (
           <div className="table-responsive" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
             <div style={{ minWidth: '860px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '8px', marginBottom: '8px' }}>
                 {days.map(day => (
-                  <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                  <div key={day} style={{ textAlign: 'center', fontWeight: '600', padding: '8px', backgroundColor: 'var(--card-bg)', borderRadius: '4px', border: '1px solid var(--border-color)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {day}
                   </div>
                 ))}
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '8px' }}>
                 {totalSlots.map((day, index) => {
                   const dateStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : null;
                   const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
@@ -558,7 +558,9 @@ export default function Citas() {
                         opacity: day ? 1 : 0.5,
                         transition: 'border-color 0.2s',
                         display: 'flex',
-                        flexDirection: 'column'
+                        flexDirection: 'column',
+                        minWidth: 0,
+                        overflow: 'hidden'
                       }}
                       onMouseEnter={(e) => {
                         if (day) e.currentTarget.style.borderColor = 'var(--accent-green)';
@@ -569,36 +571,43 @@ export default function Citas() {
                     >
                       {day && (
                         <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '4px', minWidth: 0 }}>
+                            <div style={{ minWidth: 0, overflow: 'hidden' }}>
                               {dispoDay && (
-                                <div style={{ fontSize: '10px' }}>
+                                <div style={{ fontSize: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {dispoDay.cerrado ? (
                                     <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Cerrado</span>
                                   ) : dispoDay.tipo === 'slots' ? (
-                                    <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0}) • Cap: {dispoDay.capacidad_por_slot || 1}</span>
+                                    <span title={`Slots (${dispoDay.slots ? dispoDay.slots.length : 0}) • Cap: ${dispoDay.capacidad_por_slot || 1}`} style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Slots ({dispoDay.slots ? dispoDay.slots.length : 0})</span>
                                   ) : (
                                     <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>Rango</span>
                                   )}
                                 </div>
                               )}
                             </div>
-                            <div style={{ fontWeight: '600', color: 'var(--text-muted)' }}>
+                            <div style={{ fontWeight: '600', color: 'var(--text-muted)', flexShrink: 0 }}>
                               {day}
                             </div>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0, overflow: 'hidden' }}>
                             {dayEvents.slice(0, 3).map(ev => (
-                              <div key={ev.id} style={{ 
-                                fontSize: '11px', 
-                                padding: '4px', 
-                                borderRadius: '4px', 
-                                backgroundColor: 'var(--card-bg)',
-                                borderLeft: `3px solid ${getStatusColor(ev.status)}`,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                              }}>
+                              <div 
+                                key={ev.id} 
+                                title={`${ev.time} - ${ev.title}`}
+                                style={{ 
+                                  fontSize: '11px', 
+                                  padding: '4px', 
+                                  borderRadius: '4px', 
+                                  backgroundColor: 'var(--card-bg)',
+                                  borderLeft: `3px solid ${getStatusColor(ev.status)}`,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  minWidth: 0,
+                                  maxWidth: '100%',
+                                  boxSizing: 'border-box'
+                                }}
+                              >
                                 {ev.time} - {ev.title}
                               </div>
                             ))}
