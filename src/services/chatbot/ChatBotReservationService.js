@@ -242,15 +242,26 @@ export class ChatBotReservationService {
         }
         _reservationState.data.clienteTelefono = input;
         
-        // 1. Intentar buscar perfil en Supabase usando el teléfono
+        // Consultar perfil EXCLUSIVAMENTE en la base de datos Supabase usando el teléfono
         let knownProfile = null;
         try {
-          const { data: clientDB } = await supabase
+          let { data: clientDB } = await supabase
             .from('clientes')
             .select('nombre, vehiculo')
             .eq('telefono', cleanPhone)
             .order('created_at', { ascending: false })
             .limit(1);
+
+          // Si no encontró por solo dígitos y el input original tenía otro formato, probar con el input exacto
+          if ((!clientDB || clientDB.length === 0) && input !== cleanPhone) {
+            const { data: fallbackDB } = await supabase
+              .from('clientes')
+              .select('nombre, vehiculo')
+              .eq('telefono', input)
+              .order('created_at', { ascending: false })
+              .limit(1);
+            clientDB = fallbackDB;
+          }
 
           if (clientDB && clientDB.length > 0) {
             knownProfile = {
@@ -259,21 +270,8 @@ export class ChatBotReservationService {
               vehiculo: clientDB[0].vehiculo
             };
           }
-        } catch (e) { console.error(e); }
-
-        // 2. Fallback a localStorage
-        if (!knownProfile) {
-          try {
-            if (typeof localStorage !== 'undefined') {
-              const stored = localStorage.getItem('lavamovil_client_profile');
-              if (stored) {
-                const parsed = JSON.parse(stored);
-                if (parsed.telefono && parsed.telefono.replace(/\D/g, '') === cleanPhone) {
-                  knownProfile = parsed;
-                }
-              }
-            }
-          } catch(e) {}
+        } catch (e) {
+          console.error("Error consultando cliente en base de datos:", e);
         }
 
         if (knownProfile && knownProfile.nombre) {
