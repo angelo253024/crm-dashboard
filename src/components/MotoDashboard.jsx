@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import OneSignal from 'react-onesignal';
-import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3, Car, Sparkles, FileText } from 'lucide-react';
+import { MapPin, Check, X, Bell, User, Banknote, MessageSquare, Send, Map, PlusCircle, DollarSign, Eye, Edit3, Car, Sparkles, FileText, Trash2 } from 'lucide-react';
 import KpiCards from './KpiCards';
 import { getMapUrls } from '../utils/navigationUrls';
 import { sendDirectWorkerPush } from '../utils/oneSignalHelper';
@@ -886,6 +886,94 @@ export default function MotoDashboard({ user }) {
     fetchReservasAsignadas(false);
   };
 
+  const handleDeleteExtra = async (resId, extraIndex) => {
+    const reserva = reservas.find(r => r.id === resId) || pendientes.find(r => r.id === resId);
+    if (!reserva) return;
+
+    const servInfo = getReservaServicioInfo(reserva);
+    if (!servInfo.extrasDetalle || extraIndex < 0 || extraIndex >= servInfo.extrasDetalle.length) return;
+
+    const extraAEliminar = servInfo.extrasDetalle[extraIndex];
+    const remainingExtras = servInfo.extrasDetalle.filter((_, i) => i !== extraIndex);
+
+    // Calcular el nuevo total exacto deduciendo el extra
+    const sumaRemainingExtras = remainingExtras.reduce((sum, ext) => sum + Number(ext.precio || 0), 0);
+    let nuevoPrecio;
+    if (servInfo.precioPrincipal != null && servInfo.precioPrincipal > 0) {
+      nuevoPrecio = Number(servInfo.precioPrincipal) + sumaRemainingExtras;
+    } else {
+      const extraPrice = Number(extraAEliminar.precio || 0);
+      const actualTotal = Number(reserva.precio_total || reserva.precio || 0);
+      nuevoPrecio = Math.max(0, actualTotal - extraPrice);
+    }
+
+    // Reconstruir la cadena descriptiva de servicios
+    const principalName = servInfo.principal || reserva.servicio || 'Servicio de Lavado';
+    let nuevoServicioStr = principalName;
+    if (remainingExtras.length > 0) {
+      const extrasFormatted = remainingExtras
+        .map(ext => ext.precio ? `${ext.nombre} (Bs ${ext.precio})` : ext.nombre)
+        .join(' + ');
+      nuevoServicioStr = `${principalName} + ${extrasFormatted}`;
+    }
+
+    // Reconstruir lista estructurada servicios_detalle
+    const newServiciosDetalle = [
+      {
+        id: reserva.servicio_id || null,
+        nombre: principalName,
+        categoria: 'Lavado',
+        precio: Number(servInfo.precioPrincipal || (nuevoPrecio - sumaRemainingExtras) || 0)
+      },
+      ...remainingExtras.map(ext => ({
+        id: null,
+        nombre: ext.nombre,
+        categoria: 'Servicios Extras',
+        precio: Number(ext.precio || 0)
+      }))
+    ];
+
+    const updatePayload = {
+      servicio: nuevoServicioStr,
+      servicios_detalle: newServiciosDetalle,
+      precio_total: nuevoPrecio
+    };
+
+    // Si el campo vehiculo contenía anotaciones de extras (Adicionales: ...), sincronizarlo
+    if (reserva.vehiculo && reserva.vehiculo.toLowerCase().includes('(adicionales:')) {
+      const vehiculoLimpio = getVehiculoLimpio(reserva.vehiculo);
+      if (remainingExtras.length > 0) {
+        updatePayload.vehiculo = `${vehiculoLimpio} (Adicionales: ${remainingExtras.map(e => e.nombre).join(', ')})`;
+      } else {
+        updatePayload.vehiculo = vehiculoLimpio;
+      }
+    }
+
+    // Actualización optimista inmediata en la UI
+    setReservas(prev => prev.map(r => r.id === resId ? { ...r, ...updatePayload } : r));
+    setPendientes(prev => prev.map(r => r.id === resId ? { ...r, ...updatePayload } : r));
+    if (selectedReservaForPayment && selectedReservaForPayment.id === resId) {
+      setSelectedReservaForPayment(prev => ({ ...prev, ...updatePayload }));
+    }
+
+    let { error } = await supabase.from('reservas').update(updatePayload).eq('id', resId);
+    if (error && error.message && error.message.includes('servicios_detalle')) {
+      const retryPayload = { ...updatePayload };
+      delete retryPayload.servicios_detalle;
+      const retry = await supabase.from('reservas').update(retryPayload).eq('id', resId);
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error("Error al eliminar extra:", error);
+      alert("Hubo un error al eliminar el extra. Intenta de nuevo.");
+      fetchReservasAsignadas(false);
+      return;
+    }
+
+    fetchReservasAsignadas(false);
+  };
+
   const handleUpdateMainService = async (resId, newService) => {
     const reserva = reservas.find(r => r.id === resId);
     if (!reserva) return;
@@ -1393,9 +1481,43 @@ export default function MotoDashboard({ user }) {
                             <span style={{ color: '#c084fc', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
                               <Sparkles size={12} color="#c084fc" /> + {ext.nombre}
                             </span>
-                            <span style={{ color: '#a855f7', fontWeight: '800' }}>
-                              {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: '#a855f7', fontWeight: '800' }}>
+                                {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteExtra(res.id, idx);
+                                }}
+                                title="Eliminar este extra"
+                                aria-label="Eliminar este extra"
+                                style={{
+                                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  color: '#ef4444',
+                                  borderRadius: '5px',
+                                  padding: '3px 6px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                  lineHeight: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
+                                  e.currentTarget.style.borderColor = '#ef4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+                                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                }}
+                              >
+                                <Trash2 size={13} color="#ef4444" />
+                              </button>
+                            </div>
                           </div>
                         ))}
 
@@ -1700,9 +1822,43 @@ export default function MotoDashboard({ user }) {
                             <span style={{ color: '#c084fc', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
                               <Sparkles size={12} color="#c084fc" /> + {ext.nombre}
                             </span>
-                            <span style={{ color: '#a855f7', fontWeight: '800' }}>
-                              {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ color: '#a855f7', fontWeight: '800' }}>
+                                {ext.precio ? `+ Bs ${ext.precio}` : 'Extra'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteExtra(res.id, idx);
+                                }}
+                                title="Eliminar este extra"
+                                aria-label="Eliminar este extra"
+                                style={{
+                                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  color: '#ef4444',
+                                  borderRadius: '5px',
+                                  padding: '3px 6px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                  lineHeight: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
+                                  e.currentTarget.style.borderColor = '#ef4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+                                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                }}
+                              >
+                                <Trash2 size={13} color="#ef4444" />
+                              </button>
+                            </div>
                           </div>
                         ))}
 
